@@ -9,17 +9,17 @@
 '---------------------------------------------------------------------------------------------------------
 '   Check any comment labeled with 'TODO'
 '   Change all 'Tick' & 'Time' variables to Integer64
-'   Add 'Asserts' after file loads
-'   Check all 'PutImage' calls
-'   Map and check all instances of 'ddsBack.BltFast' from the original code
-'   Check all 'SndBal' calls and calling order
-'   SndBal panning values are wrong and should be corrected using a PanCompute function (?)
-'   Map and check all instances of '.Play DSBPLAY_LOOPING' from the original code
-'   Remove sound buffer duplication and let unlimited sound copies to play using 'SndPlayCopy'
+'   Remove GetTicks() dependency ?
 '   Check all Byte variables to see if we need to make those unsigned (VBA 'Byte' is always unsigned)
+'   Add 'Asserts' after file loads
 '   Change FindStringCenter() to DrawStringCenter()
-'   Remove GetTicks() dependency
+'   Map and check all instances of 'ddsBack.BltFast' from the original code
+'   Check all 'PutImage' calls
 '   Fix spriite sheet rendering bug - random white lines on bottom and right
+'   Map and check all instances of '.Play DSBPLAY_LOOPING' from the original code
+'   SndBal panning values are wrong and should be corrected using a PanCompute function (?)
+'   Check all 'SndBal' calls and calling order
+'   Remove sound buffer duplication and let unlimited sound copies to play using 'SndPlayCopy h, vol, pan' (new QB64-PE enhacement)
 '---------------------------------------------------------------------------------------------------------
 
 '---------------------------------------------------------------------------------------------------------
@@ -60,36 +60,6 @@ Const NULLSTRING = ""
 ' Game constants
 Const APP_NAME = "Space Shooter 2000"
 
-'MessageBox Constant values as defined by Microsoft (MBType)
-Const MB_OK = 0 'OK button only
-Const MB_OKCANCEL = 1 'OK & Cancel
-Const MB_ABORTRETRYIGNORE = 2 'Abort, Retry & Ignore
-Const MB_YESNOCANCEL = 3 'Yes, No & Cancel
-Const MB_YESNO = 4 'Yes & No
-Const MB_RETRYCANCEL = 5 'Retry & Cancel
-Const MB_CANCELTRYCONTINUE = 6 'Cancel, Try Again & Continue
-Const MB_ICONSTOP = 16 'Error stop sign icon
-Const MB_ICONQUESTION = 32 'Question-mark icon
-Const MB_ICONEXCLAMATION = 48 'Exclamation-point icon
-Const MB_ICONINFORMATION = 64 'Letter i in a circle icon
-Const MB_DEFBUTTON1 = 0 '1st button default(left)
-Const MB_DEFBUTTON2 = 256 '2nd button default
-Const MB_DEFBUTTON3 = 512 '3rd button default(right)
-Const MB_APPLMODAL = 0 'Message box applies to application only
-Const MB_SYSTEMMODAL = 4096 'Message box on top of all other windows
-Const MB_SETFOCUS = 65536 'Set message box as focus
-
-' Return values from MessageBox
-Const ID_OK = 1 'OK button pressed
-Const ID_CANCEL = 2 'Cancel button pressed
-Const ID_ABORT = 3 'Abort button pressed
-Const ID_RETRY = 4 'Retry button pressed
-Const ID_IGNORE = 5 'Ignore button pressed
-Const ID_YES = 6 'Yes button pressed
-Const ID_NO = 7 'No button pressed
-Const ID_TRYAGAIN = 10 'Try again button pressed
-Const ID_CONTINUE = 1 'Continue button pressed
-
 ' Keyboard key codes
 Const DIK_UP = 18432
 Const DIK_DOWN = 20480
@@ -111,7 +81,6 @@ Const TITLE_COLOR_RED = 50
 Const TITLE_COLOR_GREEN = 0
 Const TITLE_COLOR_BLUE = 204
 Const JOYSTICKCENTERED = 32768 'Center value of the joystick
-
 
 Const SHIELD = &H0 'Constant for the shield powerup
 Const WEAPON = &H20 'Constant for the weapon powerup
@@ -146,6 +115,7 @@ Const EXTRALIFETARGET = 250000 'If the player exceeds this value he gets an extr
 
 Const SOUND_DUPLICATE_MAX = 7 ' Maximum number of duplicate sound of any type. This is not count but max. Ex. 0 - 7
 
+' High score stuff
 Const HIGH_SCORE_FILENAME = "highscore.csv" ' High score file
 Const NUM_HIGH_SCORES = 10 ' Number of high scores
 Const HIGH_SCORE_TEXT_LEN = 20 ' The max length of the name in a high score
@@ -154,7 +124,7 @@ Const HIGH_SCORE_TEXT_LEN = 20 ' The max length of the name in a high score
 '---------------------------------------------------------------------------------------------------------
 ' USER DEFINED TYPES
 '---------------------------------------------------------------------------------------------------------
-Type typeRECT
+Type Rectangle2D
     left As Long
     top As Long
     right As Long
@@ -1227,7 +1197,7 @@ Sub EndGame
 
     'Is there a Segment playing?
     'Stop playing any midi's currently playing
-    PlayMIDIFile ""
+    PlayMIDIFile NULLSTRING
 End Sub
 
 
@@ -1256,12 +1226,12 @@ Sub CheckHighScore
         Loop
         lngHighScore(9) = lngScore 'if the player does have a high score, assign it to the last place
         boolGettingInput = TRUE 'we are now getting keyboard input
-        strName = "" 'clear the string
+        strName = NULLSTRING 'clear the string
         PlayMIDIFile "./dat/sfx/mus/inbtween.mid" 'play the inbetween levels & title screen midi
     End If
 
     If boolGettingInput And boolEnterPressed = FALSE Then 'as long as we are getting input, and the player hasn't pressed enter
-        If Len(strName) < 14 And strBuffer <> "" Then 'if we haven't reached the limit of characters for the name, and the buffer isn't empty then
+        If Len(strName) < 14 And strBuffer <> NULLSTRING Then 'if we haven't reached the limit of characters for the name, and the buffer isn't empty then
             If Asc(strBuffer) > 65 Or strBuffer = Chr$(32) Then strName = strName + strBuffer 'if the buffer contains a letter or a space, add it to the buffer
         End If
         strTemp = Str$(lngHighScore(9)) + "  New high score!!!"
@@ -1292,7 +1262,7 @@ Sub CheckHighScore
         PlayMIDIFile "./dat/sfx/mus/title.mid" 'Start the title midi again
     End If
 
-    strBuffer = "" 'clear the buffer
+    strBuffer = NULLSTRING 'clear the buffer
     boolEnterPressed = FALSE 'clear the enter toggle
 End Sub
 
@@ -1305,7 +1275,7 @@ Sub UpdatePowerUps (CreatePowerup As Byte) ' Optional CreatePowerup As Boolean
     Static byteAdvanceFrameOffset As Byte 'counter to advance the animation frames
     Static byteFrameCount As Byte 'holds which animation frame we are on
     Dim intRandomNumber As Long 'variable to hold a random number
-    Dim SrcRect As typeRECT 'rect structure
+    Dim SrcRect As Rectangle2D 'rect structure
     Dim byteFrameOffset As Byte 'offset for animation frames
     Dim intCount As Long 'standard count integer
 
@@ -1367,7 +1337,7 @@ End Sub
 'This sub creates the explosions that appear when a player destroys an object. The index controls which
 'explosion bitmap to play. Player explosion is a flag so the player doesn't get credit for blowing himself up.
 'It also adds to the number of enemies the player has killed to be displayed upon level completion.
-Sub CreateExplosion (Coordinates As typeRECT, ExplosionIndex As Byte, NoCredit As Byte) ' Optional NoCredit As Boolean = False
+Sub CreateExplosion (Coordinates As Rectangle2D, ExplosionIndex As Byte, NoCredit As Byte) ' Optional NoCredit As Boolean = False
     Dim lngCount As Long 'Standard count variable
 
     If NoCredit = FALSE Then 'If the NoCredit flag is not set
@@ -1395,7 +1365,7 @@ End Sub
 'This subroutine updates the animation for the large explosions
 Sub UpdateExplosions
     Dim lngCount As Long 'count variable
-    Dim SrcRect As typeRECT 'source rectangle
+    Dim SrcRect As Rectangle2D 'source rectangle
     Dim lngRightOffset As Long 'offset for the animation rectangle
     Dim lngLeftOffset As Long 'offset for the animation rectangle
     Dim lngTopOffset As Long 'offset for the animation rectangle
@@ -1485,8 +1455,8 @@ End Sub
 
 'This sub displays all levels, and displays where the player is located with a flashing orange box
 Sub ShowMapLocation (OutlineLocation As Byte) ' Optional OutlineLocation As Boolean
-    Dim DestRect As typeRECT 'Destination rectangle
-    Dim CurrentLevelRect As typeRECT 'Rectangle for the current level
+    Dim DestRect As Rectangle2D 'Destination rectangle
+    Dim CurrentLevelRect As Rectangle2D 'Rectangle for the current level
     Dim intCount As Long 'Count variable
     Dim XOffset As Long 'Offset of the X line
     Dim YOffset As Long 'Offset of the Y line
@@ -1535,7 +1505,7 @@ Sub StartIntro
     Dim lngCount As Long 'count variable
     Dim YPosition As Long 'y position for the string location
     Dim ddsSplash As Long 'direct draw surface to hold the background bitmap
-    Dim SrcRect As typeRECT 'source rectangle
+    Dim SrcRect As Rectangle2D 'source rectangle
 
     'These lines store the text to be displayed
     strDialog(0) = "As you may know, the unknown alien species has been attacking the Earth for an"
@@ -1544,7 +1514,7 @@ Sub StartIntro
     strDialog(3) = "has met with silence on their part, and their assault has not stopped."
     strDialog(4) = "Now is the time for all inhabitants of the Earth to put their trust in you."
     strDialog(5) = "You must not let us down."
-    strDialog(6) = ""
+    strDialog(6) = NULLSTRING
     strDialog(7) = "You will receive the opportunity of grabbing a power-up for every twenty-five"
     strDialog(8) = "alien ships you destroy. We don't have the time to fit your ship with them now,"
     strDialog(9) = "as our outer perimeter space probes have detected a large armada of alien"
@@ -1555,14 +1525,14 @@ Sub StartIntro
     strDialog(14) = "the ship to fail. With that in mind, it is imperative that you avoid getting"
     strDialog(15) = "hit, as the enemy forces are large, and every upgrade you get will make this"
     strDialog(16) = "difficult mission more attainable."
-    strDialog(17) = ""
+    strDialog(17) = NULLSTRING
     strDialog(18) = "We will warp you to the first entry point of the alien galaxy, and you will"
     strDialog(19) = "journey on a course that leads you through each part of their system,"
     strDialog(20) = "destroying as much of their weaponry and resources as possible along the way."
     strDialog(21) = "At the end of each stage, we have set up warp-jumps that will transport you to"
     strDialog(22) = "the next critical sector. Go now, soldier, and fight so that we may avert the"
     strDialog(23) = "annihilation of the human race."
-    strDialog(24) = ""
+    strDialog(24) = NULLSTRING
     strDialog(25) = "(Press enter to continue)"
 
     Cls 'fill the backbuffer with black
@@ -1610,7 +1580,7 @@ Sub LoadLevel (level As Long)
     Dim intCount2 As Long 'another count variable
     Dim TempString As String 'temporary string variable
     Dim LoadingString As String * 30 'string loaded from the binary level file
-    Dim SrcRect As typeRECT 'source rectangle structure
+    Dim SrcRect As Rectangle2D 'source rectangle structure
     Dim strStats As String 'string to hold statistics
     Dim strNumEnemiesKilled As String 'string to hold the number of enemies killed
     Dim strTotalNumEnemies As String 'string to hold the total number of enemies on the level
@@ -1830,7 +1800,7 @@ Sub UpdateLevels
     Dim TempInfo As typeBackGroundDesc 'Temporary description variable
     Dim blnTempInfo As Byte 'Temporary flag
     Dim strString As String 'String variable
-    Dim SrcRect As typeRECT 'Source rectangle
+    Dim SrcRect As Rectangle2D 'Source rectangle
     Dim lngDelayTime As Unsigned Long 'Stores the amount of delay
     Dim byteIndex As Byte 'Index count variable
     Dim DSExplosionIndex As Long 'Holds the direct sound explosion buffer count
@@ -1838,7 +1808,7 @@ Sub UpdateLevels
     If SectionCount < 0 Then 'If the end of the level is reached
         byteLevel = byteLevel + 1 'Increment the level the player is on
         If byteLevel = 9 Then 'If all levels have been beat
-            PlayMIDIFile "" 'Stop playing any midi
+            PlayMIDIFile NULLSTRING 'Stop playing any midi
             SndStop dsAlarm 'Turn off any alarm
             SndStop dsInvulnerability 'Stop any invulnerability sound effect
             Cls 'fill the back buffer with black
@@ -2141,7 +2111,7 @@ End Sub
 
 
 'This function takes two rectangles and determines if they overlap each other
-Function DetectCollision%% (r1 As typeRECT, r2 As typeRECT)
+Function DetectCollision%% (r1 As Rectangle2D, r2 As Rectangle2D)
     DetectCollision = Not (r1.left > r2.right Or r2.left > r1.right Or r1.top > r2.bottom Or r2.top > r1.bottom)
 End Function
 
@@ -2191,11 +2161,11 @@ End Sub
 'This also is the largest sub in the program, since it has to increment through
 'everything on the screen
 Sub CheckForCollisions
-    Dim SrcRect As typeRECT 'rect structure
-    Dim SrcRect2 As typeRECT 'another rect structure
+    Dim SrcRect As Rectangle2D 'rect structure
+    Dim SrcRect2 As Rectangle2D 'another rect structure
     Dim intCount As Long 'counter for loops
     Dim intCount2 As Long 'second loop counter
-    Dim ShipRect As typeRECT 'holds the position of the player
+    Dim ShipRect As Rectangle2D 'holds the position of the player
     'TODO: Dim ddTempBltFx As DDBLTFX                                                      'used to hold info about the special effects for flashing the screen when something is hit
     Dim TempDesc As typeBackGroundDesc
     Dim blnTempDesc As Byte
@@ -2788,7 +2758,7 @@ Sub UpdateBackground
     Dim sngFinalY As Single 'the final Y position of the bitmap
     Dim OffsetTop As Long 'The offset of the top of the bitmap
     Dim OffsetBottom As Long 'The offset of the bottom of the bitmap
-    Dim SrcRect As typeRECT 'Source rectangle of the bitmap
+    Dim SrcRect As Rectangle2D 'Source rectangle of the bitmap
 
     If boolBackgroundExists = FALSE Then 'If there is no background bitmap,
         Exit Sub 'exit the sub
@@ -2830,7 +2800,7 @@ End Sub
 'This sub creates as well as updates stars
 Sub UpdateStars
     Dim intCount As Long 'count variable
-    Dim SrcRect As typeRECT 'source rectangle
+    Dim SrcRect As Rectangle2D 'source rectangle
 
     For intCount = 0 To UBound(StarDesc) 'loop through all the stars
         If StarDesc(intCount).Exists = FALSE Then 'if this star doesn't exist then
@@ -2874,7 +2844,7 @@ Sub UpdateObstacles
     Dim OffsetTop As Long 'the top offset of the animation frame
     Dim OffsetBottom As Long 'the bottom offset of the animation frame
     Dim sngFinalY As Single 'the final Y position of the obstacle
-    Dim SrcRect As typeRECT 'source rectangle
+    Dim SrcRect As Rectangle2D 'source rectangle
 
     For intCount = 0 To UBound(ObstacleDesc) 'loop through all obstacles
         If ObstacleDesc(intCount).Exists Then 'if this obstacle exists
@@ -2927,7 +2897,7 @@ End Sub
 'This sub updates all the enemies that are being displayed on the screen
 Sub UpdateEnemys
     Dim intCount As Long 'count variable
-    Dim SrcRect As typeRECT 'source rectangle for the blit
+    Dim SrcRect As Rectangle2D 'source rectangle for the blit
     Dim intReturnResult As Long 'return holder
     Dim sngChaseSpeed As Single 'chase speed of the enemy
     Dim TempX As Long 'temporary X coordinate
@@ -3175,7 +3145,7 @@ End Sub
 Sub UpdateWeapons
     Dim intCount As Long 'count variable
     Dim intCounter As Long 'another count variable
-    Dim SrcRect As typeRECT 'source rectuangle
+    Dim SrcRect As Rectangle2D 'source rectuangle
 
     Do Until intCount > UBound(LaserDesc) 'Loop through all the level 1 lasers
         If LaserDesc(intCount).Exists Then 'if the laser exists
@@ -3327,7 +3297,7 @@ End Sub
 
 'This sub updates the player's ship, and animates it
 Sub UpdateShip
-    Dim SrcRect As typeRECT 'source rectangle
+    Dim SrcRect As Rectangle2D 'source rectangle
     Dim TempX As Long 'X poistion of the animation
     Dim TempY As Long 'Y position of the animation
     Static byteFrameDirection As Byte 'keep track of the direction the animation is moving
@@ -3409,7 +3379,7 @@ Sub UpdateInvulnerability
     Dim TempY As Long 'Temporary Y variable
     Dim XOffset As Long 'Offset of the rectangle
     Dim YOffset As Long 'Offset of the rectangle
-    Dim SrcRect As typeRECT 'Source rectangle
+    Dim SrcRect As Rectangle2D 'Source rectangle
     Static intInvFrameCount As Long 'Keep track of what animation frame the animation is on
     Static blnInvWarning As Byte 'Flag that is set if it is time to warn the player that the invulnerability is running out
     Static intWarningCount As Long 'Keep track of how many times the player has been warned
@@ -3472,7 +3442,7 @@ End Sub
 'This sub updates the shield display and also checks whether or not there are any shields left, as well as
 'updating the players lives. If there are no lives left, it will reset the game.
 Sub UpdateShields
-    Dim SrcRect As typeRECT 'The source rectangle for the shield indicator
+    Dim SrcRect As Rectangle2D 'The source rectangle for the shield indicator
     Dim lngTime As Long 'variable to store the current tick count
     Dim lngTargetTick As Long 'variable to stabilize frame rate
     Dim intCount As Long 'standard loop variable
@@ -3587,7 +3557,7 @@ End Sub
 Sub UpdateBombs
     Dim TempY As Long 'Temporary Y coordinate
     Dim TempX As Long 'Temporary X coordinate
-    Dim SrcRect As typeRECT 'Source rectangle structure
+    Dim SrcRect As Rectangle2D 'Source rectangle structure
     Dim XOffset As Long 'Offset for the X coordinate
     Dim YOffset As Long 'Offset for the Y coordinate
     Dim intCount As Long 'Count variable
@@ -3625,7 +3595,7 @@ End Sub
 Sub FireMissile
     Dim intCount As Long 'standard count variable
     Dim lngTargetTick As Unsigned Long 'long value to hold the tick count
-    Dim ExplosionRect As typeRECT 'rect structure that defines the position of an enemy ship
+    Dim ExplosionRect As Rectangle2D 'rect structure that defines the position of an enemy ship
     Dim As Long w, h
 
     ' Screen x & y max
@@ -3915,7 +3885,7 @@ Sub GetInput
             'if the M key is pressed, and the game has not started
             If blnMidiEnabled Then 'if midi is enabled
                 blnMidiEnabled = FALSE 'toggle it off
-                PlayMIDIFile "" 'stop playing any midi
+                PlayMIDIFile NULLSTRING 'stop playing any midi
             Else 'otherwise
                 blnMidiEnabled = TRUE 'turn the midi on
                 PlayMIDIFile "./dat/sfx/mus/title.mid" 'play the title midi

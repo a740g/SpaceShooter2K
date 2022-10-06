@@ -29,12 +29,13 @@ Main programming, graphics, and MIDI music are by Adam "Gollum" Lonnberg.
 Force Feedback implementation and conversion to DirectX 7 by Dominic "DirectX" Riccetti.
 
 The following graphics are by Robert Barry:
-Enemy1.gif
-Enemy2.gif
-Enemy3.gif
-Enemy4.gif
-Ship.gif
-Blocker.gif
+
+- Enemy1.gif
+- Enemy2.gif
+- Enemy3.gif
+- Enemy4.gif
+- Ship.gif
+- Blocker.gif
 
 All sound effects created by Gordon Duclos.
 
