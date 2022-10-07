@@ -8,7 +8,7 @@ The original [Visual Basic 6](https://winworldpc.com/product/microsoft-visual-ba
 
 This conversion has multiple changes and improvements over the Visual Basic 6 version. These are:
 
-- Works on Windows, Linux & macOS
+- Works natively on Windows, Linux & macOS
 - There is no DirectX 7 dependency
 - The game now uses native [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe) graphics and sound functions
 - The game now runs in 32bpp graphics mode
@@ -30,6 +30,7 @@ There is a [YouTube Playthrough](https://www.youtube.com/watch?v=LnUwmS-mYPA) th
 ## Original Credits
 
 Main programming, graphics, and MIDI music are by Adam "Gollum" Lonnberg.
+
 Force Feedback implementation and conversion to DirectX 7 by Dominic "DirectX" Riccetti.
 
 The following graphics are by Robert Barry:
@@ -44,3 +45,7 @@ The following graphics are by Robert Barry:
 All sound effects created by Gordon Duclos.
 
 Many thanks go out to the both of them.
+
+## Trivia
+
+I've was supposed to complete the source port more than 10 years ago. Initially I thought of just doing it using VB.Net. Lack of a good game programming library then (like [raylib](https://www.raylib.com/)) and procrastination got the better of me. So, the code basically lived on and moved from my HDDs, SSDs, systems, OneDrive and what not. I re-discovered QB64 in early 2022. QB64 had almost everything for me to complete the port. There place where it lagged behind was audio. I decided to work around these limitations by using my own custom libraries. Sadly, RC Cola happened and he burned everything QB64 was to the ground. A few good folks like @SteveMcNeill @mkilgore @RhoSigma-QB64 (just to name a few) picked up the pieces and built QB64-PE. I started opening issues on QB64-PE GitHub and interacting with @mkilgore while working on this port. One day, while discusssing MIDI support in QB64-PE @mkilgore [motivated me](https://github.com/QB64-Phoenix-Edition/QB64pe/issues/115#issuecomment-1176112854) (probably unknowingly) enough to replace the QB64-PE OpenAL GPL audio backend with [miniaudio](https://miniaud.io/) and implement audio format support (like MIDI, MOD, S3M, XM, IT) which were present in old QB64-SDL versions. I managed to complete the [miniaudio](https://miniaud.io/) implemetation sometime in August 2022 and with help from @mkilgore was able to merge the changes to the QB64-PE repo. @SteveMcNeill generously offered me to become a QB64-PE dev which I gladly accepted. And here we are.
