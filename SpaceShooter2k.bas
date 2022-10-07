@@ -33,6 +33,9 @@ Option ExplicitArray
 Option Base 1
 $Asserts
 $Color:32
+$Resize:Smooth
+$Unstable:Midi
+$MidiSoundFont:Default
 $ExeIcon:'./SpaceShooter2k.ico'
 $VersionInfo:ProductName='Space Shooter 2000'
 $VersionInfo:CompanyName='Samuel Gomes'
@@ -45,9 +48,6 @@ $VersionInfo:OriginalFilename='SpaceShooter2k.exe'
 $VersionInfo:FileDescription='Space Shooter 2000 executable'
 $VersionInfo:FILEVERSION#=2,0,1,0
 $VersionInfo:PRODUCTVERSION#=2,0,0,0
-$Resize:Smooth
-$Unstable:Midi
-$MidiSoundFont:Default
 '---------------------------------------------------------------------------------------------------------
 
 '---------------------------------------------------------------------------------------------------------
@@ -72,14 +72,11 @@ Const DIK_BACK = 8
 Const DIK_RETURN = 13
 Const DIK_ESCAPE = 27
 
-Const SCREENWIDTH = 640 'Width for the display mode
-Const SCREENHEIGHT = 480 'Height for the display mode
+Const SCREEN_WIDTH = 640 'Width for the display mode
+Const SCREEN_HEIGHT = 480 'Height for the display mode
 Const TRANSPARENT_COLOR_RED = 208
 Const TRANSPARENT_COLOR_GREEN = 2
 Const TRANSPARENT_COLOR_BLUE = 178
-Const TITLE_COLOR_RED = 50
-Const TITLE_COLOR_GREEN = 0
-Const TITLE_COLOR_BLUE = 204
 Const JOYSTICKCENTERED = 32768 'Center value of the joystick
 
 Const SHIELD = &H0 'Constant for the shield powerup
@@ -453,7 +450,7 @@ End Sub
 Sub InitializeStartup
     Randomize Timer ' Seed randomizer
     Title APP_NAME ' Set the Window title
-    Screen NewImage(SCREENWIDTH, SCREENHEIGHT, 32) ' Initialize graphics
+    Screen NewImage(SCREEN_WIDTH, SCREEN_HEIGHT, 32) ' Initialize graphics
     AllowFullScreen SquarePixels , Smooth ' Set to fullscreen. We can also go to windowed mode using Alt+Enter
     PrintMode KeepBackground ' We want transparent text rendering
 
@@ -1073,7 +1070,7 @@ Function FindStringCenter& (strInput As String)
     'assign the new X position of the string to the function after we find the center of the string
     'in relationship to the screen width and the average width of all characters in the font, and
     'add the offset of the length of the string
-    FindStringCenter = (SCREENWIDTH \ 2) - (PrintWidth(strInput) \ 2)
+    FindStringCenter = (SCREEN_WIDTH \ 2) - (PrintWidth(strInput) \ 2)
 End Function
 
 
@@ -1295,7 +1292,7 @@ Sub UpdatePowerUps (CreatePowerup As Byte) ' Optional CreatePowerup As Boolean
             ElseIf intRandomNumber >= 800 And intRandomNumber < 900 Then
                 PowerUp(intCount).Index = INVULNERABILITY 'Make it an invulnerability powerup
             End If
-            PowerUp(intCount).X = Int(((SCREENWIDTH - POWERUPWIDTH) - 1) * Rnd + 1) 'Create the power-up, and set a random X position
+            PowerUp(intCount).X = Int(((SCREEN_WIDTH - POWERUPWIDTH) - 1) * Rnd + 1) 'Create the power-up, and set a random X position
             PowerUp(intCount).Y = 0 'Make the power-up start at the top of the screen
             PowerUp(intCount).Exists = TRUE 'The power up now exists
         End If
@@ -1322,7 +1319,7 @@ Sub UpdatePowerUps (CreatePowerup As Byte) ' Optional CreatePowerup As Boolean
             SrcRect.left = 0 + byteFrameOffset 'determine the frame offset
             SrcRect.right = SrcRect.left + POWERUPWIDTH 'use the constant to set the width of the surface to blit
 
-            If PowerUp(intCount).Y + POWERUPHEIGHT > SCREENHEIGHT Then 'If the power-up goes off screen,
+            If PowerUp(intCount).Y + POWERUPHEIGHT > SCREEN_HEIGHT Then 'If the power-up goes off screen,
                 PowerUp(intCount).Exists = FALSE 'destroy it
             Else
                 PutImage (PowerUp(intCount).X, PowerUp(intCount).Y), ddsPowerUp, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom) 'otherwise, blit it to the back buffer,
@@ -1393,9 +1390,9 @@ Sub UpdateExplosions
         If ExplosionDesc(lngCount).Exists = TRUE Then 'If this explosion exists then
             FinalX = ExplosionDesc(lngCount).X 'Start by getting the X coorindate of the explosion
             FinalY = ExplosionDesc(lngCount).Y 'Get the Y coordinate of the explosion
-            If ExplosionDesc(lngCount).X + ExplosionDesc(lngCount).W > SCREENWIDTH Then
+            If ExplosionDesc(lngCount).X + ExplosionDesc(lngCount).W > SCREEN_WIDTH Then
                 'If the explosion hangs off the right edge of the screen
-                lngRightOffset = (SCREENWIDTH - (ExplosionDesc(lngCount).X + ExplosionDesc(lngCount).W)) + ExplosionDesc(lngCount).W
+                lngRightOffset = (SCREEN_WIDTH - (ExplosionDesc(lngCount).X + ExplosionDesc(lngCount).W)) + ExplosionDesc(lngCount).W
                 'Adjust the rectangle to compensate
             Else 'Otherwise
                 lngRightOffset = ExplosionDesc(lngCount).W
@@ -1408,9 +1405,9 @@ Sub UpdateExplosions
                 'Adjust the width of the rectangle
                 FinalX = 0 'The X coordinate is 0
             End If
-            If ExplosionDesc(lngCount).Y + ExplosionDesc(lngCount).H > SCREENHEIGHT Then
+            If ExplosionDesc(lngCount).Y + ExplosionDesc(lngCount).H > SCREEN_HEIGHT Then
                 'If the bottom of the explosion hangs off the bottom of the screen
-                lngBottomOffset = (SCREENHEIGHT - (ExplosionDesc(lngCount).Y + ExplosionDesc(lngCount).H)) + ExplosionDesc(lngCount).H
+                lngBottomOffset = (SCREEN_HEIGHT - (ExplosionDesc(lngCount).Y + ExplosionDesc(lngCount).H)) + ExplosionDesc(lngCount).H
                 'Adjust the rectangle to compensate
             Else 'Otherwise
                 lngBottomOffset = ExplosionDesc(lngCount).H
@@ -1540,9 +1537,9 @@ Sub StartIntro
 
     'describe the location rectangle for the large background bitmap
     SrcRect.top = 0
-    SrcRect.bottom = SCREENHEIGHT - 1
+    SrcRect.bottom = SCREEN_HEIGHT - 1
     SrcRect.left = 0
-    SrcRect.right = SCREENWIDTH - 1
+    SrcRect.right = SCREEN_WIDTH - 1
 
     ddsSplash = LoadImage("./dat/gfx/nebulae4.gif") 'create a surface
     PutImage (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom), ddsSplash 'blit the surface to the screen
@@ -1660,8 +1657,8 @@ Sub LoadLevel (level As Long)
     SrcRect.right = 5
 
     For intCount = 1 To 500 'loop this 500 times
-        intLowerCount = Int((SCREENHEIGHT - 1) * Rnd) + 1 'find a random Y coordinate
-        intUpperCount = Int((SCREENWIDTH - 1) * Rnd) + 1 'find a random X coordinate
+        intLowerCount = Int((SCREEN_HEIGHT - 1) * Rnd) + 1 'find a random Y coordinate
+        intUpperCount = Int((SCREEN_WIDTH - 1) * Rnd) + 1 'find a random X coordinate
         PutImage (intUpperCount, intLowerCount), ddsStar, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom) 'blit a star in to the random coordinates
     Next
 
@@ -1739,7 +1736,7 @@ Sub LoadLevel (level As Long)
         intObjectIndex = 0 'set the index to 0
     Else
         boolBackgroundExists = TRUE 'reset background
-        sngBackgroundX = (SCREENWIDTH \ 2) - (BackgroundObject(intObjectIndex).W \ 2)
+        sngBackgroundX = (SCREEN_WIDTH \ 2) - (BackgroundObject(intObjectIndex).W \ 2)
         'set the coorindates of the background object to be centered
         sngBackgroundY = -100 - BackgroundObject(intObjectIndex).H
         'set the starting Y position of the object off the screen
@@ -1819,8 +1816,8 @@ Sub UpdateLevels
                 If DSExplosionIndex > UBound(dsExplosionDuplicate) Then DSExplosionIndex = 0
                 'if all buffers are active, reset the count
                 If Int((75 * Rnd) + 1) < 25 Then 'if we get a number that is between 1-25 then
-                    intCount = Int((SCREENWIDTH * Rnd) + 1) 'get a random X coordinate
-                    intCount2 = Int((SCREENHEIGHT * Rnd) + 1) 'get a random Y coordinate
+                    intCount = Int((SCREEN_WIDTH * Rnd) + 1) 'get a random X coordinate
+                    intCount2 = Int((SCREEN_HEIGHT * Rnd) + 1) 'get a random Y coordinate
                     'Enter the rectangle values
                     SrcRect.top = intCount2
                     SrcRect.bottom = SrcRect.top + 10
@@ -2012,7 +2009,7 @@ Sub FireWeapon
                 LaserDesc(intCount).Damage = 1 'the amount of damage this laser does
                 SndSetPos dsLaser, 0 'set the position of the buffer to 0
                 SndPlay dsLaser 'play the laser sound
-                SndBal dsLaser, ((Ship.X / SCREENWIDTH) - 0.5) * 2 'pan the sound according to the ships location
+                SndBal dsLaser, ((Ship.X / SCREEN_WIDTH) - 0.5) * 2 'pan the sound according to the ships location
                 Exit Do 'exit the do loop
             End If
             intCount = intCount + 1 'incrementing the count
@@ -2059,7 +2056,7 @@ Sub FireWeapon
                     Laser2RDesc(intCount).Damage = 1
                     SndSetPos dsLaser2Duplicate(DSLaser2Index), 0
                     SndPlay dsLaser2Duplicate(DSLaser2Index)
-                    SndBal dsLaser2Duplicate(DSLaser2Index), ((Ship.X / SCREENWIDTH) - 0.5) * 2
+                    SndBal dsLaser2Duplicate(DSLaser2Index), ((Ship.X / SCREEN_WIDTH) - 0.5) * 2
                     DSLaser2Index = DSLaser2Index + 1
                     If DSLaser2Index > UBound(dsLaser2Duplicate) Then DSLaser2Index = 0
                     Exit Do
@@ -2077,7 +2074,7 @@ Sub FireWeapon
                     Laser2LDesc(intCount).Damage = 1
                     SndSetPos dsLaser2Duplicate(DSLaser2Index), 0
                     SndPlay dsLaser2Duplicate(DSLaser2Index)
-                    SndBal dsLaser2Duplicate(DSLaser2Index), ((Ship.X / SCREENWIDTH) - 0.5) * 2
+                    SndBal dsLaser2Duplicate(DSLaser2Index), ((Ship.X / SCREEN_WIDTH) - 0.5) * 2
                     DSLaser2Index = DSLaser2Index + 1
                     If DSLaser2Index > UBound(dsLaser2Duplicate) Then DSLaser2Index = 0
                     Exit Do
@@ -2144,7 +2141,7 @@ Sub UpdateHits (NewHit As Byte, x As Long, y As Long) ' Optional NewHit As Boole
                     HitDesc(intCount).Exists = FALSE 'The hit no longer exists
                     HitDesc(intCount).Index = 0 'Set the frame of the hit to 0
                 Else 'Otherwise, the hit animation frame needs to be displayed
-                    If HitDesc(intCount).X > 0 And HitDesc(intCount).X < (SCREENWIDTH - HitDesc(intCount).W) And HitDesc(intCount).Y > 0 And HitDesc(intCount).Y < (SCREENHEIGHT - HitDesc(intCount).H) Then
+                    If HitDesc(intCount).X > 0 And HitDesc(intCount).X < (SCREEN_WIDTH - HitDesc(intCount).W) And HitDesc(intCount).Y > 0 And HitDesc(intCount).Y < (SCREEN_HEIGHT - HitDesc(intCount).H) Then
                         'If the hit is on screen
                         PutImage (HitDesc(intCount).X, HitDesc(intCount).Y), ddsHit 'blit the hit to the screen
                     End If
@@ -2236,7 +2233,7 @@ Sub CheckForCollisions
             If DetectCollision(SrcRect, ShipRect) Then 'if the enemy ship collides with the player
                 SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0 'set the position of the buffer to the beginning
                 SndPlay dsExplosionDuplicate(DSExplosionIndex) 'play the explosion sound
-                SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREENWIDTH \ 2)) * 3
+                SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
                 'TODO: If IsFF = True Then ef(1).start 1, 0                                'If force feedback is enabled, start the effect
                 DSExplosionIndex = DSExplosionIndex + 1 'increment the explosion index to the next duplicate
                 If Not EnemyDesc(intCount).Invulnerable Then EnemyDesc(intCount).Exists = FALSE
@@ -2322,7 +2319,7 @@ Sub CheckForCollisions
                             lngScore = lngScore + EnemyDesc(intCount).Score 'add the score value of this enemy to the players score
                             SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0
                             SndPlay dsExplosionDuplicate(DSExplosionIndex)
-                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREENWIDTH \ 2)) * 3
+                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
 
                             'play the explosion sound
                             DSExplosionIndex = DSExplosionIndex + 1 'increment the explosion index to the next duplicate
@@ -2356,7 +2353,7 @@ Sub CheckForCollisions
                             'the amount of times the obstacle can be hit, then
                             lngScore = lngScore + ObstacleDesc(intCount).Score 'add the score value of this obstacle to the players score
                             SndPlay dsExplosionDuplicate(DSExplosionIndex) 'play the explosion sound
-                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREENWIDTH \ 2)) * 3
+                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
                             DSExplosionIndex = DSExplosionIndex + 1 'increment the explosion index to the next duplicate
                             If ObstacleDesc(intCount).HasFired Then
                                 TempDesc = ObstacleDesc(intCount)
@@ -2420,7 +2417,7 @@ Sub CheckForCollisions
                             lngScore = lngScore + EnemyDesc(intCount).Score
                             SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0
                             SndPlay dsExplosionDuplicate(DSExplosionIndex)
-                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREENWIDTH \ 2)) * 3
+                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
                             DSExplosionIndex = DSExplosionIndex + 1
                             EnemyDesc(intCount).Exists = FALSE
                             CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, FALSE
@@ -2449,7 +2446,7 @@ Sub CheckForCollisions
                             lngScore = lngScore + ObstacleDesc(intCount).Score
                             SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0
                             SndPlay dsExplosionDuplicate(DSExplosionIndex)
-                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREENWIDTH \ 2)) * 3
+                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
                             DSExplosionIndex = DSExplosionIndex + 1
                             If ObstacleDesc(intCount).HasFired Then
                                 TempDesc = ObstacleDesc(intCount)
@@ -2508,7 +2505,7 @@ Sub CheckForCollisions
                             lngScore = lngScore + EnemyDesc(intCount).Score
                             SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0
                             SndPlay dsExplosionDuplicate(DSExplosionIndex)
-                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREENWIDTH \ 2)) * 3
+                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
                             DSExplosionIndex = DSExplosionIndex + 1
                             EnemyDesc(intCount).Exists = FALSE
                             CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, FALSE
@@ -2537,7 +2534,7 @@ Sub CheckForCollisions
                             lngScore = lngScore + ObstacleDesc(intCount).Score
                             SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0
                             SndPlay dsExplosionDuplicate(DSExplosionIndex)
-                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREENWIDTH \ 2)) * 3
+                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
                             DSExplosionIndex = DSExplosionIndex + 1
                             If ObstacleDesc(intCount).HasFired Then
                                 TempDesc = ObstacleDesc(intCount)
@@ -2597,7 +2594,7 @@ Sub CheckForCollisions
                             lngScore = lngScore + EnemyDesc(intCount).Score
                             SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0
                             SndPlay dsExplosionDuplicate(DSExplosionIndex)
-                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREENWIDTH \ 2)) * 3
+                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
                             DSExplosionIndex = DSExplosionIndex + 1
                             CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, FALSE
                             EnemyDesc(intCount).Exists = FALSE
@@ -2627,7 +2624,7 @@ Sub CheckForCollisions
                             lngScore = lngScore + ObstacleDesc(intCount).Score
                             SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0
                             SndPlay dsExplosionDuplicate(DSExplosionIndex)
-                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREENWIDTH \ 2)) * 3
+                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
                             DSExplosionIndex = DSExplosionIndex + 1
                             CreateExplosion SrcRect, ObstacleDesc(intCount).ExplosionIndex, FALSE
                             If ObstacleDesc(intCount).HasFired Then
@@ -2685,7 +2682,7 @@ Sub CheckForCollisions
                         EnemyDesc(intCount).TimesHit = EnemyDesc(intCount).TimesHit + 10
                         SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0
                         SndPlay dsExplosionDuplicate(DSExplosionIndex)
-                        SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREENWIDTH \ 2)) * 3
+                        SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
                         DSExplosionIndex = DSExplosionIndex + 1
                         If EnemyDesc(intCount).TimesHit > EnemyDesc(intCount).TimesDies And Not EnemyDesc(intCount).Invulnerable Then
                             EnemyDesc(intCount).Exists = FALSE
@@ -2713,7 +2710,7 @@ Sub CheckForCollisions
                         ObstacleDesc(intCount).TimesHit = ObstacleDesc(intCount).TimesHit + 10
                         SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0
                         SndPlay dsExplosionDuplicate(DSExplosionIndex)
-                        SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREENWIDTH \ 2)) * 3
+                        SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
                         DSExplosionIndex = DSExplosionIndex + 1
                         If ObstacleDesc(intCount).TimesHit > ObstacleDesc(intCount).TimesDies Then
                             lngScore = lngScore + ObstacleDesc(intCount).Score
@@ -2766,12 +2763,12 @@ Sub UpdateBackground
         sngBackgroundY = sngBackgroundY + 0.1 'increment the Y position of the bitmap
         If sngBackgroundY + BackgroundObject(intObjectIndex).H < 0 Then Exit Sub
         'if the y position is less than 0 exit the sub
-        If sngBackgroundY >= SCREENHEIGHT - 1 Then 'if the bitmap is less that the height of the screen then
+        If sngBackgroundY >= SCREEN_HEIGHT - 1 Then 'if the bitmap is less that the height of the screen then
             boolBackgroundExists = FALSE 'the bitmap no longer exists, since it has left the screen
         Else 'otherwise
-            If sngBackgroundY + BackgroundObject(intObjectIndex).H >= SCREENHEIGHT Then
+            If sngBackgroundY + BackgroundObject(intObjectIndex).H >= SCREEN_HEIGHT Then
                 'if bitmap is partially on the bottom of the screen
-                OffsetBottom = SCREENHEIGHT - (sngBackgroundY + BackgroundObject(intObjectIndex).H)
+                OffsetBottom = SCREEN_HEIGHT - (sngBackgroundY + BackgroundObject(intObjectIndex).H)
                 'set the offset amount to adjust for this
             Else 'otherwise
                 OffsetBottom = 0 'there is no offset
@@ -2807,7 +2804,7 @@ Sub UpdateStars
             If (Int((3500 - 1) * Rnd) + 1) <= 25 Then 'if a number between 3500 and 1 is less than 25 then
                 'begin creating a new star
                 StarDesc(intCount).Exists = TRUE 'the star exists
-                StarDesc(intCount).X = Int((SCREENWIDTH - 1) * Rnd) + 1
+                StarDesc(intCount).X = Int((SCREEN_WIDTH - 1) * Rnd) + 1
                 'set a random X coordinate
                 StarDesc(intCount).Y = 0 'start at the top of the screen
                 StarDesc(intCount).Index = Int((5 - 1) * Rnd) + 1 'set a random number for a color
@@ -2816,7 +2813,7 @@ Sub UpdateStars
         Else
             StarDesc(intCount).Y = StarDesc(intCount).Y + StarDesc(intCount).Speed
             'increment the stars position by its' speed
-            If StarDesc(intCount).Y >= SCREENHEIGHT - 1 Then
+            If StarDesc(intCount).Y >= SCREEN_HEIGHT - 1 Then
                 'if the star goes off the screen
                 StarDesc(intCount).Y = 0 'set the stars Y position to 0
                 StarDesc(intCount).Exists = FALSE 'the star no longer exists
@@ -2850,7 +2847,7 @@ Sub UpdateObstacles
         If ObstacleDesc(intCount).Exists Then 'if this obstacle exists
             ObstacleDesc(intCount).Y = ObstacleDesc(intCount).Y + ObstacleDesc(intCount).Speed
             'increment the obstacle by its' speed
-            If ObstacleDesc(intCount).Y >= SCREENHEIGHT Then 'if the obstacle goes completely off the screen
+            If ObstacleDesc(intCount).Y >= SCREEN_HEIGHT Then 'if the obstacle goes completely off the screen
                 ObstacleDesc(intCount).Exists = FALSE 'the obstacle no longer exists
             Else 'otherwise
                 XOffset = 0 'reset the X offset
@@ -2870,8 +2867,8 @@ Sub UpdateObstacles
                     sngFinalY = ObstacleDesc(intCount).Y 'set the y position of the obstacle
                     OffsetTop = 0 'there is no top offset for the obstacle
                 End If
-                If ObstacleDesc(intCount).Y + ObstacleDesc(intCount).H >= SCREENHEIGHT Then 'if the obstacle is partially off the bottom of the screen
-                    OffsetBottom = ObstacleDesc(intCount).H + (SCREENHEIGHT - (ObstacleDesc(intCount).Y + ObstacleDesc(intCount).H)) 'adjust the rectangle
+                If ObstacleDesc(intCount).Y + ObstacleDesc(intCount).H >= SCREEN_HEIGHT Then 'if the obstacle is partially off the bottom of the screen
+                    OffsetBottom = ObstacleDesc(intCount).H + (SCREEN_HEIGHT - (ObstacleDesc(intCount).Y + ObstacleDesc(intCount).H)) 'adjust the rectangle
                 Else 'otherwise
                     OffsetBottom = ObstacleDesc(intCount).H 'the bottom is the entire height of the obstacle
                 End If
@@ -2923,8 +2920,8 @@ Sub UpdateEnemys
             EnemyDesc(intCount).Y = EnemyDesc(intCount).Y + EnemyDesc(intCount).Speed
             'increment the enemies Y position by its' speed
             FinalY = EnemyDesc(intCount).Y 'start off with the final Y the same as the enemies Y
-            If EnemyDesc(intCount).Y + EnemyDesc(intCount).H > SCREENHEIGHT Then 'if the enemy is partially off the bottom of the screen
-                lngBottomOffset = (SCREENHEIGHT - (EnemyDesc(intCount).Y + EnemyDesc(intCount).H)) + EnemyDesc(intCount).H 'adjust the offset of the rectangle to compensate
+            If EnemyDesc(intCount).Y + EnemyDesc(intCount).H > SCREEN_HEIGHT Then 'if the enemy is partially off the bottom of the screen
+                lngBottomOffset = (SCREEN_HEIGHT - (EnemyDesc(intCount).Y + EnemyDesc(intCount).H)) + EnemyDesc(intCount).H 'adjust the offset of the rectangle to compensate
             Else 'otherwise
                 lngBottomOffset = EnemyDesc(intCount).H 'blit the whole enemy
             End If
@@ -2934,7 +2931,7 @@ Sub UpdateEnemys
                 lngBottomOffset = EnemyDesc(intCount).H + EnemyDesc(intCount).Y 'also adjust the bottom offset of the rectangle to compensate
                 FinalY = 0 'the Y position of the rectangle will be zero
             End If
-            If EnemyDesc(intCount).Y < SCREENHEIGHT Then
+            If EnemyDesc(intCount).Y < SCREEN_HEIGHT Then
                 'if the enemy is on the screen then
                 If Ship.Y > EnemyDesc(intCount).Y Then 'if the the enemyies Y coorindate is larger than the players ship
                     If EnemyDesc(intCount).ChaseValue > 0 Then
@@ -2959,9 +2956,9 @@ Sub UpdateEnemys
                 EnemyDesc(intCount).X = EnemyDesc(intCount).X + EnemyDesc(intCount).XVelocity
                 'increment the X position of the enemy by its' velocity
                 FinalX = EnemyDesc(intCount).X 'the final X will be set to the enemies X coordinate
-                If EnemyDesc(intCount).X + EnemyDesc(intCount).W > SCREENWIDTH Then
+                If EnemyDesc(intCount).X + EnemyDesc(intCount).W > SCREEN_WIDTH Then
                     'if the enemy is partially off the screen to the right
-                    lngRightOffset = (SCREENWIDTH - (EnemyDesc(intCount).X + EnemyDesc(intCount).W)) + EnemyDesc(intCount).W
+                    lngRightOffset = (SCREEN_WIDTH - (EnemyDesc(intCount).X + EnemyDesc(intCount).W)) + EnemyDesc(intCount).W
                     'set the right offset of the animation rectangle to compensate
                 Else 'otherwise
                     lngRightOffset = EnemyDesc(intCount).W
@@ -3009,7 +3006,7 @@ Sub UpdateEnemys
                 SrcRect.left = 0 + XOffset + lngLeftOffset 'set the left offset
                 SrcRect.right = SrcRect.left + lngRightOffset 'the right is the left plus the right offset
 
-                If (EnemyDesc(intCount).W + EnemyDesc(intCount).X) > 1 And EnemyDesc(intCount).X < SCREENWIDTH And SrcRect.right > SrcRect.left And SrcRect.bottom > SrcRect.top Then
+                If (EnemyDesc(intCount).W + EnemyDesc(intCount).X) > 1 And EnemyDesc(intCount).X < SCREEN_WIDTH And SrcRect.right > SrcRect.left And SrcRect.bottom > SrcRect.top Then
                     'make sure that the enemy is within the bounds for blitting
                     PutImage (FinalX, FinalY), ddsEnemyContainer(EnemyDesc(intCount).Index), , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom)
                     'blit the enemy with a transparent key
@@ -3019,7 +3016,7 @@ Sub UpdateEnemys
             End If
         End If
 
-        If EnemyDesc(intCount).HasFired = FALSE And EnemyDesc(intCount).Exists = TRUE And EnemyDesc(intCount).DoesFire And EnemyDesc(intCount).Y > 0 And (EnemyDesc(intCount).Y + EnemyDesc(intCount).H) < SCREENHEIGHT And EnemyDesc(intCount).X > 0 And (EnemyDesc(intCount).X + EnemyDesc(intCount).W) < SCREENWIDTH Then
+        If EnemyDesc(intCount).HasFired = FALSE And EnemyDesc(intCount).Exists = TRUE And EnemyDesc(intCount).DoesFire And EnemyDesc(intCount).Y > 0 And (EnemyDesc(intCount).Y + EnemyDesc(intCount).H) < SCREEN_HEIGHT And EnemyDesc(intCount).X > 0 And (EnemyDesc(intCount).X + EnemyDesc(intCount).W) < SCREEN_WIDTH Then
             'This incredibly long line has a very important job. It makes sure that the enemy hasn't fired, that it exists, and that it is visible on the screen
             intReturnResult = Int((1500 - 1) * Rnd + 1) 'make a random number to to determine whether the enemy will fire
             If intReturnResult < 20 Then 'if the random number is less than 20, make the enemy fire
@@ -3078,7 +3075,7 @@ Sub UpdateEnemys
             SrcRect.left = EnemyDesc(intCount).FireFrame 'set the left to which frame we are on
             SrcRect.right = SrcRect.left + 5 'the width of the fire is 5 pixels
 
-            If EnemyDesc(intCount).XFire > SCREENWIDTH - 5 Or EnemyDesc(intCount).XFire < 0 Or EnemyDesc(intCount).YFire > SCREENHEIGHT - 5 Or EnemyDesc(intCount).YFire < 0 Then
+            If EnemyDesc(intCount).XFire > SCREEN_WIDTH - 5 Or EnemyDesc(intCount).XFire < 0 Or EnemyDesc(intCount).YFire > SCREEN_HEIGHT - 5 Or EnemyDesc(intCount).YFire < 0 Then
                 'if the enemy fire is off the visible screen
                 EnemyDesc(intCount).HasFired = FALSE 'the enemy hasn't fired
             Else 'otherwise
@@ -3131,7 +3128,7 @@ Sub UpdateEnemys
             SrcRect.left = ObstacleDesc(intCount).FireFrame
             SrcRect.right = SrcRect.left + 5
 
-            If ObstacleDesc(intCount).XFire > SCREENWIDTH - 5 Or ObstacleDesc(intCount).XFire < 0 Or ObstacleDesc(intCount).YFire > SCREENHEIGHT - 5 Or ObstacleDesc(intCount).YFire < 0 Then
+            If ObstacleDesc(intCount).XFire > SCREEN_WIDTH - 5 Or ObstacleDesc(intCount).XFire < 0 Or ObstacleDesc(intCount).YFire > SCREEN_HEIGHT - 5 Or ObstacleDesc(intCount).YFire < 0 Then
                 ObstacleDesc(intCount).HasFired = FALSE
             Else
                 PutImage (ObstacleDesc(intCount).XFire, ObstacleDesc(intCount).YFire), ddsEnemyFire, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom)
@@ -3181,7 +3178,7 @@ Sub UpdateWeapons
             SrcRect.top = 0
             SrcRect.bottom = LASER2HEIGHT
 
-            If Laser2RDesc(intCount).X < 0 Or Laser2RDesc(intCount).X > (SCREENWIDTH - LASER2WIDTH) Or Laser2RDesc(intCount).Y < 0 Or Laser2RDesc(intCount).Y > (SCREENHEIGHT - LASER2HEIGHT) Then
+            If Laser2RDesc(intCount).X < 0 Or Laser2RDesc(intCount).X > (SCREEN_WIDTH - LASER2WIDTH) Or Laser2RDesc(intCount).Y < 0 Or Laser2RDesc(intCount).Y > (SCREEN_HEIGHT - LASER2HEIGHT) Then
                 'if the laser goes off the screen then
                 Laser2RDesc(intCount).Exists = FALSE 'the laser no longer exists
             Else 'otherwise
@@ -3204,7 +3201,7 @@ Sub UpdateWeapons
             SrcRect.top = 0
             SrcRect.bottom = LASER2HEIGHT
 
-            If Laser2LDesc(intCount).X < 0 Or Laser2LDesc(intCount).X > (SCREENWIDTH - LASER2WIDTH) Or Laser2LDesc(intCount).Y < 0 Or Laser2LDesc(intCount).Y > (SCREENHEIGHT - LASER2HEIGHT) Then
+            If Laser2LDesc(intCount).X < 0 Or Laser2LDesc(intCount).X > (SCREEN_WIDTH - LASER2WIDTH) Or Laser2LDesc(intCount).Y < 0 Or Laser2LDesc(intCount).Y > (SCREEN_HEIGHT - LASER2HEIGHT) Then
                 Laser2LDesc(intCount).Exists = FALSE
             Else
                 PutImage (Laser2LDesc(intCount).X, Laser2LDesc(intCount).Y), ddsLaser2L, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom)
@@ -3281,7 +3278,7 @@ Sub UpdateWeapons
             'increment the missile X by the velocity of the missile
             GuidedMissile(intCount).Y = GuidedMissile(intCount).Y + GuidedMissile(intCount).YVelocity
             'increment the missile X by the velocity of the missile
-            If GuidedMissile(intCount).X < 0 Or (GuidedMissile(intCount).X + MISSILEDIMENSIONS) > SCREENWIDTH Or GuidedMissile(intCount).Y < 0 Or (GuidedMissile(intCount).Y + MISSILEDIMENSIONS) > SCREENHEIGHT Then
+            If GuidedMissile(intCount).X < 0 Or (GuidedMissile(intCount).X + MISSILEDIMENSIONS) > SCREEN_WIDTH Or GuidedMissile(intCount).Y < 0 Or (GuidedMissile(intCount).Y + MISSILEDIMENSIONS) > SCREEN_HEIGHT Then
                 'if the missile goes off the screen
                 GuidedMissile(intCount).Exists = FALSE 'the guided missile no longer exists
                 GuidedMissile(intCount).TargetSet = FALSE 'the guided missile has no target
@@ -3364,9 +3361,9 @@ Sub UpdateShip
 
     If Ship.X < 0 Then Ship.X = 0 'if the ship hits the left of the screen, set the X to 0
     If Ship.Y < 0 Then Ship.Y = 0 'if the ship hits the bottom of the screen, set the Y to 0
-    If Ship.X >= SCREENWIDTH - SHIPWIDTH Then Ship.X = SCREENWIDTH - SHIPWIDTH
+    If Ship.X >= SCREEN_WIDTH - SHIPWIDTH Then Ship.X = SCREEN_WIDTH - SHIPWIDTH
     'if the ship hits the right of the screen, set it to the right edge
-    If Ship.Y >= SCREENHEIGHT - SHIPHEIGHT Then Ship.Y = SCREENHEIGHT - SHIPHEIGHT
+    If Ship.Y >= SCREEN_HEIGHT - SHIPHEIGHT Then Ship.Y = SCREEN_HEIGHT - SHIPHEIGHT
     'if the ship hits the bottom of the screen, set it to the bottom edge
 
     PutImage (Ship.X, Ship.Y), ddsShip, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom) 'blit the ship to the screen
@@ -3434,7 +3431,7 @@ Sub UpdateInvulnerability
             PutImage (Ship.X, Ship.Y), ddsInvulnerable, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom)
             'Blit the animation frame
         End If
-        SndBal dsInvulnerability, (Ship.X - (SCREENWIDTH \ 2)) * 3 'If we are above 15 frames of animation, stop playing the invulnerability sound effect
+        SndBal dsInvulnerability, (Ship.X - (SCREEN_WIDTH \ 2)) * 3 'If we are above 15 frames of animation, stop playing the invulnerability sound effect
     End If
 End Sub
 

@@ -19,6 +19,10 @@ This conversion has multiple changes and improvements over the Visual Basic 6 ve
 
 The source port still has some rough edges and bugs. You can see these under the "TODO" section in the source code. I will gradually work through these as and when I get time.
 
+The source port also uses new features introduced in [QB64-PE v3.3.x+](https://github.com/QB64-Phoenix-Edition/QB64pe/releases) and as such may not work correctly or reliably with older versions of QB64-PE or any version of QB64. You've been warned. Please don't nag me about backwards compatiblity.
+
+As usual, I do not accept responsibility for any effects, adverse or otherwise, that this code may have on you, your computer, your sanity, your dog, and anything else that you can think of. Use it at your own risk.
+
 Icon by [Everaldo / Yellowicon](https://iconarchive.com/artist/everaldo.html)
 
 There is a [YouTube Playthrough](https://www.youtube.com/watch?v=LnUwmS-mYPA) that helped me a lot while doing the source port. Shoutout to [David Coleman](https://www.youtube.com/user/TheFieryDreamer) for posting the video.
