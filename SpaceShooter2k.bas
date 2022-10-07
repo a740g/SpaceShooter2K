@@ -20,6 +20,7 @@
 '   SndBal panning values are wrong and should be corrected using a PanCompute function (?)
 '   Check all 'SndBal' calls and calling order
 '   Remove sound buffer duplication and let unlimited sound copies to play using 'SndPlayCopy h, vol, pan' (new QB64-PE enhacement)
+'   Remove usage of Rectangle2D types whereever not really required
 '---------------------------------------------------------------------------------------------------------
 
 '---------------------------------------------------------------------------------------------------------
