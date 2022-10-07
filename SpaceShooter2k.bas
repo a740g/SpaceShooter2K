@@ -1273,7 +1273,7 @@ Sub UpdatePowerUps (CreatePowerup As Byte) ' Optional CreatePowerup As Boolean
     Static byteAdvanceFrameOffset As Byte 'counter to advance the animation frames
     Static byteFrameCount As Byte 'holds which animation frame we are on
     Dim intRandomNumber As Long 'variable to hold a random number
-    Dim SrcRect As Rectangle2D 'rect structure
+    'Dim SrcRect As Rectangle2D 'rect structure
     Dim byteFrameOffset As Byte 'offset for animation frames
     Dim intCount As Long 'standard count integer
 
@@ -1315,15 +1315,15 @@ Sub UpdatePowerUps (CreatePowerup As Byte) ' Optional CreatePowerup As Boolean
             byteFrameOffset = (POWERUPWIDTH * byteFrameCount) + PowerUp(intCount).Index 'determine the offset for the surfces rectangle
 
             'Set the rectangle structure of the power-up
-            SrcRect.top = 0 'start at the very top of the surface
-            SrcRect.bottom = SrcRect.top + POWERUPHEIGHT 'use the powerup constant to determine the top
-            SrcRect.left = 0 + byteFrameOffset 'determine the frame offset
-            SrcRect.right = SrcRect.left + POWERUPWIDTH 'use the constant to set the width of the surface to blit
+            'SrcRect.top = 0 'start at the very top of the surface
+            'SrcRect.bottom = SrcRect.top + POWERUPHEIGHT 'use the powerup constant to determine the top
+            'SrcRect.left = 0 + byteFrameOffset 'determine the frame offset
+            'SrcRect.right = SrcRect.left + POWERUPWIDTH 'use the constant to set the width of the surface to blit
 
             If PowerUp(intCount).Y + POWERUPHEIGHT > SCREEN_HEIGHT Then 'If the power-up goes off screen,
                 PowerUp(intCount).Exists = FALSE 'destroy it
             Else
-                PutImage (PowerUp(intCount).X, PowerUp(intCount).Y), ddsPowerUp, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom) 'otherwise, blit it to the back buffer,
+                PutImage (PowerUp(intCount).X, PowerUp(intCount).Y), ddsPowerUp, , (byteFrameOffset, 0)-(byteFrameOffset + POWERUPWIDTH, POWERUPHEIGHT) 'otherwise, blit it to the back buffer,
             End If
 
             PowerUp(intCount).Y = PowerUp(intCount).Y + 1.25 'and increment its' Y position
