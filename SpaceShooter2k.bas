@@ -12,15 +12,16 @@
 '   Remove GetTicks() dependency ?
 '   Check all Byte variables to see if we need to make those unsigned (VBA 'Byte' is always unsigned)
 '   Add 'Asserts' after file loads
-'   Change FindStringCenter() to DrawStringCenter()
 '   Map and check all instances of 'ddsBack.BltFast' from the original code
 '   Check all 'PutImage' calls
-'   Fix spriite sheet rendering bug - random white lines on bottom and right
+'   Fix spritesheet rendering bug - random white lines on bottom and right - probably copying extra pixels from right and bottom
 '   Map and check all instances of '.Play DSBPLAY_LOOPING' from the original code
 '   SndBal panning values are wrong and should be corrected using a PanCompute function (?)
 '   Check all 'SndBal' calls and calling order
-'   Remove sound buffer duplication and let unlimited sound copies to play using 'SndPlayCopy h, vol, pan' (new QB64-PE enhacement)
+'   Remove sound buffer duplication and let unlimited sound copies to play using 'SndPlayCopy h, vol, pan' (new QB64-PE enhancement)
 '   Remove usage of Rectangle2D types whereever not really required
+'   Attempt using hardware images (33)
+'   Guard all FreeImage calls to avoid error events
 '---------------------------------------------------------------------------------------------------------
 
 '---------------------------------------------------------------------------------------------------------
@@ -358,10 +359,10 @@ Do 'The main loop of the game.
         CheckForCollisions 'Branch to collision checking subs
         UpdateShields 'Branch to sub that paints shields
         UpdateBombs
-        DrawText 30, 10, "Score:" + Str$(lngScore), RGB32(149, 248, 153)
+        DrawString 30, 10, "Score:" + Str$(lngScore), RGB32(149, 248, 153)
         'Display the score
-        DrawText 175, 10, "Lives:" + Str$(byteLives), RGB32(149, 248, 153) 'Display lives left.
-        DrawText 560, 10, "Level:" + Str$(byteLevel), RGB32(149, 248, 153) 'Display the current level
+        DrawString 175, 10, "Lives:" + Str$(byteLives), RGB32(149, 248, 153) 'Display lives left.
+        DrawString 560, 10, "Level:" + Str$(byteLevel), RGB32(149, 248, 153) 'Display the current level
         CheckScore
     ElseIf boolStarted = FALSE And boolGettingInput = FALSE Then 'If we haven't started, and we aren't getting high score input from the player
         ShowTitle 'Show the title screen with high scores and directions
@@ -376,7 +377,7 @@ Do 'The main loop of the game.
             intFrameCount = 0 'reset the frame count
             lngStartTime = GetTicks 'get a new start time
         End If
-        DrawText 30, 30, "FPS:" + Str$(intFinalFrame), RGB32(255, 255, 255)
+        DrawString 30, 30, "FPS:" + Str$(intFinalFrame), RGB32(255, 255, 255)
         'display the frame rate
     End If
 
@@ -384,7 +385,7 @@ Do 'The main loop of the game.
         Do Until GetTicks - lngTargetTick > 18 'Make sure the game doesn't get out of control
         Loop 'speed-wise by looping until we reach the targeted frame rate
     Else
-        DrawText 30, 45, "Uncapped FPS enabled", RGB32(255, 255, 255) 'Let the player know there is no frame rate limitation
+        DrawString 30, 45, "Uncapped FPS enabled", RGB32(255, 255, 255) 'Let the player know there is no frame rate limitation
     End If
     Display 'Flip the front buffer with the back
 
@@ -892,7 +893,7 @@ Sub CheckScore
     End If
 
     If lngTargetTime > GetTicks And blnExtraLifeDisplay Then 'As long as the target time is larger than the current time, and the extra life display flag is set
-        DrawText FindStringCenter("Extra Life!!!"), 250, "Extra Life!!!", RGB32(255, 50, 50)
+        DrawStringCenter "Extra Life!!!", 250, RGB32(255, 50, 50)
         'Display the extra life message
     Else
         blnExtraLifeDisplay = FALSE 'Otherwise, if we have gone past the display duration, turn the display flag off
@@ -906,30 +907,30 @@ Sub ShowTitle
     Dim lngCount As Long 'x variable for counting
 
     PutImage (200, 50), ddsTitle 'blit the entire title screen bitmap to the backbuffer using the source color key as a mask
-    DrawText 290, 250, "High Scores", RGB32(255, 200, 175) 'Display the high scores message
+    DrawString 290, 250, "High Scores", RGB32(255, 200, 175) 'Display the high scores message
     lngYCount = 265 'Initialize the starting y coordinate for the high scores
     For lngCount = 0 To 9 'loop through the 10 high scores
         If lngCount = byteNewHighScore Then
-            DrawText 265, lngYCount, Str$(lngHighScore(lngCount)) + "   " + strHighScoreName(lngCount), RGB32(254, 255, 102)
+            DrawString 265, lngYCount, Str$(lngHighScore(lngCount)) + "   " + strHighScoreName(lngCount), RGB32(254, 255, 102)
         Else
-            DrawText 265, lngYCount, Str$(lngHighScore(lngCount)) + "   " + strHighScoreName(lngCount), RGB32(50, 100, 200)
+            DrawString 265, lngYCount, Str$(lngHighScore(lngCount)) + "   " + strHighScoreName(lngCount), RGB32(50, 100, 200)
         End If
         'display the high score information
         lngYCount = lngYCount + 15 'increment the Y coordinate for the next high score
     Next
 
     If blnMidiEnabled Then 'if midi is enabled
-        DrawText FindStringCenter("Press M to toggle Midi music. Midi: Enabled"), 435, "Press M to toggle Midi music. Midi: Enabled", RGB32(58, 84, 26)
+        DrawStringCenter "Press M to toggle Midi music. Midi: Enabled", 435, RGB32(58, 84, 26)
         'display this message
     Else 'otherwise
-        DrawText FindStringCenter("Press M to toggle Midi music. Midi: Disabled"), 435, "Press M to toggle Midi music. Midi: Disabled", RGB32(58, 84, 26)
+        DrawStringCenter "Press M to toggle Midi music. Midi: Disabled", 435, RGB32(58, 84, 26)
         'display this message
     End If
 
     If blnJoystickEnabled Then 'if the joystick is enabled display this message
-        DrawText FindStringCenter("Press J to toggle joystick. Joystick: Enabled"), 450, "Press J to toggle joystick. Joystick: Enabled", RGB32(56, 78, 56)
+        DrawStringCenter "Press J to toggle joystick. Joystick: Enabled", 450, RGB32(56, 78, 56)
     Else 'otherwise
-        DrawText FindStringCenter("Press J to toggle joystick. Joystick: Disabled"), 450, "Press J to toggle joystick. Joystick: Disabled", RGB32(56, 78, 56)
+        DrawStringCenter "Press J to toggle joystick. Joystick: Disabled", 450, RGB32(56, 78, 56)
         'display this message
     End If
 End Sub
@@ -1066,17 +1067,16 @@ Sub FadeScreen (bIn As Byte) ' Optional FadeIn As Boolean
 End Sub
 
 
-'This sub finds the approximate center of a string
-Function FindStringCenter& (strInput As String)
-    'assign the new X position of the string to the function after we find the center of the string
-    'in relationship to the screen width and the average width of all characters in the font, and
-    'add the offset of the length of the string
-    FindStringCenter = (SCREEN_WIDTH \ 2) - (PrintWidth(strInput) \ 2)
-End Function
+' Centers a string on the screen
+' The function calculates the correct starting column position to center the string on the screen and then draws the actual text
+Sub DrawStringCenter (s As String, y As Long, c As Unsigned Long)
+    Color c
+    PrintString ((SCREEN_WIDTH \ 2) - (PrintWidth(s) \ 2), y), s
+End Sub
 
 
 'This sub draws text to the back buffer
-Sub DrawText (lngXPos As Long, lngYPos As Long, strText As String, lngColor As Unsigned Long)
+Sub DrawString (lngXPos As Long, lngYPos As Long, strText As String, lngColor As Unsigned Long)
     Color lngColor 'Set the color of the text to the color passed to the sub
     PrintString (lngXPos, lngYPos), strText 'Draw the text on to the screen, in the coordinates specified
 End Sub
@@ -1232,9 +1232,8 @@ Sub CheckHighScore
         If Len(strName) < 14 And strBuffer <> NULLSTRING Then 'if we haven't reached the limit of characters for the name, and the buffer isn't empty then
             If Asc(strBuffer) > 65 Or strBuffer = Chr$(32) Then strName = strName + strBuffer 'if the buffer contains a letter or a space, add it to the buffer
         End If
-        strTemp = Str$(lngHighScore(9)) + "  New high score!!!"
-        DrawText FindStringCenter(strTemp), 200, strTemp, RGB32(200, 200, 50) 'Display the new high score message
-        DrawText 240, 220, "Enter your name: " + strName + Chr$(179), RGB32(200, 200, 50) 'Give the player a cursor, and display the buffer
+        DrawStringCenter Str$(lngHighScore(9)) + "  New high score!!!", 200, RGB32(200, 200, 50) 'Display the new high score message
+        DrawString 240, 220, "Enter your name: " + strName + Chr$(179), RGB32(200, 200, 50) 'Give the player a cursor, and display the buffer
     ElseIf boolGettingInput And boolEnterPressed Then 'If we are getting input, and the player presses then enter key then
         strHighScoreName(9) = strName 'assign the new high score name the string contained in the buffer
         For intCount = 0 To 9 'loop through the high scores and re-arrange them
@@ -1273,7 +1272,6 @@ Sub UpdatePowerUps (CreatePowerup As Byte) ' Optional CreatePowerup As Boolean
     Static byteAdvanceFrameOffset As Byte 'counter to advance the animation frames
     Static byteFrameCount As Byte 'holds which animation frame we are on
     Dim intRandomNumber As Long 'variable to hold a random number
-    'Dim SrcRect As Rectangle2D 'rect structure
     Dim byteFrameOffset As Byte 'offset for animation frames
     Dim intCount As Long 'standard count integer
 
@@ -1313,12 +1311,6 @@ Sub UpdatePowerUps (CreatePowerup As Byte) ' Optional CreatePowerup As Boolean
             End If
 
             byteFrameOffset = (POWERUPWIDTH * byteFrameCount) + PowerUp(intCount).Index 'determine the offset for the surfces rectangle
-
-            'Set the rectangle structure of the power-up
-            'SrcRect.top = 0 'start at the very top of the surface
-            'SrcRect.bottom = SrcRect.top + POWERUPHEIGHT 'use the powerup constant to determine the top
-            'SrcRect.left = 0 + byteFrameOffset 'determine the frame offset
-            'SrcRect.right = SrcRect.left + POWERUPWIDTH 'use the constant to set the width of the surface to blit
 
             If PowerUp(intCount).Y + POWERUPHEIGHT > SCREEN_HEIGHT Then 'If the power-up goes off screen,
                 PowerUp(intCount).Exists = FALSE 'destroy it
@@ -1503,7 +1495,6 @@ Sub StartIntro
     Dim lngCount As Long 'count variable
     Dim YPosition As Long 'y position for the string location
     Dim ddsSplash As Long 'direct draw surface to hold the background bitmap
-    Dim SrcRect As Rectangle2D 'source rectangle
 
     'These lines store the text to be displayed
     strDialog(0) = "As you may know, the unknown alien species has been attacking the Earth for an"
@@ -1536,16 +1527,10 @@ Sub StartIntro
     Cls 'fill the backbuffer with black
     YPosition = 50 'initialize the Y coordinate of the text to 50
 
-    'describe the location rectangle for the large background bitmap
-    SrcRect.top = 0
-    SrcRect.bottom = SCREEN_HEIGHT - 1
-    SrcRect.left = 0
-    SrcRect.right = SCREEN_WIDTH - 1
-
     ddsSplash = LoadImage("./dat/gfx/nebulae4.gif") 'create a surface
-    PutImage (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom), ddsSplash 'blit the surface to the screen
+    PutImage (0, 0)-(SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1), ddsSplash 'blit the surface to the screen
     Do Until lngCount > UBound(strDialog) 'loop through all string arrays
-        DrawText FindStringCenter(strDialog(lngCount)), YPosition, strDialog(lngCount), RGB32(151, 150, 150)
+        DrawStringCenter strDialog(lngCount), YPosition, RGB32(151, 150, 150)
         'draw the text to the screen
         YPosition = YPosition + 15 'increment the Y position of the text
         lngCount = lngCount + 1 'increment the count
@@ -1702,24 +1687,24 @@ Sub LoadLevel (level As Long)
         End If
         If intCount > 20 Then intCount = 0 'if the count is larger than 20, set it to 0
         If byteLevel > 1 Then 'if the player has passed level 1 then
-            DrawText FindStringCenter(strStats), 80, strStats, RGB32(51, 153, 1)
+            DrawStringCenter strStats, 80, RGB32(51, 153, 1)
             'display the statistics
-            DrawText FindStringCenter(strNumEnemiesKilled), 100, strNumEnemiesKilled, RGB32(51, 153, 1)
+            DrawStringCenter strNumEnemiesKilled, 100, RGB32(51, 153, 1)
             'display the number of enemies killed
-            DrawText FindStringCenter(strTotalNumEnemies), 120, strTotalNumEnemies, RGB32(51, 153, 1)
+            DrawStringCenter strTotalNumEnemies, 120, RGB32(51, 153, 1)
             'display the total number of enemies on the level
             If lngNumEnemiesKilled > 0 Then 'if any enemies have been killed then
-                DrawText FindStringCenter(strPercent), 140, strPercent, RGB32(51, 153, 1)
+                DrawStringCenter strPercent, 140, RGB32(51, 153, 1)
                 'display the percentage of enemies killed
-                DrawText FindStringCenter(strBonus), 160, strBonus, RGB32(51, 153, 1)
+                DrawStringCenter strBonus, 160, RGB32(51, 153, 1)
                 'display the bonus awarded
             End If
         End If
         TempString = "Next level:  Level" + Str$(byteLevel) 'set the temp string with the next level number
-        DrawText FindStringCenter(TempString), 200, TempString, RGB32(136, 143, 172) 'display the temp string
-        DrawText FindStringCenter(strLevelText), 220, strLevelText, RGB32(136, 143, 172) 'display the level text
+        DrawStringCenter TempString, 200, RGB32(136, 143, 172) 'display the temp string
+        DrawStringCenter strLevelText, 220, RGB32(136, 143, 172) 'display the level text
         TempString = "(Press enter to continue)" 'set the temp string with this message
-        DrawText FindStringCenter(TempString), 450, TempString, RGB32(136, 143, 172) 'display the temp string
+        DrawStringCenter TempString, 450, RGB32(136, 143, 172) 'display the temp string
         If KeyHit = DIK_RETURN Then Exit Do 'if the enter key is pressed
         Delay 0.001 'don't hog the processor
         Display 'flip the direct draw front buffer to display the info
@@ -1797,7 +1782,6 @@ Sub UpdateLevels
     Dim lngStartTime As Unsigned Long 'The beginning time
     Dim TempInfo As typeBackGroundDesc 'Temporary description variable
     Dim blnTempInfo As Byte 'Temporary flag
-    Dim strString As String 'String variable
     Dim SrcRect As Rectangle2D 'Source rectangle
     Dim lngDelayTime As Unsigned Long 'Stores the amount of delay
     Dim byteIndex As Byte 'Index count variable
@@ -1851,22 +1835,14 @@ Sub UpdateLevels
             Cls 'fill the back buffer with black
 
             'The next lines all display the winning text
-            strString = "You win!!!"
-            DrawText FindStringCenter(strString), 150, strString, RGB32(135, 119, 8)
-            strString = "After emerging victorious through 8 different alien galaxies, the enemy has been"
-            DrawText FindStringCenter(strString), 165, strString, RGB32(135, 119, 8)
-            strString = "driven to the point of near-extinction. Congratulations on a victory well deserved!"
-            DrawText FindStringCenter(strString), 180, strString, RGB32(135, 119, 8)
-            strString = "You return to Earth, triumphant."
-            DrawText FindStringCenter(strString), 195, strString, RGB32(135, 119, 8)
-            strString = "As the peoples of the Earth revel in celebration,"
-            DrawText FindStringCenter(strString), 210, strString, RGB32(135, 119, 8)
-            strString = "and the world rejoices from relief of the threat of annihalation, you can't help"
-            DrawText FindStringCenter(strString), 225, strString, RGB32(135, 119, 8)
-            strString = "but ponder...were all of the aliens really destroyed?"
-            DrawText FindStringCenter(strString), 240, strString, RGB32(135, 119, 8)
-            strString = "The End"
-            DrawText FindStringCenter(strString), 270, strString, RGB32(135, 119, 8)
+            DrawStringCenter "You win!!!", 150, RGB32(135, 119, 8)
+            DrawStringCenter "After emerging victorious through 8 different alien galaxies, the enemy has been", 165, RGB32(135, 119, 8)
+            DrawStringCenter "driven to the point of near-extinction. Congratulations on a victory well deserved!", 180, RGB32(135, 119, 8)
+            DrawStringCenter "You return to Earth, triumphant.", 195, RGB32(135, 119, 8)
+            DrawStringCenter "As the peoples of the Earth revel in celebration,", 210, RGB32(135, 119, 8)
+            DrawStringCenter "and the world rejoices from relief of the threat of annihalation, you can't help", 225, RGB32(135, 119, 8)
+            DrawStringCenter "but ponder... were all of the aliens really destroyed?", 240, RGB32(135, 119, 8)
+            DrawStringCenter "The End", 270, RGB32(135, 119, 8)
 
             FadeScreen TRUE 'fade the screen in
             lngStartTime = GetTicks 'set the start time
@@ -3455,7 +3431,7 @@ Sub UpdateShields
         Line (449, 6)-(551, 28), RGB32(255, 255, 255), B 'draw a box for the shield indicator and set the fore color to white
         PutImage (450, 7), ddsShieldIndicator, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom)
         'blt the indicator rectangle to the screen
-        DrawText 390, 10, "Shields:", RGB32(255, 200, 200) 'display some text
+        DrawString 390, 10, "Shields:", RGB32(255, 200, 200) 'display some text
         If intShields < 25 Then 'if the shields are less than 25% then
             SndLoop dsAlarm 'play the alarm sound effect, and loop it
             Ship.AlarmActive = TRUE 'set the alarm flag to on
@@ -3510,7 +3486,7 @@ Sub UpdateShields
                 UpdateStars 'this too
                 UpdateExplosions 'same here
                 UpdateWeapons 'as well as this
-                DrawText 275, 200, "Lives left:" + Str$(byteLives), RGB32(255, 255, 255)
+                DrawString 275, 200, "Lives left:" + Str$(byteLives), RGB32(255, 255, 255)
                 'display a message letting the player know how many ships are left
                 Display 'flip the front buffer with the back
                 Do Until GetTicks - lngTargetTick > 18 'Make sure the game doesn't get out of control
@@ -3527,7 +3503,7 @@ Sub UpdateShields
                 UpdateBackground
                 UpdateExplosions
                 UpdateWeapons
-                DrawText 275, 200, "Game Over", RGB32(255, 255, 255)
+                DrawString 275, 200, "Game Over", RGB32(255, 255, 255)
                 'display that the game is now over
                 Display 'flip the front and back surfaces
                 Delay 0.001 'don't hog the processor
@@ -3628,9 +3604,9 @@ Sub FireMissile
         If Ship.Invulnerable Then UpdateInvulnerability 'If the player is invulnerable, update the invulenerability animation
         UpdateShields 'Update the shield indicator
         UpdateBombs 'Update the missile animation
-        DrawText 30, 10, "Score:" + Str$(lngScore), RGB32(149, 248, 153) 'Display the score
-        DrawText 175, 10, "Lives:" + Str$(byteLives), RGB32(149, 248, 153) 'Display lives left
-        DrawText 560, 10, "Level:" + Str$(byteLevel), RGB32(149, 248, 153) 'Display the current level
+        DrawString 30, 10, "Score:" + Str$(lngScore), RGB32(149, 248, 153) 'Display the score
+        DrawString 175, 10, "Lives:" + Str$(byteLives), RGB32(149, 248, 153) 'Display lives left
+        DrawString 560, 10, "Level:" + Str$(byteLevel), RGB32(149, 248, 153) 'Display the current level
 
         Line (0, 0)-(w, h), RGBA(255, 255, 255, intCount), BF 'Set the palette to our new palette entry values
 
@@ -3638,7 +3614,7 @@ Sub FireMissile
             Do Until GetTicks - lngTargetTick > 18 'Make sure the game doesn't get out of control
             Loop 'speed-wise by looping until we reach the targeted frame rate
         Else
-            DrawText 30, 45, "Uncapped FPS enabled", RGB32(255, 255, 255)
+            DrawString 30, 45, "Uncapped FPS enabled", RGB32(255, 255, 255)
             'Let the player know there is no frame rate limitation
         End If
 
@@ -3699,9 +3675,9 @@ Sub FireMissile
         If Ship.Invulnerable Then UpdateInvulnerability
         UpdateShields
         UpdateBombs
-        DrawText 30, 10, "Score:" + Str$(lngScore), RGB32(149, 248, 153)
-        DrawText 175, 10, "Lives:" + Str$(byteLives), RGB32(149, 248, 153)
-        DrawText 560, 10, "Level:" + Str$(byteLevel), RGB32(149, 248, 153)
+        DrawString 30, 10, "Score:" + Str$(lngScore), RGB32(149, 248, 153)
+        DrawString 175, 10, "Lives:" + Str$(byteLives), RGB32(149, 248, 153)
+        DrawString 560, 10, "Level:" + Str$(byteLevel), RGB32(149, 248, 153)
 
         Line (0, 0)-(w, h), RGBA(255, 0, 0, intCount), BF
 
@@ -3709,7 +3685,7 @@ Sub FireMissile
             Do Until GetTicks - lngTargetTick > 18
             Loop
         Else
-            DrawText 30, 45, "Uncapped FPS enabled", RGB32(255, 255, 255)
+            DrawString 30, 45, "Uncapped FPS enabled", RGB32(255, 255, 255)
         End If
         Display
     Next
@@ -3810,7 +3786,7 @@ Sub GetInput
             ' pause music
             If MIDIHandle > 0 Then SndPause MIDIHandle
 
-            DrawText 200, 200, "Paused...press Enter to start again", RGB32(255, 50, 100)
+            DrawString 200, 200, "Paused...press Enter to start again", RGB32(255, 50, 100)
             'display the pause text
             Display 'flip the surfaces to show the back buffer
             'Check the keyboard for keypresses
