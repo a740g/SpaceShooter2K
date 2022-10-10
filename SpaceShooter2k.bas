@@ -15,10 +15,6 @@
 '   Map and check all instances of 'ddsBack.BltFast' from the original code
 '   Check all 'PutImage' calls
 '   Fix spritesheet rendering bug - random white lines on bottom and right - probably copying extra pixels from right and bottom
-'   Map and check all instances of '.Play DSBPLAY_LOOPING' from the original code
-'   SndBal panning values are wrong and should be corrected using a PanCompute function (?)
-'   Check all 'SndBal' calls and calling order
-'   Remove sound buffer duplication and let unlimited sound copies to play using 'SndPlayCopy h, vol, pan' (new QB64-PE enhancement)
 '   Remove usage of Rectangle2D types whereever not really required
 '   Attempt using hardware images (33)
 '   Guard all FreeImage calls to avoid error events
@@ -111,8 +107,6 @@ Const CHASEOFF = 0 'The object doesn't follow the players' X coordinates
 Const CHASESLOW = 1 'The object does follow the players' X coordinates, but slowly
 Const CHASEFAST = 2 'The object does follow the players' X coordinates, but fast
 Const EXTRALIFETARGET = 250000 'If the player exceeds this value he gets an extra life
-
-Const SOUND_DUPLICATE_MAX = 7 ' Maximum number of duplicate sound of any type. This is not count but max. Ex. 0 - 7
 
 ' High score stuff
 Const HIGH_SCORE_FILENAME = "highscore.csv" ' High score file
@@ -241,24 +235,19 @@ Dim Shared ddsInvulnerable As Long 'Invulnerable bitmap surface
 
 'Sound Section
 Dim Shared dsLaser2 As Long 'stage 2 laser fire buffer
-Dim Shared dsLaser2Duplicate(0 To SOUND_DUPLICATE_MAX) As Long 'duplicate stage 2 laser fire
 Dim Shared dsLaser As Long 'stage 1 laser fire
 Dim Shared dsExplosion As Long 'explosion sound effect
-Dim Shared dsExplosionDuplicate(0 To SOUND_DUPLICATE_MAX) As Long 'duplicate explosion effects
 Dim Shared dsPowerUp As Long 'power up sound effect buffer
 Dim Shared dsMissile As Long 'missile sound effect buffer
 Dim Shared dsEnergize As Long 'sound effect for when the player materializes
 Dim Shared dsAlarm As Long 'low shield alarm
 Dim Shared dsEnemyFire As Long 'enemy fire direct sound buffer
-Dim Shared dsEnemyFireDuplicate(0 To SOUND_DUPLICATE_MAX) As Long 'duplicate enemy sound buffers
 Dim Shared dsNoHit As Long 'player hits an object that isn't destroyed
-Dim Shared dsNoHitDuplicate(0 To SOUND_DUPLICATE_MAX) As Long 'duplicate sounds for an object that isn't destroyed
 Dim Shared dsPulseCannon As Long 'sound for the pulse cannon
 Dim Shared dsPlayerDies As Long 'sound for when the player dies
 Dim Shared dsInvulnerability As Long 'sound for when the player is invulnerable
 Dim Shared dsInvPowerDown As Long 'sound for when the invulnerability wears off
 Dim Shared dsExtraLife As Long 'sound for when the player gets an extra life
-Dim Shared DSEnemyFireIndex As Long 'Keeps track of how many sounds are playing at once
 
 Dim Shared MIDIHandle As Long ' MIDI music handle
 
@@ -453,7 +442,7 @@ Sub InitializeStartup
     Randomize Timer ' Seed randomizer
     Title APP_NAME ' Set the Window title
     Screen NewImage(SCREEN_WIDTH, SCREEN_HEIGHT, 32) ' Initialize graphics
-    AllowFullScreen SquarePixels , Smooth ' Set to fullscreen. We can also go to windowed mode using Alt+Enter
+    FullScreen SquarePixels , Smooth ' Set to fullscreen. We can also go to windowed mode using Alt+Enter
     PrintMode KeepBackground ' We want transparent text rendering
 
     Cls ' We want black screen
@@ -1023,15 +1012,6 @@ Sub InitializeDS
     dsInvulnerability = SndOpen("./dat/sfx/snd/invulnerability.wav")
     dsInvPowerDown = SndOpen("./dat/sfx/snd/invpowerdown.wav")
     dsExtraLife = SndOpen("./dat/sfx/snd/extralife.wav")
-
-    'The next lines initialize duplicate sound buffers from the existing ones
-    Dim intCount As Long 'standard count variable
-    For intCount = 0 To SOUND_DUPLICATE_MAX
-        dsLaser2Duplicate(intCount) = SndCopy(dsLaser2)
-        dsEnemyFireDuplicate(intCount) = SndCopy(dsEnemyFire)
-        dsNoHitDuplicate(intCount) = SndCopy(dsNoHit)
-        dsExplosionDuplicate(intCount) = SndCopy(dsExplosion)
-    Next
 End Sub
 
 
@@ -1099,32 +1079,16 @@ Sub EndGame
     'Release direct sound objects
     SndClose dsExplosion 'set the explosion ds buffer to nothing
     dsExplosion = NULL
-    For intCount = 0 To UBound(dsExplosionDuplicate) 'loop through all the duplicate explosion buffers
-        SndClose dsExplosionDuplicate(intCount) 'set them to nothing
-        dsExplosionDuplicate(intCount) = NULL
-    Next
     SndClose dsEnergize 'set the ds enemrgize buffer to nothing
     dsEnergize = NULL
     SndClose dsAlarm 'set the alarm ds buffer to nothing
     dsAlarm = NULL
     SndClose dsEnemyFire 'set the enemy fire ds buffer to nothing
     dsEnemyFire = NULL
-    For intCount = 0 To UBound(dsEnemyFireDuplicate) 'loop through all the enemy duplicate ds buffers
-        SndClose dsEnemyFireDuplicate(intCount) 'set them to nothing
-        dsEnemyFireDuplicate(intCount) = NULL
-    Next
     SndClose dsNoHit 'set the no hit ds buffer to nothing
     dsNoHit = NULL
-    For intCount = 0 To UBound(dsNoHitDuplicate) 'loop through all the no hit ds duplicate buffers
-        SndClose dsNoHitDuplicate(intCount) 'set them to nothing
-        dsNoHitDuplicate(intCount) = NULL
-    Next
     SndClose dsLaser2 'set the level2 ds buffer to nothing
     dsLaser2 = NULL
-    For intCount = 0 To UBound(dsLaser2Duplicate) 'loop through all the level2 ds duplicate buffers
-        SndClose dsLaser2Duplicate(intCount) 'set them to nothing
-        dsLaser2Duplicate(intCount) = NULL
-    Next
     SndClose dsLaser 'set the ds laser buffer to nothing
     dsLaser = NULL
     SndClose dsPulseCannon
@@ -1785,7 +1749,6 @@ Sub UpdateLevels
     Dim SrcRect As Rectangle2D 'Source rectangle
     Dim lngDelayTime As Unsigned Long 'Stores the amount of delay
     Dim byteIndex As Byte 'Index count variable
-    Dim DSExplosionIndex As Long 'Holds the direct sound explosion buffer count
 
     If SectionCount < 0 Then 'If the end of the level is reached
         byteLevel = byteLevel + 1 'Increment the level the player is on
@@ -1797,9 +1760,6 @@ Sub UpdateLevels
             lngStartTime = GetTicks 'grab the current time
 
             Do While lngStartTime + 8000 > GetTicks 'loop this routine for 8 seconds
-                DSExplosionIndex = DSExplosionIndex + 1 'increment the duplicate sound buffer count
-                If DSExplosionIndex > UBound(dsExplosionDuplicate) Then DSExplosionIndex = 0
-                'if all buffers are active, reset the count
                 If Int((75 * Rnd) + 1) < 25 Then 'if we get a number that is between 1-25 then
                     intCount = Int((SCREEN_WIDTH * Rnd) + 1) 'get a random X coordinate
                     intCount2 = Int((SCREEN_HEIGHT * Rnd) + 1) 'get a random Y coordinate
@@ -1818,9 +1778,7 @@ Sub UpdateLevels
                     Do While lngDelayTime + 35 > GetTicks 'loop for 35 milliseconds
                         Delay 0.001 'don't hog the processor while looping
                     Loop
-                    SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0 'set the play position of the duplicate buffer to the beginning
-                    SndPlay dsExplosionDuplicate(DSExplosionIndex) 'play the explosion sound
-                    DSExplosionIndex = DSExplosionIndex + 1 'increment the explosion index to the next duplicate
+                    SndPlayCopy dsExplosion 'play the explosion sound
                 End If
                 Display 'Flip the front buffer with the back
                 Cls 'fill the back buffer with black
@@ -1969,7 +1927,6 @@ Sub FireWeapon
     Static byteGuidedMissileCounter As Byte 'variable to hold the number of times this sub has been called to determine if it is time to let another guided missile be created
     Static byteLaser2Counter As Byte 'variable to hold the number of times this sub has been called to determine if it is time to let another level2 laser (left side) be created
     Static byteLaser3Counter As Byte 'variable to hold the number of times this sub has been called to determine if it is time to let another level2 laser (right side) be created
-    Static DSLaser2Index As Long 'variable to hold the number of times this sub has been called to determine if it is time to let another laser wave effect sound to be created
     Dim intCount As Long 'Standard count variable for loops
 
     'Stage 1 laser
@@ -1984,9 +1941,11 @@ Sub FireWeapon
                 'center the laser fire
                 LaserDesc(intCount).Y = Ship.Y 'the laser starts at the same Y as the ship
                 LaserDesc(intCount).Damage = 1 'the amount of damage this laser does
+
                 SndSetPos dsLaser, 0 'set the position of the buffer to 0
+                SndBal dsLaser, (2 * (Ship.X + SHIPWIDTH / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'pan the sound according to the ships location
                 SndPlay dsLaser 'play the laser sound
-                SndBal dsLaser, ((Ship.X / SCREEN_WIDTH) - 0.5) * 2 'pan the sound according to the ships location
+
                 Exit Do 'exit the do loop
             End If
             intCount = intCount + 1 'incrementing the count
@@ -2031,11 +1990,9 @@ Sub FireWeapon
                     Laser2RDesc(intCount).XVelocity = 0 + (LASERSPEED - 4)
                     Laser2RDesc(intCount).YVelocity = 0 - LASERSPEED
                     Laser2RDesc(intCount).Damage = 1
-                    SndSetPos dsLaser2Duplicate(DSLaser2Index), 0
-                    SndPlay dsLaser2Duplicate(DSLaser2Index)
-                    SndBal dsLaser2Duplicate(DSLaser2Index), ((Ship.X / SCREEN_WIDTH) - 0.5) * 2
-                    DSLaser2Index = DSLaser2Index + 1
-                    If DSLaser2Index > UBound(dsLaser2Duplicate) Then DSLaser2Index = 0
+
+                    SndPlayCopy dsLaser2, , (2 * (Ship.X + SHIPWIDTH / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1)
+
                     Exit Do
                 End If
                 intCount = intCount + 1
@@ -2049,11 +2006,9 @@ Sub FireWeapon
                     Laser2LDesc(intCount).XVelocity = 0 - (LASERSPEED - 4)
                     Laser2LDesc(intCount).YVelocity = 0 - LASERSPEED
                     Laser2LDesc(intCount).Damage = 1
-                    SndSetPos dsLaser2Duplicate(DSLaser2Index), 0
-                    SndPlay dsLaser2Duplicate(DSLaser2Index)
-                    SndBal dsLaser2Duplicate(DSLaser2Index), ((Ship.X / SCREEN_WIDTH) - 0.5) * 2
-                    DSLaser2Index = DSLaser2Index + 1
-                    If DSLaser2Index > UBound(dsLaser2Duplicate) Then DSLaser2Index = 0
+
+                    SndPlayCopy dsLaser2, , (2 * (Ship.X + SHIPWIDTH / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1)
+
                     Exit Do
                 End If
                 intCount = intCount + 1
@@ -2072,8 +2027,11 @@ Sub FireWeapon
                     Laser3Desc(intCount).Y = Ship.Y
                     Laser3Desc(intCount).YVelocity = (LASERSPEED + 1.5)
                     Laser3Desc(intCount).Damage = 2
+
                     SndSetPos dsPulseCannon, 0
+                    SndBal dsPulseCannon, (2 * (Ship.X + SHIPWIDTH / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1)
                     SndPlay dsPulseCannon
+
                     Exit Do
                 End If
                 intCount = intCount + 1
@@ -2094,7 +2052,6 @@ End Function
 'It also plays a small "no hit" sound effect
 Sub UpdateHits (NewHit As Byte, x As Long, y As Long) ' Optional NewHit As Boolean = False, Optional x As Long, Optional y As Long
     Dim intCount As Long 'Count variable
-    Static DSNoHitIndex As Long 'Keep track of the duplicate sound buffer
 
     If NewHit Then 'If this is a new hit
         For intCount = 0 To UBound(HitDesc) 'Loop through the hit array
@@ -2103,13 +2060,12 @@ Sub UpdateHits (NewHit As Byte, x As Long, y As Long) ' Optional NewHit As Boole
                 HitDesc(intCount).Exists = TRUE 'This hit now exists
                 HitDesc(intCount).X = x - 2 'Center the x if the hit
                 HitDesc(intCount).Y = y 'The Y of the hit
+
+                SndPlayCopy dsNoHit, , (2 * (HitDesc(intCount).X + 1) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'Play the sound effect
+
+                Exit For
             End If
         Next
-        SndSetPos dsNoHitDuplicate(DSNoHitIndex), 0 'Set the sound effect to the start
-        SndPlay dsNoHitDuplicate(DSNoHitIndex) 'Play the sound effect
-        DSNoHitIndex = DSNoHitIndex + 1 'Increment the duplicate count
-        If DSNoHitIndex > UBound(dsNoHitDuplicate) Then DSNoHitIndex = 0
-        'If we run out of buffers, set them to 0
     Else 'Otherwise, if this is updating an existing hit
         For intCount = 0 To UBound(HitDesc) 'Loop through the hit array
             If HitDesc(intCount).Exists Then 'If this hit exists
@@ -2143,9 +2099,6 @@ Sub CheckForCollisions
     'TODO: Dim ddTempBltFx As DDBLTFX                                                      'used to hold info about the special effects for flashing the screen when something is hit
     Dim TempDesc As typeBackGroundDesc
     Dim blnTempDesc As Byte
-    Static DSExplosionIndex As Long 'used to keep track of which direct sound explosion duplicate we are on
-
-    If DSExplosionIndex > UBound(dsExplosionDuplicate) Then DSExplosionIndex = 0 'increment the duplicate explosion sound effect index to the next position
 
     'TODO: ddTempBltFx.lFill = 143 ' Index 143 in the palette is bright red used to fill the screen with red when the player is hit.
 
@@ -2208,11 +2161,11 @@ Sub CheckForCollisions
             SrcRect.right = SrcRect.left + EnemyDesc(intCount).W
 
             If DetectCollision(SrcRect, ShipRect) Then 'if the enemy ship collides with the player
-                SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0 'set the position of the buffer to the beginning
-                SndPlay dsExplosionDuplicate(DSExplosionIndex) 'play the explosion sound
-                SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
+
+                SndPlayCopy dsExplosion, , (2 * (EnemyDesc(intCount).X + EnemyDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
+
                 'TODO: If IsFF = True Then ef(1).start 1, 0                                'If force feedback is enabled, start the effect
-                DSExplosionIndex = DSExplosionIndex + 1 'increment the explosion index to the next duplicate
+
                 If Not EnemyDesc(intCount).Invulnerable Then EnemyDesc(intCount).Exists = FALSE
                 'if the enemy isn't invulnerable the enemy is destroyed
                 CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, FALSE 'Call the create explosion sub with the rect coordinates, and the index of the explosion type
@@ -2294,12 +2247,9 @@ Sub CheckForCollisions
                             'If the number of times the enemy has been hit is greater than
                             'the amount of times the enemy can be hit, then
                             lngScore = lngScore + EnemyDesc(intCount).Score 'add the score value of this enemy to the players score
-                            SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0
-                            SndPlay dsExplosionDuplicate(DSExplosionIndex)
-                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
 
-                            'play the explosion sound
-                            DSExplosionIndex = DSExplosionIndex + 1 'increment the explosion index to the next duplicate
+                            SndPlayCopy dsExplosion, , (2 * (EnemyDesc(intCount).X + EnemyDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
+
                             EnemyDesc(intCount).Exists = FALSE 'This enemy no longer exists
                             LaserDesc(intCount2).Exists = FALSE 'The players weapon fire no longer exists
                             CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, FALSE
@@ -2329,9 +2279,9 @@ Sub CheckForCollisions
                             'If the number of times the obstacle has been hit is greater than
                             'the amount of times the obstacle can be hit, then
                             lngScore = lngScore + ObstacleDesc(intCount).Score 'add the score value of this obstacle to the players score
-                            SndPlay dsExplosionDuplicate(DSExplosionIndex) 'play the explosion sound
-                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
-                            DSExplosionIndex = DSExplosionIndex + 1 'increment the explosion index to the next duplicate
+
+                            SndPlayCopy dsExplosion, , (2 * (ObstacleDesc(intCount).X + ObstacleDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
+
                             If ObstacleDesc(intCount).HasFired Then
                                 TempDesc = ObstacleDesc(intCount)
                                 blnTempDesc = TRUE
@@ -2392,10 +2342,9 @@ Sub CheckForCollisions
                         EnemyDesc(intCount).TimesHit = EnemyDesc(intCount).TimesHit + Laser2RDesc(intCount2).Damage
                         If EnemyDesc(intCount).TimesHit > EnemyDesc(intCount).TimesDies And Not EnemyDesc(intCount).Invulnerable Then
                             lngScore = lngScore + EnemyDesc(intCount).Score
-                            SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0
-                            SndPlay dsExplosionDuplicate(DSExplosionIndex)
-                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
-                            DSExplosionIndex = DSExplosionIndex + 1
+
+                            SndPlayCopy dsExplosion, , (2 * (EnemyDesc(intCount).X + EnemyDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
+
                             EnemyDesc(intCount).Exists = FALSE
                             CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, FALSE
                             Laser2RDesc(intCount2).Exists = FALSE
@@ -2421,10 +2370,9 @@ Sub CheckForCollisions
                         ObstacleDesc(intCount).TimesHit = ObstacleDesc(intCount).TimesHit + Laser2RDesc(intCount2).Damage
                         If ObstacleDesc(intCount).TimesHit > ObstacleDesc(intCount).TimesDies Then
                             lngScore = lngScore + ObstacleDesc(intCount).Score
-                            SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0
-                            SndPlay dsExplosionDuplicate(DSExplosionIndex)
-                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
-                            DSExplosionIndex = DSExplosionIndex + 1
+
+                            SndPlayCopy dsExplosion, , (2 * (ObstacleDesc(intCount).X + ObstacleDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
+
                             If ObstacleDesc(intCount).HasFired Then
                                 TempDesc = ObstacleDesc(intCount)
                                 blnTempDesc = TRUE
@@ -2480,10 +2428,9 @@ Sub CheckForCollisions
                         EnemyDesc(intCount).TimesHit = EnemyDesc(intCount).TimesHit + Laser2LDesc(intCount2).Damage
                         If EnemyDesc(intCount).TimesHit > EnemyDesc(intCount).TimesDies And Not EnemyDesc(intCount).Invulnerable Then
                             lngScore = lngScore + EnemyDesc(intCount).Score
-                            SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0
-                            SndPlay dsExplosionDuplicate(DSExplosionIndex)
-                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
-                            DSExplosionIndex = DSExplosionIndex + 1
+
+                            SndPlayCopy dsExplosion, , (2 * (EnemyDesc(intCount).X + EnemyDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
+
                             EnemyDesc(intCount).Exists = FALSE
                             CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, FALSE
                             Laser2LDesc(intCount2).Exists = FALSE
@@ -2509,10 +2456,9 @@ Sub CheckForCollisions
                         ObstacleDesc(intCount).TimesHit = ObstacleDesc(intCount).TimesHit + Laser2LDesc(intCount2).Damage
                         If ObstacleDesc(intCount).TimesHit > ObstacleDesc(intCount).TimesDies Then
                             lngScore = lngScore + ObstacleDesc(intCount).Score
-                            SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0
-                            SndPlay dsExplosionDuplicate(DSExplosionIndex)
-                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
-                            DSExplosionIndex = DSExplosionIndex + 1
+
+                            SndPlayCopy dsExplosion, , (2 * (ObstacleDesc(intCount).X + ObstacleDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
+
                             If ObstacleDesc(intCount).HasFired Then
                                 TempDesc = ObstacleDesc(intCount)
                                 blnTempDesc = TRUE
@@ -2569,10 +2515,9 @@ Sub CheckForCollisions
                         EnemyDesc(intCount).TimesHit = EnemyDesc(intCount).TimesHit + Laser3Desc(intCount2).Damage
                         If EnemyDesc(intCount).TimesHit > EnemyDesc(intCount).TimesDies And Not EnemyDesc(intCount).Invulnerable Then
                             lngScore = lngScore + EnemyDesc(intCount).Score
-                            SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0
-                            SndPlay dsExplosionDuplicate(DSExplosionIndex)
-                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
-                            DSExplosionIndex = DSExplosionIndex + 1
+
+                            SndPlayCopy dsExplosion, , (2 * (EnemyDesc(intCount).X + EnemyDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
+
                             CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, FALSE
                             EnemyDesc(intCount).Exists = FALSE
                             Exit Sub
@@ -2599,10 +2544,9 @@ Sub CheckForCollisions
                         ObstacleDesc(intCount).TimesHit = ObstacleDesc(intCount).TimesHit + Laser3Desc(intCount2).Damage
                         If ObstacleDesc(intCount).TimesHit > ObstacleDesc(intCount).TimesDies Then
                             lngScore = lngScore + ObstacleDesc(intCount).Score
-                            SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0
-                            SndPlay dsExplosionDuplicate(DSExplosionIndex)
-                            SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
-                            DSExplosionIndex = DSExplosionIndex + 1
+
+                            SndPlayCopy dsExplosion, , (2 * (ObstacleDesc(intCount).X + ObstacleDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
+
                             CreateExplosion SrcRect, ObstacleDesc(intCount).ExplosionIndex, FALSE
                             If ObstacleDesc(intCount).HasFired Then
                                 TempDesc = ObstacleDesc(intCount)
@@ -2657,10 +2601,9 @@ Sub CheckForCollisions
 
                     If DetectCollision(SrcRect, SrcRect2) Then
                         EnemyDesc(intCount).TimesHit = EnemyDesc(intCount).TimesHit + 10
-                        SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0
-                        SndPlay dsExplosionDuplicate(DSExplosionIndex)
-                        SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
-                        DSExplosionIndex = DSExplosionIndex + 1
+
+                        SndPlayCopy dsExplosion, , (2 * (EnemyDesc(intCount).X + EnemyDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
+
                         If EnemyDesc(intCount).TimesHit > EnemyDesc(intCount).TimesDies And Not EnemyDesc(intCount).Invulnerable Then
                             EnemyDesc(intCount).Exists = FALSE
                             lngScore = lngScore + EnemyDesc(intCount).Score
@@ -2685,10 +2628,9 @@ Sub CheckForCollisions
 
                     If DetectCollision(SrcRect, SrcRect2) Then
                         ObstacleDesc(intCount).TimesHit = ObstacleDesc(intCount).TimesHit + 10
-                        SndSetPos dsExplosionDuplicate(DSExplosionIndex), 0
-                        SndPlay dsExplosionDuplicate(DSExplosionIndex)
-                        SndBal dsExplosionDuplicate(DSExplosionIndex), (SrcRect.left - (SCREEN_WIDTH \ 2)) * 3
-                        DSExplosionIndex = DSExplosionIndex + 1
+
+                        SndPlayCopy dsExplosion, , (2 * (ObstacleDesc(intCount).X + ObstacleDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
+
                         If ObstacleDesc(intCount).TimesHit > ObstacleDesc(intCount).TimesDies Then
                             lngScore = lngScore + ObstacleDesc(intCount).Score
                             If ObstacleDesc(intCount).HasFired Then
@@ -2997,13 +2939,9 @@ Sub UpdateEnemys
             'This incredibly long line has a very important job. It makes sure that the enemy hasn't fired, that it exists, and that it is visible on the screen
             intReturnResult = Int((1500 - 1) * Rnd + 1) 'make a random number to to determine whether the enemy will fire
             If intReturnResult < 20 Then 'if the random number is less than 20, make the enemy fire
-                If DSEnemyFireIndex > UBound(dsEnemyFireDuplicate) Then DSEnemyFireIndex = 0
-                'if we have reached the upper boundary of the duplicate sound buffer, reset the buffer to zero
-                SndSetPos dsEnemyFireDuplicate(DSEnemyFireIndex), 0
-                'set the position of the buffer to the beginning
-                SndPlay dsEnemyFireDuplicate(DSEnemyFireIndex)
-                'play the duplicate sound buffer
-                DSEnemyFireIndex = DSEnemyFireIndex + 1 'increment the count for the number of active sound buffers
+
+                SndPlayCopy dsEnemyFire, , (2 * (EnemyDesc(intCount).X + EnemyDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the duplicate sound buffer
+
                 If EnemyDesc(intCount).X < Ship.X Then 'if the players X coordinate is less than the enemies
                     EnemyDesc(intCount).TargetX = 3 'set the X fire direction to +3 pixels every frame
                 Else 'otherwise
@@ -3068,10 +3006,9 @@ Sub UpdateEnemys
         If ObstacleDesc(intCount).HasFired = FALSE And ObstacleDesc(intCount).Exists = TRUE And ObstacleDesc(intCount).DoesFire Then
             intReturnResult = Int((3000 - 1) * Rnd + 1)
             If intReturnResult < 20 Then
-                If DSEnemyFireIndex > UBound(dsEnemyFireDuplicate) Then DSEnemyFireIndex = 0
-                SndSetPos dsEnemyFireDuplicate(DSEnemyFireIndex), 0
-                SndPlay dsEnemyFireDuplicate(DSEnemyFireIndex)
-                DSEnemyFireIndex = DSEnemyFireIndex + 1
+
+                SndPlayCopy dsEnemyFire, , (2 * (ObstacleDesc(intCount).X + ObstacleDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the duplicate sound buffer
+
                 If ObstacleDesc(intCount).X < Ship.X Then
                     ObstacleDesc(intCount).TargetX = 3
                 Else
@@ -3408,7 +3345,7 @@ Sub UpdateInvulnerability
             PutImage (Ship.X, Ship.Y), ddsInvulnerable, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom)
             'Blit the animation frame
         End If
-        SndBal dsInvulnerability, (Ship.X - (SCREEN_WIDTH \ 2)) * 3 'If we are above 15 frames of animation, stop playing the invulnerability sound effect
+        SndBal dsInvulnerability, (2 * (Ship.X + SHIPWIDTH / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'If we are above 15 frames of animation, stop playing the invulnerability sound effect
     End If
 End Sub
 
