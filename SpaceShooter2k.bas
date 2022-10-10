@@ -8,7 +8,6 @@
 ' TODOs
 '---------------------------------------------------------------------------------------------------------
 '   Check any comment labeled with 'TODO'
-'   Change all 'Tick' & 'Time' variables to Integer64
 '   Remove GetTicks() dependency ?
 '   Check all Byte variables to see if we need to make those unsigned (VBA 'Byte' is always unsigned)
 '   Add 'Asserts' after file loads
@@ -176,7 +175,7 @@ End Type
 Type typeShipDesc 'UDT to define the players' ship bitmap
     PowerUpState As Unsigned Byte 'Determines how many levels of power-ups the player has
     Invulnerable As Byte 'Determines whether or not the player is invulnerable
-    InvulnerableTime As Long 'Used to keep track of the amount of time the player has left when invulnerable
+    InvulnerableTime As Integer64 'Used to keep track of the amount of time the player has left when invulnerable
     X As Single 'X of the ship
     Y As Single 'Y of the ship
     XOffset As Long 'X Offset of the animation frame
@@ -311,9 +310,9 @@ Dim Shared boolMaxFrameRate As Byte 'Removes all frame rate limits
 ' PROGRAM ENTRY POINT - This is the entry point for the game. From here everything branches out to all the
 ' subs that handle collisions, enemies, player, weapon fire, sounds, level updating, etc.
 '---------------------------------------------------------------------------------------------------------
-Dim lngTargetTick As Long 'Variable to store the targeted tick count time
-Dim lngStartTime As Long 'stores the start time of a frame rate count
-Dim lngCurrentTime As Long 'stores the current tick for frame rate count
+Dim lngTargetTick As Integer64 'Variable to store the targeted tick count time
+Dim lngStartTime As Integer64 'stores the start time of a frame rate count
+Dim lngCurrentTime As Integer64 'stores the current tick for frame rate count
 Dim intFinalFrame As Long 'holds the total number of frames in a second
 Dim intFrameCount As Long 'keeps track of how many frames have elapsed
 
@@ -870,7 +869,7 @@ End Sub
 'If it has, then display that the player has gained an extra life, and give the player an extra life
 Sub CheckScore
     Static blnExtraLifeDisplay As Byte 'Flag that is set if an extra life message needs to be displayed
-    Static lngTargetTime As Long 'Variable used to hold the targeted time
+    Static lngTargetTime As Integer64 'Variable used to hold the targeted time
 
     If lngScore > lngNextExtraLifeScore Then 'If the current score is larger than the score needed to get an extra life
         lngNextExtraLifeScore = lngNextExtraLifeScore + EXTRALIFETARGET 'Increase the extra life target score
@@ -1743,11 +1742,11 @@ Sub UpdateLevels
     Dim intCount2 As Long 'Another count variable
     Dim EnemySectionNotEmpty As Byte 'Flag to set if there are no enemies in the section
     Dim ObstacleSectionNotEmpty As Byte 'Flag to set if there are no obstacles in the section
-    Dim lngStartTime As Unsigned Long 'The beginning time
+    Dim lngStartTime As Integer64 'The beginning time
     Dim TempInfo As typeBackGroundDesc 'Temporary description variable
     Dim blnTempInfo As Byte 'Temporary flag
     Dim SrcRect As Rectangle2D 'Source rectangle
-    Dim lngDelayTime As Unsigned Long 'Stores the amount of delay
+    Dim lngDelayTime As Integer64 'Stores the amount of delay
     Dim byteIndex As Byte 'Index count variable
 
     If SectionCount < 0 Then 'If the end of the level is reached
@@ -3354,8 +3353,8 @@ End Sub
 'updating the players lives. If there are no lives left, it will reset the game.
 Sub UpdateShields
     Dim SrcRect As Rectangle2D 'The source rectangle for the shield indicator
-    Dim lngTime As Long 'variable to store the current tick count
-    Dim lngTargetTick As Long 'variable to stabilize frame rate
+    Dim lngTime As Integer64 'variable to store the current tick count
+    Dim lngTargetTick As Integer64 'variable to stabilize frame rate
     Dim intCount As Long 'standard loop variable
 
     If intShields > 0 Then 'if there is more than 0% shields left
@@ -3505,7 +3504,7 @@ End Sub
 'This routine fires a missle if the player has one in his possesion
 Sub FireMissile
     Dim intCount As Long 'standard count variable
-    Dim lngTargetTick As Unsigned Long 'long value to hold the tick count
+    Dim lngTargetTick As Integer64 'long value to hold the tick count
     Dim ExplosionRect As Rectangle2D 'rect structure that defines the position of an enemy ship
     Dim As Long w, h
 
@@ -3658,9 +3657,9 @@ Sub GetInput
     Dim intCount As Long 'standard count variable
     'Dim KeyboardState(0 To 255) As Byte 'Byte array to hold the state of the keyboard
     'TODO: Dim JoystickState As DIJOYSTATE                             'joystick state type
-    Dim lngTime As Long 'variable to hold the time
-    Dim lngTargetTime As Long 'holds a targeted time
-    Dim TempTime As Long
+    Dim lngTime As Integer64 'variable to hold the time
+    Dim lngTargetTime As Integer64 'holds a targeted time
+    Dim TempTime As Integer64
 
     ' TODO: Game controller
     'If Not diJoystick Is Nothing And blnJoystickEnabled Then    'if the joystick object has been set, and the joystick is enabled
