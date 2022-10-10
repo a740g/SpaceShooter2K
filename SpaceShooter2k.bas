@@ -111,7 +111,7 @@ Const EXTRALIFETARGET = 250000 'If the player exceeds this value he gets an extr
 ' High score stuff
 Const HIGH_SCORE_FILENAME = "highscore.csv" ' High score file
 Const NUM_HIGH_SCORES = 10 ' Number of high scores
-Const HIGH_SCORE_TEXT_LEN = 20 ' The max length of the name in a high score
+Const HIGH_SCORE_TEXT_LEN = 14 ' The max length of the name in a high score
 '---------------------------------------------------------------------------------------------------------
 
 '---------------------------------------------------------------------------------------------------------
@@ -1193,7 +1193,7 @@ Sub CheckHighScore
     End If
 
     If boolGettingInput And boolEnterPressed = FALSE Then 'as long as we are getting input, and the player hasn't pressed enter
-        If Len(strName) < 14 And strBuffer <> NULLSTRING Then 'if we haven't reached the limit of characters for the name, and the buffer isn't empty then
+        If Len(strName) < HIGH_SCORE_TEXT_LEN And strBuffer <> NULLSTRING Then 'if we haven't reached the limit of characters for the name, and the buffer isn't empty then
             If Asc(strBuffer) > 65 Or strBuffer = Chr$(32) Then strName = strName + strBuffer 'if the buffer contains a letter or a space, add it to the buffer
         End If
         DrawStringCenter Str$(lngHighScore(9)) + "  New high score!!!", 200, RGB32(200, 200, 50) 'Display the new high score message
@@ -2774,8 +2774,8 @@ Sub UpdateObstacles
                 If ObstacleDesc(intCount).NumFrames > 0 Then 'if this obstacle has an animation
                     ObstacleDesc(intCount).Frame = ObstacleDesc(intCount).Frame + 1 'increment the frame the animation is on
                     If ObstacleDesc(intCount).Frame > ObstacleDesc(intCount).NumFrames Then ObstacleDesc(intCount).Frame = 0 'if the animation goes beyond the number of frames it has, reset it to the start
-                    TempY = ObstacleDesc(intCount).Frame \ 4 'TODO: X and Y reversed? calculate the left of the animation
-                    TempX = ObstacleDesc(intCount).Frame - (TempY * 4) 'TODO: X and Y reversed? calculate the top of the animation
+                    TempY = ObstacleDesc(intCount).Frame \ 4 'calculate the left of the animation
+                    TempX = ObstacleDesc(intCount).Frame - (TempY * 4) 'calculate the top of the animation
                     XOffset = CLng(TempX * ObstacleDesc(intCount).W) 'calculate the right of the animation
                     YOffset = CLng(TempY * ObstacleDesc(intCount).H) 'calculate the bottom of the animation
                 End If
@@ -3635,24 +3635,20 @@ End Sub
 
 'This routine displays the ending credits, fading in and out
 Sub DoCredits
-    Dim lngTime As Long 'standard count
     Dim ddsEndCredits As Long 'holds the end credit direct draw surface
 
     ddsEndCredits = LoadImage("./dat/gfx/endcredits.gif") 'create the end credits direct draw surface
+
     Cls 'fill the back buffer with black
     PutImage (0, 100), ddsEndCredits 'blt the end credits to the back buffer
-    FreeImage ddsEndCredits 'release our direct draw surface
-    FadeScreen TRUE 'Fade the screen in
-    lngTime = GetTicks 'get the current time
-    Do Until GetTicks > lngTime + 1500 'loop until we have waited 1.5 seconds
-        Delay 0.001 'get the current time
-    Loop
-    FadeScreen FALSE 'Fade the screen out
 
-    lngTime = GetTicks 'get the current time
-    Do Until GetTicks > lngTime + 500 'loop for .5 second
-        Delay 0.001 'get the current time
-    Loop
+    FreeImage ddsEndCredits 'release our direct draw surface
+
+    FadeScreen TRUE 'Fade the screen in
+    Sleep 2
+
+    FadeScreen FALSE 'Fade the screen out
+    Sleep 1
 End Sub
 
 
@@ -3666,7 +3662,7 @@ Sub GetInput
     Dim lngTargetTime As Long 'holds a targeted time
     Dim TempTime As Long
 
-    ' TODO:
+    ' TODO: Game controller
     'If Not diJoystick Is Nothing And blnJoystickEnabled Then    'if the joystick object has been set, and the joystick is enabled
     '    diJoystick.Acquire                                      'acquire the joystick
     '    diJoystick.Poll                                         'poll the joystick
@@ -3844,6 +3840,7 @@ Sub PlayMIDIFile (fileName As String)
 End Sub
 
 ' Chear mouse and keyboard events
+' TODO: Game controller?
 Sub ClearInput
     While MouseInput
     Wend
