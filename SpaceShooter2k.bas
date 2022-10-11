@@ -10,13 +10,11 @@
 '   Check any comment labeled with 'TODO'
 '   Remove GetTicks() dependency ?
 '   Check all Byte variables to see if we need to make those unsigned (VBA 'Byte' is always unsigned)
-'   Add 'Asserts' after file loads
 '   Map and check all instances of 'ddsBack.BltFast' from the original code
 '   Check all 'PutImage' calls
 '   Fix spritesheet rendering bug - random white lines on bottom and right - probably copying extra pixels from right and bottom
 '   Remove usage of Rectangle2D types whereever not really required
-'   Attempt using hardware images (33)
-'   Guard all FreeImage calls to avoid error events
+'   BUG: Picking up invulnerability while one is active does not increase InvulnerableTime
 '---------------------------------------------------------------------------------------------------------
 
 '---------------------------------------------------------------------------------------------------------
@@ -71,9 +69,7 @@ Const DIK_ESCAPE = 27
 
 Const SCREEN_WIDTH = 640 'Width for the display mode
 Const SCREEN_HEIGHT = 480 'Height for the display mode
-Const TRANSPARENT_COLOR_RED = 208
-Const TRANSPARENT_COLOR_GREEN = 2
-Const TRANSPARENT_COLOR_BLUE = 178
+Const TRANSPARENT_COLOR = RGB32(208, 2, 178) ' transparent color used in all GIF images assets
 Const JOYSTICKCENTERED = 32768 'Center value of the joystick
 
 Const SHIELD = &H0 'Constant for the shield powerup
@@ -194,6 +190,12 @@ Type typeBackgroundObject 'UDT to define background pictures
     H As Long 'Height of the B.G. object
     PathName As String 'Path to the bitmap of the background object
 End Type
+
+Type typeHighScore
+    text As String
+    score As Long
+End Type
+
 '---------------------------------------------------------------------------------------------------------
 
 '---------------------------------------------------------------------------------------------------------
@@ -293,8 +295,7 @@ Dim Shared strName As String 'Players name when they get a high score
 Dim Shared SectionCount As Long 'Keeps track of what section the player is on
 Dim Shared FrameCount As Long 'keeps track of the number of accumulated frames. When it reaches 20, a new section is added
 Dim Shared boolStarted As Byte 'Determines whether a game is running or not
-Dim Shared lngHighScore(0 To NUM_HIGH_SCORES - 1) As Unsigned Long 'Keeps track of high scores
-Dim Shared strHighScoreName(0 To NUM_HIGH_SCORES - 1) As String 'Keeps track of high score names
+Dim Shared HighScore(0 To NUM_HIGH_SCORES - 1) As typeHighScore 'Keeps track of high scores
 Dim Shared byteNewHighScore As Unsigned Byte 'index of a new high score to paint the name color differently
 Dim Shared strBuffer As String 'Buffer to pass keypresses
 Dim Shared boolEnterPressed As Byte 'Flag to determine if the enter key was pressed
@@ -319,7 +320,7 @@ Dim intFrameCount As Long 'keeps track of how many frames have elapsed
 InitializeStartup 'Do the startup routines
 LoadHighScores 'Call the sub to load the high scores
 lngNextExtraLifeScore = EXTRALIFETARGET 'Initialize the extra life score to 100,000
-Sleep 5 ' Sleep for 5 extra seconds
+Sleep 2 ' Sleep for 2 extra seconds
 FadeScreen FALSE ' Fade out the loading screen
 ClearInput ' Clear any cached input
 
@@ -804,8 +805,8 @@ Sub LoadHighScores
 
         ' Read the name and the scores
         For i = 0 To NUM_HIGH_SCORES - 1
-            Input #hsFile, strHighScoreName(i), lngHighScore(i)
-            strHighScoreName(i) = Trim$(strHighScoreName(i)) 'trim the highscorename variable of all spaces and assign it to the name array
+            Input #hsFile, HighScore(i).text, HighScore(i).score
+            HighScore(i).text = Trim$(HighScore(i).text) 'trim the highscorename variable of all spaces and assign it to the name array
         Next
 
         ' Close file
@@ -813,35 +814,35 @@ Sub LoadHighScores
     Else
         ' Load default highscores if there is no highscore file
 
-        strHighScoreName(0) = "Major Stryker"
-        lngHighScore(0) = 10000
+        HighScore(0).text = "Major Stryker"
+        HighScore(0).score = 70000
 
-        strHighScoreName(1) = "Sam Stone"
-        lngHighScore(1) = 9000
+        HighScore(1).text = "Sam Stone"
+        HighScore(1).score = 60000
 
-        strHighScoreName(2) = "Commander Keen"
-        lngHighScore(2) = 8000
+        HighScore(2).text = "Commander Keen"
+        HighScore(2).score = 55000
 
-        strHighScoreName(3) = "Gordon Freeman"
-        lngHighScore(3) = 7000
+        HighScore(3).text = "Gordon Freeman"
+        HighScore(3).score = 50000
 
-        strHighScoreName(4) = "Max Payne"
-        lngHighScore(4) = 6000
+        HighScore(4).text = "Max Payne"
+        HighScore(4).score = 40000
 
-        strHighScoreName(5) = "Lara Croft"
-        lngHighScore(5) = 5000
+        HighScore(5).text = "Lara Croft"
+        HighScore(5).score = 35000
 
-        strHighScoreName(6) = "Duke Nukem"
-        lngHighScore(6) = 4000
+        HighScore(6).text = "Duke Nukem"
+        HighScore(6).score = 30000
 
-        strHighScoreName(7) = "Master Chief"
-        lngHighScore(7) = 3000
+        HighScore(7).text = "Master Chief"
+        HighScore(7).score = 20000
 
-        strHighScoreName(8) = "Marcus Fenix"
-        lngHighScore(8) = 2000
+        HighScore(8).text = "Marcus Fenix"
+        HighScore(8).score = 15000
 
-        strHighScoreName(9) = "John Blade"
-        lngHighScore(9) = 1000
+        HighScore(9).text = "John Blade"
+        HighScore(9).score = 10000
     End If
 End Sub
 
@@ -853,12 +854,11 @@ Sub SaveHighScores
 
     ' Open the file for writing
     hsFile = FreeFile
-
     Open HIGH_SCORE_FILENAME For Output As hsFile
 
     For i = 0 To NUM_HIGH_SCORES - 1
-        strHighScoreName(i) = Trim$(strHighScoreName(i)) 'trim the highscorename variable of all spaces and assign it to the name array
-        Write #hsFile, strHighScoreName(i), lngHighScore(i)
+        HighScore(i).text = Trim$(HighScore(i).text) 'trim the highscorename variable of all spaces and assign it to the name array
+        Write #hsFile, HighScore(i).text, HighScore(i).score
     Next
 
     Close hsFile
@@ -891,20 +891,18 @@ End Sub
 
 'This sub displays the title screen, and rotates one of the palette indexes from blue to black
 Sub ShowTitle
-    Dim lngYCount As Long 'Y variable for counting
-    Dim lngCount As Long 'x variable for counting
+    Dim As Long i
 
     PutImage (200, 50), ddsTitle 'blit the entire title screen bitmap to the backbuffer using the source color key as a mask
-    DrawString 290, 250, "High Scores", RGB32(255, 200, 175) 'Display the high scores message
-    lngYCount = 265 'Initialize the starting y coordinate for the high scores
-    For lngCount = 0 To 9 'loop through the 10 high scores
-        If lngCount = byteNewHighScore Then
-            DrawString 265, lngYCount, Str$(lngHighScore(lngCount)) + "   " + strHighScoreName(lngCount), RGB32(254, 255, 102)
+
+    DrawStringCenter "####===-- HIGH SCORES --===####", 250, RGB32(255, 200, 175) 'Display the high scores message
+
+    For i = 0 To NUM_HIGH_SCORES - 1 'loop through the 10 high scores
+        If i = byteNewHighScore Then
+            DrawStringCenter Right$(" " + Str$(i + 1), 2) + ". " + Left$(HighScore(i).text + Space$(HIGH_SCORE_TEXT_LEN), HIGH_SCORE_TEXT_LEN) + "  " + Right$(Space$(10) + Str$(HighScore(i).score), 11), 265 + i * 16, RGB32(254, 255, 102)
         Else
-            DrawString 265, lngYCount, Str$(lngHighScore(lngCount)) + "   " + strHighScoreName(lngCount), RGB32(50, 100, 200)
+            DrawStringCenter Right$(" " + Str$(i + 1), 2) + ". " + Left$(HighScore(i).text + Space$(HIGH_SCORE_TEXT_LEN), HIGH_SCORE_TEXT_LEN) + "  " + Right$(Space$(10) + Str$(HighScore(i).score), 11), 265 + i * 16, RGB32(50, 100, 200)
         End If
-        'display the high score information
-        lngYCount = lngYCount + 15 'increment the Y coordinate for the next high score
     Next
 
     If blnMidiEnabled Then 'if midi is enabled
@@ -927,19 +925,37 @@ End Sub
 'This sub initializes Direct Draw and loads up all the surfaces
 Sub InitializeDD
     Dim ddsSplash As Long 'dim a direct draw surface
+
     ddsSplash = LoadImage("./dat/gfx/splash.gif") 'create the splash screen surface
+    Assert ddsSplash < -1
+
     PutImage (0, 0), ddsSplash 'blit the splash screen to the back buffer
+
     FreeImage ddsSplash 'release the splash screen, since we don't need it anymore
+
     FadeScreen TRUE 'flip the front buffer so the splash screen bitmap on the backbuffer is displayed
     PlayMIDIFile "./dat/sfx/mus/title.mid" 'Start playing the title song
 
     ddsTitle = LoadImageTransparent("./dat/gfx/title.gif") 'Load the title screen bitmap and put in a direct draw surface
+    Assert ddsTitle < -1
+
     ddsShip = LoadImageTransparent("./dat/gfx/ship.gif") 'Load the ship bitmap and make it into a direct draw surface
+    Assert ddsShip < -1
+
     ddsShieldIndicator = LoadImage("./dat/gfx/shields.gif") 'Load the shield indicator bitmap and put in a direct draw surface
+    Assert ddsShieldIndicator < -1
+
     ddsPowerUp = LoadImageTransparent("./dat/gfx/powerups.gif") 'Load the shield indicator bitmap and put in a direct draw surface
+    Assert ddsPowerUp < -1
+
     ddsExplosion(0) = LoadImageTransparent("./dat/gfx/explosion.gif") 'Load the first explosion bitmap
+    Assert ddsExplosion(0) < -1
+
     ddsExplosion(1) = LoadImageTransparent("./dat/gfx/explosion2.gif") 'Load the second explosion bitmap
+    Assert ddsExplosion(1) < -1
+
     ddsInvulnerable = LoadImageTransparent("./dat/gfx/invulnerable.gif") 'Load the invulnerable bitmap
+    Assert ddsInvulnerable < -1
 
     Dim intCount As Long 'count variable
 
@@ -952,6 +968,8 @@ Sub InitializeDD
     Next
 
     ddsHit = LoadImageTransparent("./dat/gfx/hit.gif")
+    Assert ddsHit < -1
+
     For intCount = 0 To UBound(HitDesc)
         HitDesc(intCount).NumFrames = 5
         HitDesc(intCount).H = 8
@@ -959,6 +977,8 @@ Sub InitializeDD
     Next
 
     ddsLaser = LoadImageTransparent("./dat/gfx/laser.bmp")
+    Assert ddsLaser < -1
+
     For intCount = 0 To UBound(LaserDesc)
         LaserDesc(intCount).Exists = FALSE
         LaserDesc(intCount).W = LASER1WIDTH
@@ -966,6 +986,8 @@ Sub InitializeDD
     Next
 
     ddsLaser2R = LoadImageTransparent("./dat/gfx/laser2.gif")
+    Assert ddsLaser2R < -1
+
     For intCount = 0 To UBound(Laser2RDesc)
         Laser2RDesc(intCount).Exists = FALSE
         Laser2RDesc(intCount).W = LASER2WIDTH
@@ -973,6 +995,8 @@ Sub InitializeDD
     Next
 
     ddsLaser2L = LoadImageTransparent("./dat/gfx/laser2.gif")
+    Assert ddsLaser2L < -1
+
     For intCount = 0 To UBound(Laser2LDesc)
         Laser2LDesc(intCount).Exists = FALSE
         Laser2LDesc(intCount).W = LASER2WIDTH
@@ -980,6 +1004,8 @@ Sub InitializeDD
     Next
 
     ddsLaser3 = LoadImageTransparent("./dat/gfx/laser3.gif")
+    Assert ddsLaser3 < -1
+
     For intCount = 0 To UBound(Laser3Desc)
         Laser3Desc(intCount).Exists = FALSE
         Laser3Desc(intCount).W = LASER3WIDTH
@@ -987,10 +1013,19 @@ Sub InitializeDD
     Next
 
     ddsEnemyFire = LoadImageTransparent("./dat/gfx/enemyfire1.gif")
+    Assert ddsEnemyFire < -1
+
     ddsStar = LoadImage("./dat/gfx/stars.gif")
+    Assert ddsStar < -1
+
     ddsGuidedMissile = LoadImageTransparent("./dat/gfx/guidedmissile.gif")
+    Assert ddsGuidedMissile < -1
+
     ddsDisplayBomb = LoadImageTransparent("./dat/gfx/displaybomb.gif")
+    Assert ddsDisplayBomb < -1
+
     ddsObstacle(40) = LoadImage("./dat/gfx/deadplate.gif")
+    Assert ddsObstacle(40) < -1
 End Sub
 
 
@@ -998,19 +1033,46 @@ End Sub
 Sub InitializeDS
     'The next lines load up all of the wave files using the default capabilites
     dsPowerUp = SndOpen("./dat/sfx/snd/powerup.wav")
+    Assert dsPowerUp > 0
+
     dsEnergize = SndOpen("./dat/sfx/snd/energize.wav")
+    Assert dsEnergize > 0
+
     dsAlarm = SndOpen("./dat/sfx/snd/alarm.wav")
+    Assert dsAlarm > 0
+
     dsLaser = SndOpen("./dat/sfx/snd/laser.wav")
+    Assert dsLaser > 0
+
     dsExplosion = SndOpen("./dat/sfx/snd/explosion.wav")
+    Assert dsExplosion > 0
+
     dsMissile = SndOpen("./dat/sfx/snd/missile.wav")
+    Assert dsMissile > 0
+
     dsNoHit = SndOpen("./dat/sfx/snd/nohit.wav")
+    Assert dsNoHit > 0
+
     dsEnemyFire = SndOpen("./dat/sfx/snd/enemyfire.wav")
+    Assert dsEnemyFire > 0
+
     dsLaser2 = SndOpen("./dat/sfx/snd/laser2.wav")
+    Assert dsLaser2 > 0
+
     dsPulseCannon = SndOpen("./dat/sfx/snd/pulse.wav")
+    Assert dsPulseCannon > 0
+
     dsPlayerDies = SndOpen("./dat/sfx/snd/playerdies.wav")
+    Assert dsPlayerDies > 0
+
     dsInvulnerability = SndOpen("./dat/sfx/snd/invulnerability.wav")
+    Assert dsInvulnerability > 0
+
     dsInvPowerDown = SndOpen("./dat/sfx/snd/invpowerdown.wav")
+    Assert dsInvPowerDown > 0
+
     dsExtraLife = SndOpen("./dat/sfx/snd/extralife.wav")
+    Assert dsExtraLife > 0
 End Sub
 
 
@@ -1169,23 +1231,21 @@ Sub CheckHighScore
     Static lngCount As Long 'standard count variable
     Dim intCount As Long 'another counting variable
     Dim intCount2 As Long 'a second counter variable
-    Dim lngTemp As Long 'a temporary variable for storage
-    Dim strTemp As String 'temporary string variable for storage
 
     If boolGettingInput = FALSE Then 'if the player isn't entering a name then
         ClearInput
         boolEnterPressed = FALSE 'the enter key hasn't been pressed
         lngCount = 0 'reset the count
-        Do While lngScore < lngHighScore(lngCount) 'loop until we reach the end of the high scores
+        Do While lngScore < HighScore(lngCount).score 'loop until we reach the end of the high scores
             lngCount = lngCount + 1 'increment the counter
-            If lngCount > 9 Then 'if we reach the end of the high scores
+            If lngCount >= NUM_HIGH_SCORES Then 'if we reach the end of the high scores
                 lngScore = 0 'reset the players score
                 PlayMIDIFile "./dat/sfx/mus/title.mid" 'play the title midi
                 byteNewHighScore = 255 'set the new high score to no new high score
                 Exit Sub 'get out of here
             End If
         Loop
-        lngHighScore(9) = lngScore 'if the player does have a high score, assign it to the last place
+        HighScore(NUM_HIGH_SCORES - 1).score = lngScore 'if the player does have a high score, assign it to the last place
         boolGettingInput = TRUE 'we are now getting keyboard input
         strName = NULLSTRING 'clear the string
         PlayMIDIFile "./dat/sfx/mus/inbtween.mid" 'play the inbetween levels & title screen midi
@@ -1195,25 +1255,20 @@ Sub CheckHighScore
         If Len(strName) < HIGH_SCORE_TEXT_LEN And strBuffer <> NULLSTRING Then 'if we haven't reached the limit of characters for the name, and the buffer isn't empty then
             If Asc(strBuffer) > 65 Or strBuffer = Chr$(32) Then strName = strName + strBuffer 'if the buffer contains a letter or a space, add it to the buffer
         End If
-        DrawStringCenter Str$(lngHighScore(9)) + "  New high score!!!", 200, RGB32(200, 200, 50) 'Display the new high score message
-        DrawString 240, 220, "Enter your name: " + strName + Chr$(179), RGB32(200, 200, 50) 'Give the player a cursor, and display the buffer
+        DrawStringCenter "New high score -" + Str$(HighScore(NUM_HIGH_SCORES - 1).score) + "!!!", 200, RGB32(200, 200, 50) 'Display the new high score message
+        DrawStringCenter "Enter your name: " + strName + Chr$(179), 220, RGB32(200, 200, 50) 'Give the player a cursor, and display the buffer
     ElseIf boolGettingInput And boolEnterPressed Then 'If we are getting input, and the player presses then enter key then
-        strHighScoreName(9) = strName 'assign the new high score name the string contained in the buffer
+        HighScore(NUM_HIGH_SCORES - 1).text = strName 'assign the new high score name the string contained in the buffer
         For intCount = 0 To 9 'loop through the high scores and re-arrange them
             For intCount2 = 0 To 8 'so that the highest scores are on top, and the lowest
-                If lngHighScore(intCount2 + 1) > lngHighScore(intCount2) Then 'are on the bottom
-                    lngTemp = lngHighScore(intCount2)
-                    strTemp = strHighScoreName(intCount2)
-                    lngHighScore(intCount2) = lngHighScore(intCount2 + 1)
-                    strHighScoreName(intCount2) = strHighScoreName(intCount2 + 1)
-                    lngHighScore(intCount2 + 1) = lngTemp
-                    strHighScoreName(intCount2 + 1) = strTemp
+                If HighScore(intCount2 + 1).score > HighScore(intCount2).score Then 'are on the bottom
+                    Swap HighScore(intCount2), HighScore(intCount2 + 1)
                 End If
             Next
         Next
 
-        For intCount = 0 To 9 'loop through all the high scores
-            If lngHighScore(intCount) = lngScore Then byteNewHighScore = intCount 'find the new high score from the list and store it's index
+        For intCount = 0 To NUM_HIGH_SCORES - 1 'loop through all the high scores
+            If HighScore(intCount).score = lngScore Then byteNewHighScore = intCount 'find the new high score from the list and store it's index
         Next
 
         lngScore = 0 'reset the score
@@ -1491,7 +1546,12 @@ Sub StartIntro
     YPosition = 50 'initialize the Y coordinate of the text to 50
 
     ddsSplash = LoadImage("./dat/gfx/nebulae4.gif") 'create a surface
+    Assert ddsSplash < -1
+
     PutImage (0, 0)-(SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1), ddsSplash 'blit the surface to the screen
+
+    FreeImage ddsSplash 'release all resources for the background bitmap
+
     Do Until lngCount > UBound(strDialog) 'loop through all string arrays
         DrawStringCenter strDialog(lngCount), YPosition, RGB32(151, 150, 150)
         'draw the text to the screen
@@ -1511,8 +1571,6 @@ Sub StartIntro
     ClearInput
 
     FadeScreen FALSE 'fade the screen out
-
-    FreeImage ddsSplash 'release all resources for the background bitmap
 End Sub
 
 
@@ -1560,6 +1618,8 @@ Sub LoadLevel (level As Long)
         End If
     Next
 
+    Assert FileExists("./dat/map/level" + Trim$(Str$(level)) + ".bin")
+
     FileFree = FreeFile 'get a handle to the next available free file
     Open "./dat/map/level" + Trim$(Str$(level)) + ".bin" For Binary Access Read As FileFree 'open the level file for reading
 
@@ -1584,6 +1644,7 @@ Sub LoadLevel (level As Long)
             If SectionInfo(intCount, intCount2) < 255 Then 'if the slot value is less than 255, an object exists there
                 If ddsEnemyContainer(SectionInfo(intCount, intCount2)) > -2 Then ' if this object hasn't been loaded then (QB64 valid image handles are < -1)
                     ddsEnemyContainer(SectionInfo(intCount, intCount2)) = LoadImageTransparent("./dat/gfx/" + EnemyContainerDesc(SectionInfo(intCount, intCount2)).FileName) 'create this object
+                    Assert ddsEnemyContainer(SectionInfo(intCount, intCount2)) < -1
                 End If
             End If
         Next
@@ -1594,6 +1655,7 @@ Sub LoadLevel (level As Long)
             If ObstacleInfo(intCount, intCount2) < 255 Then
                 If ddsObstacle(ObstacleInfo(intCount, intCount2)) > -2 Then
                     ddsObstacle(ObstacleInfo(intCount, intCount2)) = LoadImageTransparent("./dat/gfx/" + ObstacleContainerInfo(ObstacleInfo(intCount, intCount2)).FileName)
+                    Assert ddsObstacle(ObstacleInfo(intCount, intCount2)) < -1
                 End If
             End If
         Next
@@ -3367,7 +3429,7 @@ Sub UpdateShields
         Line (449, 6)-(551, 28), RGB32(255, 255, 255), B 'draw a box for the shield indicator and set the fore color to white
         PutImage (450, 7), ddsShieldIndicator, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom)
         'blt the indicator rectangle to the screen
-        DrawString 390, 10, "Shields:", RGB32(255, 200, 200) 'display some text
+        DrawString 380, 10, "Shields:", RGB32(255, 200, 200) 'display some text
         If intShields < 25 Then 'if the shields are less than 25% then
             SndLoop dsAlarm 'play the alarm sound effect, and loop it
             Ship.AlarmActive = TRUE 'set the alarm flag to on
@@ -3636,9 +3698,11 @@ End Sub
 Sub DoCredits
     Dim ddsEndCredits As Long 'holds the end credit direct draw surface
 
-    ddsEndCredits = LoadImage("./dat/gfx/endcredits.gif") 'create the end credits direct draw surface
-
     Cls 'fill the back buffer with black
+
+    ddsEndCredits = LoadImage("./dat/gfx/endcredits.gif") 'create the end credits direct draw surface
+    Assert ddsEndCredits < -1
+
     PutImage (0, 100), ddsEndCredits 'blt the end credits to the back buffer
 
     FreeImage ddsEndCredits 'release our direct draw surface
@@ -3814,7 +3878,7 @@ Function LoadImageTransparent& (fileName As String)
     Dim handle As Long
 
     handle = LoadImage(fileName)
-    If handle < -1 Then ClearColor RGB32(TRANSPARENT_COLOR_RED, TRANSPARENT_COLOR_GREEN, TRANSPARENT_COLOR_BLUE), handle
+    If handle < -1 Then ClearColor TRANSPARENT_COLOR, handle
 
     LoadImageTransparent = handle
 End Function
@@ -3833,6 +3897,7 @@ Sub PlayMIDIFile (fileName As String)
     If fileName <> NULLSTRING And FileExists(fileName) Then
         MIDIHandle = SndOpen(fileName, "stream")
         Assert MIDIHandle > 0
+
         ' Loop the MIDI file
         If MIDIHandle > 0 Then SndLoop MIDIHandle
     End If
