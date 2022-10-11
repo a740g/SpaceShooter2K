@@ -9,11 +9,10 @@
 '---------------------------------------------------------------------------------------------------------
 '   Check any comment labeled with 'TODO'
 '   Remove GetTicks() dependency ?
-'   Check all Byte variables to see if we need to make those unsigned (VBA 'Byte' is always unsigned)
 '   Map and check all instances of 'ddsBack.BltFast' from the original code
 '   Check all 'PutImage' calls
-'   Fix spritesheet rendering bug - random white lines on bottom and right - probably copying extra pixels from right and bottom
-'   Remove usage of Rectangle2D types whereever not really required
+'   Remove usage of typeRect types whereever not really required
+'   BUG: Random white lines on bottom and right when rendering spritesheet - probably copying extra pixels from right and bottom
 '   BUG: Picking up invulnerability while one is active does not increase InvulnerableTime
 '---------------------------------------------------------------------------------------------------------
 
@@ -112,7 +111,7 @@ Const HIGH_SCORE_TEXT_LEN = 14 ' The max length of the name in a high score
 '---------------------------------------------------------------------------------------------------------
 ' USER DEFINED TYPES
 '---------------------------------------------------------------------------------------------------------
-Type Rectangle2D
+Type typeRect
     left As Long
     top As Long
     right As Long
@@ -184,11 +183,11 @@ Type typeShipDesc 'UDT to define the players' ship bitmap
 End Type
 
 Type typeBackgroundObject 'UDT to define background pictures
+    FileName As String 'Path to the bitmap of the background object
     X As Single 'X position of the object
     Y As Single 'Y position of the object
     W As Long 'Width of the B.G. object
     H As Long 'Height of the B.G. object
-    PathName As String 'Path to the bitmap of the background object
 End Type
 
 Type typeHighScore
@@ -288,7 +287,7 @@ Dim Shared lngScore As Long 'Players score
 Dim Shared lngNextExtraLifeScore As Long 'The next score the player gets an extra life at
 Dim Shared lngNumEnemiesKilled As Long 'The number of enemies killed
 Dim Shared lngTotalNumEnemies As Long 'The total number of enemies on the level
-Dim Shared byteLevel As Long 'TODO: Make this 'unsigned byte'? 'Players level
+Dim Shared byteLevel As Unsigned Byte 'Players level
 Dim Shared strName As String 'Players name when they get a high score
 
 'The rest are miscellaneous variables
@@ -303,7 +302,7 @@ Dim Shared boolGettingInput As Byte 'Flag to see if we are getting input from th
 Dim Shared boolFrameRate As Byte 'Flag to toggle frame rate display on and off
 Dim Shared strLevelText As String 'Stores the associated startup text for the level
 Dim Shared blnJoystickEnabled As Byte 'Toggles joystick on or off
-Dim Shared blnMidiEnabled As Byte 'Toggles Midi music on or off
+Dim Shared blnMIDIEnabled As Byte 'Toggles Midi music on or off
 Dim Shared boolMaxFrameRate As Byte 'Removes all frame rate limits
 '---------------------------------------------------------------------------------------------------------
 
@@ -348,10 +347,10 @@ Do 'The main loop of the game.
         CheckForCollisions 'Branch to collision checking subs
         UpdateShields 'Branch to sub that paints shields
         UpdateBombs
-        DrawString 30, 10, "Score:" + Str$(lngScore), RGB32(149, 248, 153)
+        DrawString "Score:" + Str$(lngScore), 30, 10, PaleGreen
         'Display the score
-        DrawString 175, 10, "Lives:" + Str$(byteLives), RGB32(149, 248, 153) 'Display lives left.
-        DrawString 560, 10, "Level:" + Str$(byteLevel), RGB32(149, 248, 153) 'Display the current level
+        DrawString "Lives:" + Str$(byteLives), 175, 10, PaleGreen 'Display lives left.
+        DrawString "Level:" + Str$(byteLevel), 560, 10, PaleGreen 'Display the current level
         CheckScore
     ElseIf boolStarted = FALSE And boolGettingInput = FALSE Then 'If we haven't started, and we aren't getting high score input from the player
         ShowTitle 'Show the title screen with high scores and directions
@@ -366,7 +365,7 @@ Do 'The main loop of the game.
             intFrameCount = 0 'reset the frame count
             lngStartTime = GetTicks 'get a new start time
         End If
-        DrawString 30, 30, "FPS:" + Str$(intFinalFrame), RGB32(255, 255, 255)
+        DrawString "FPS:" + Str$(intFinalFrame), 30, 30, White
         'display the frame rate
     End If
 
@@ -374,7 +373,7 @@ Do 'The main loop of the game.
         Do Until GetTicks - lngTargetTick > 18 'Make sure the game doesn't get out of control
         Loop 'speed-wise by looping until we reach the targeted frame rate
     Else
-        DrawString 30, 45, "Uncapped FPS enabled", RGB32(255, 255, 255) 'Let the player know there is no frame rate limitation
+        DrawString "Uncapped FPS enabled", 30, 45, White 'Let the player know there is no frame rate limitation
     End If
     Display 'Flip the front buffer with the back
 
@@ -449,7 +448,7 @@ Sub InitializeStartup
     Display ' We want the framebuffer to be updated when we want
 
     MouseHide 'don't show the cursor while DX is active
-    blnMidiEnabled = TRUE 'turn on the midi by default
+    blnMIDIEnabled = TRUE 'turn on the midi by default
     Delay 0.001 'don't hog the processor while we are loading
     byteNewHighScore = 255 'set the new high score to no new high score
     InitializeDS
@@ -767,28 +766,28 @@ Sub InitializeStartup
 
     BackgroundObject(0).W = 600
     BackgroundObject(0).H = 400
-    BackgroundObject(0).PathName = "nebulae1.gif"
+    BackgroundObject(0).FileName = "nebulae1.gif"
     BackgroundObject(1).W = 600
     BackgroundObject(1).H = 400
-    BackgroundObject(1).PathName = "asteroid field.gif"
+    BackgroundObject(1).FileName = "asteroid field.gif"
     BackgroundObject(2).W = 600
     BackgroundObject(2).H = 400
-    BackgroundObject(2).PathName = "red giant.gif"
+    BackgroundObject(2).FileName = "red giant.gif"
     BackgroundObject(3).W = 600
     BackgroundObject(3).H = 400
-    BackgroundObject(3).PathName = "nebulae2.gif"
+    BackgroundObject(3).FileName = "nebulae2.gif"
     BackgroundObject(4).W = 600
     BackgroundObject(4).H = 460
-    BackgroundObject(4).PathName = "cometary.gif"
+    BackgroundObject(4).FileName = "cometary.gif"
     BackgroundObject(5).W = 600
     BackgroundObject(5).H = 400
-    BackgroundObject(5).PathName = "nebulae5.gif"
+    BackgroundObject(5).FileName = "nebulae5.gif"
     BackgroundObject(6).W = 600
     BackgroundObject(6).H = 400
-    BackgroundObject(6).PathName = "nebulae3.gif"
+    BackgroundObject(6).FileName = "nebulae3.gif"
     BackgroundObject(7).W = 600
     BackgroundObject(7).H = 400
-    BackgroundObject(7).PathName = "nebulae4.gif"
+    BackgroundObject(7).FileName = "nebulae4.gif"
 End Sub
 
 
@@ -881,7 +880,7 @@ Sub CheckScore
     End If
 
     If lngTargetTime > GetTicks And blnExtraLifeDisplay Then 'As long as the target time is larger than the current time, and the extra life display flag is set
-        DrawStringCenter "Extra Life!!!", 250, RGB32(255, 50, 50)
+        DrawStringCenter "EXTRA LIFE!", 250, Tomato
         'Display the extra life message
     Else
         blnExtraLifeDisplay = FALSE 'Otherwise, if we have gone past the display duration, turn the display flag off
@@ -893,31 +892,28 @@ End Sub
 Sub ShowTitle
     Dim As Long i
 
-    PutImage (200, 50), ddsTitle 'blit the entire title screen bitmap to the backbuffer using the source color key as a mask
+    PutImage (200, 42), ddsTitle 'blit the entire title screen bitmap to the backbuffer using the source color key as a mask
 
-    DrawStringCenter "####===-- HIGH SCORES --===####", 250, RGB32(255, 200, 175) 'Display the high scores message
+    DrawStringCenter "####===-- HIGH SCORES --===####", 250, PeachPuff 'Display the high scores message
 
     For i = 0 To NUM_HIGH_SCORES - 1 'loop through the 10 high scores
         If i = byteNewHighScore Then
-            DrawStringCenter Right$(" " + Str$(i + 1), 2) + ". " + Left$(HighScore(i).text + Space$(HIGH_SCORE_TEXT_LEN), HIGH_SCORE_TEXT_LEN) + "  " + Right$(Space$(10) + Str$(HighScore(i).score), 11), 265 + i * 16, RGB32(254, 255, 102)
+            DrawStringCenter Right$(" " + Str$(i + 1), 2) + ". " + Left$(HighScore(i).text + Space$(HIGH_SCORE_TEXT_LEN), HIGH_SCORE_TEXT_LEN) + "  " + Right$(Space$(10) + Str$(HighScore(i).score), 11), 265 + i * 16, Yellow
         Else
-            DrawStringCenter Right$(" " + Str$(i + 1), 2) + ". " + Left$(HighScore(i).text + Space$(HIGH_SCORE_TEXT_LEN), HIGH_SCORE_TEXT_LEN) + "  " + Right$(Space$(10) + Str$(HighScore(i).score), 11), 265 + i * 16, RGB32(50, 100, 200)
+            DrawStringCenter Right$(" " + Str$(i + 1), 2) + ". " + Left$(HighScore(i).text + Space$(HIGH_SCORE_TEXT_LEN), HIGH_SCORE_TEXT_LEN) + "  " + Right$(Space$(10) + Str$(HighScore(i).score), 11), 265 + i * 16, RoyalBlue
         End If
     Next
 
-    If blnMidiEnabled Then 'if midi is enabled
-        DrawStringCenter "Press M to toggle Midi music. Midi: Enabled", 435, RGB32(58, 84, 26)
-        'display this message
+    If blnMIDIEnabled Then 'if midi is enabled
+        DrawStringCenter "Press M to toggle music. Music: Enabled", 435, ForestGreen 'display this message
     Else 'otherwise
-        DrawStringCenter "Press M to toggle Midi music. Midi: Disabled", 435, RGB32(58, 84, 26)
-        'display this message
+        DrawStringCenter "Press M to toggle music. Music: Disabled", 435, DarkGreen 'display this message
     End If
 
     If blnJoystickEnabled Then 'if the joystick is enabled display this message
-        DrawStringCenter "Press J to toggle joystick. Joystick: Enabled", 450, RGB32(56, 78, 56)
+        DrawStringCenter "Press J to toggle joystick. Joystick: Enabled", 450, ForestGreen 'display this message
     Else 'otherwise
-        DrawStringCenter "Press J to toggle joystick. Joystick: Disabled", 450, RGB32(56, 78, 56)
-        'display this message
+        DrawStringCenter "Press J to toggle joystick. Joystick: Disabled", 450, DarkGreen 'display this message
     End If
 End Sub
 
@@ -1077,14 +1073,11 @@ End Sub
 
 
 ' Fades the screen to / from black
-Sub FadeScreen (bIn As Byte) ' Optional FadeIn As Boolean
+Sub FadeScreen (isIn As Byte) ' Optional FadeIn As Boolean
     ' Copy the whole screen to a temporary image buffer
-    Dim tmp As Long
+    Dim As Long tmp, i, w, h
+
     tmp = CopyImage(0)
-
-    Dim i As Unsigned Byte
-    Dim As Unsigned Long w, h
-
     w = Width(tmp) - 1
     h = Height(tmp) - 1
 
@@ -1092,7 +1085,7 @@ Sub FadeScreen (bIn As Byte) ' Optional FadeIn As Boolean
         ' First bllit the image to the framebuffer
         PutImage (0, 0), tmp
         ' Now draw a black box over the image with changing alpha
-        If bIn Then
+        If isIn Then
             Line (0, 0)-(w, h), RGBA(0, 0, 0, 255 - i), BF
         Else
             Line (0, 0)-(w, h), RGBA(0, 0, 0, i), BF
@@ -1117,9 +1110,9 @@ End Sub
 
 
 'This sub draws text to the back buffer
-Sub DrawString (lngXPos As Long, lngYPos As Long, strText As String, lngColor As Unsigned Long)
-    Color lngColor 'Set the color of the text to the color passed to the sub
-    PrintString (lngXPos, lngYPos), strText 'Draw the text on to the screen, in the coordinates specified
+Sub DrawString (s As String, x As Long, y As Long, c As Unsigned Long)
+    Color c 'Set the color of the text to the color passed to the sub
+    PrintString (x, y), s 'Draw the text on to the screen, in the coordinates specified
 End Sub
 
 
@@ -1255,8 +1248,8 @@ Sub CheckHighScore
         If Len(strName) < HIGH_SCORE_TEXT_LEN And strBuffer <> NULLSTRING Then 'if we haven't reached the limit of characters for the name, and the buffer isn't empty then
             If Asc(strBuffer) > 65 Or strBuffer = Chr$(32) Then strName = strName + strBuffer 'if the buffer contains a letter or a space, add it to the buffer
         End If
-        DrawStringCenter "New high score -" + Str$(HighScore(NUM_HIGH_SCORES - 1).score) + "!!!", 200, RGB32(200, 200, 50) 'Display the new high score message
-        DrawStringCenter "Enter your name: " + strName + Chr$(179), 220, RGB32(200, 200, 50) 'Give the player a cursor, and display the buffer
+        DrawStringCenter "New high score -" + Str$(HighScore(NUM_HIGH_SCORES - 1).score), 200, White 'Display the new high score message
+        DrawStringCenter "Enter your name: " + strName + Chr$(179), 220, Yellow 'Give the player a cursor, and display the buffer
     ElseIf boolGettingInput And boolEnterPressed Then 'If we are getting input, and the player presses then enter key then
         HighScore(NUM_HIGH_SCORES - 1).text = strName 'assign the new high score name the string contained in the buffer
         For intCount = 0 To 9 'loop through the high scores and re-arrange them
@@ -1287,10 +1280,10 @@ End Sub
 'If there is a power-up on screen, it paints it, and advances the animation
 'frames as needed for the existing power-up
 Sub UpdatePowerUps (CreatePowerup As Byte) ' Optional CreatePowerup As Boolean
-    Static byteAdvanceFrameOffset As Byte 'counter to advance the animation frames
-    Static byteFrameCount As Byte 'holds which animation frame we are on
+    Static byteAdvanceFrameOffset As Unsigned Byte 'counter to advance the animation frames
+    Static byteFrameCount As Unsigned Byte 'holds which animation frame we are on
     Dim intRandomNumber As Long 'variable to hold a random number
-    Dim byteFrameOffset As Byte 'offset for animation frames
+    Dim byteFrameOffset As Unsigned Byte 'offset for animation frames
     Dim intCount As Long 'standard count integer
 
     If CreatePowerup Then 'If there it is time to create a power-up
@@ -1345,7 +1338,7 @@ End Sub
 'This sub creates the explosions that appear when a player destroys an object. The index controls which
 'explosion bitmap to play. Player explosion is a flag so the player doesn't get credit for blowing himself up.
 'It also adds to the number of enemies the player has killed to be displayed upon level completion.
-Sub CreateExplosion (Coordinates As Rectangle2D, ExplosionIndex As Byte, NoCredit As Byte) ' Optional NoCredit As Boolean = False
+Sub CreateExplosion (Coordinates As typeRect, ExplosionIndex As Unsigned Byte, NoCredit As Byte) ' Optional NoCredit As Boolean = False
     Dim lngCount As Long 'Standard count variable
 
     If NoCredit = FALSE Then 'If the NoCredit flag is not set
@@ -1373,7 +1366,7 @@ End Sub
 'This subroutine updates the animation for the large explosions
 Sub UpdateExplosions
     Dim lngCount As Long 'count variable
-    Dim SrcRect As Rectangle2D 'source rectangle
+    Dim SrcRect As typeRect 'source rectangle
     Dim lngRightOffset As Long 'offset for the animation rectangle
     Dim lngLeftOffset As Long 'offset for the animation rectangle
     Dim lngTopOffset As Long 'offset for the animation rectangle
@@ -1441,9 +1434,9 @@ Sub UpdateExplosions
             TempY = ExplosionDesc(lngCount).Frame \ 4 'Calculate the left of the rectangle
             TempX = ExplosionDesc(lngCount).Frame - (TempY * 4)
             'Calculate the top of the rectang;e
-            XOffset = CLng(TempX * ExplosionDesc(lngCount).W)
+            XOffset = TempX * ExplosionDesc(lngCount).W
             'Calculate the right of the rectangle
-            YOffset = CLng(TempY * ExplosionDesc(lngCount).H)
+            YOffset = TempY * ExplosionDesc(lngCount).H
             'Calculate the bottom of the rectangle
             'Place the above calculated values in the rectangle struct
             SrcRect.top = 0 + YOffset + lngTopOffset
@@ -1463,8 +1456,8 @@ End Sub
 
 'This sub displays all levels, and displays where the player is located with a flashing orange box
 Sub ShowMapLocation (OutlineLocation As Byte) ' Optional OutlineLocation As Boolean
-    Dim DestRect As Rectangle2D 'Destination rectangle
-    Dim CurrentLevelRect As Rectangle2D 'Rectangle for the current level
+    Dim DestRect As typeRect 'Destination rectangle
+    Dim CurrentLevelRect As typeRect 'Rectangle for the current level
     Dim intCount As Long 'Count variable
     Dim XOffset As Long 'Offset of the X line
     Dim YOffset As Long 'Offset of the Y line
@@ -1491,7 +1484,7 @@ Sub ShowMapLocation (OutlineLocation As Byte) ' Optional OutlineLocation As Bool
         If intCount = (byteLevel - 1) Then CurrentLevelRect = DestRect 'if the level is equal to the count we are on, store this rectangle for use
         YLocation(intCount) = DestRect.bottom - ((DestRect.bottom - DestRect.top) \ 2) 'calculate the line that will be drawn between the rectangles' Y position
         PutImage (DestRect.left, DestRect.top)-(DestRect.right, DestRect.bottom), ddsBackgroundObject(intCount) 'blit the background to the screen
-        Line (DestRect.left, DestRect.top)-(DestRect.right, DestRect.bottom), RGB32(75, 75, 75), B 'draw a box around the bitmap
+        Line (DestRect.left, DestRect.top)-(DestRect.right, DestRect.bottom), DimGray, B 'draw a box around the bitmap
         YOffset = YOffset - 45 'decrement the Y offset
     Next
 
@@ -1502,7 +1495,7 @@ Sub ShowMapLocation (OutlineLocation As Byte) ' Optional OutlineLocation As Bool
     End If
 
     If OutlineLocation Then 'if the sub is called with the OutlineLocation flag set then
-        Line (CurrentLevelRect.left, CurrentLevelRect.top)-(CurrentLevelRect.right, CurrentLevelRect.bottom), RGB32(200, 50, 0), B 'draw the orange rectangle around the current level bitmap
+        Line (CurrentLevelRect.left, CurrentLevelRect.top)-(CurrentLevelRect.right, CurrentLevelRect.bottom), OrangeRed, B 'draw the orange rectangle around the current level bitmap
     End If
 End Sub
 
@@ -1540,7 +1533,7 @@ Sub StartIntro
     strDialog(22) = "the next critical sector. Go now, soldier, and fight so that we may avert the"
     strDialog(23) = "annihilation of the human race."
     strDialog(24) = NULLSTRING
-    strDialog(25) = "(Press enter to continue)"
+    strDialog(25) = "(Press ENTER to continue)"
 
     Cls 'fill the backbuffer with black
     YPosition = 50 'initialize the Y coordinate of the text to 50
@@ -1553,7 +1546,7 @@ Sub StartIntro
     FreeImage ddsSplash 'release all resources for the background bitmap
 
     Do Until lngCount > UBound(strDialog) 'loop through all string arrays
-        DrawStringCenter strDialog(lngCount), YPosition, RGB32(151, 150, 150)
+        DrawStringCenter strDialog(lngCount), YPosition, DarkGray
         'draw the text to the screen
         YPosition = YPosition + 15 'increment the Y position of the text
         lngCount = lngCount + 1 'increment the count
@@ -1574,7 +1567,7 @@ Sub StartIntro
 End Sub
 
 
-'This sub loads a level and dynamically initializes direct draw objects needed for the level. I also
+'This sub loads a level and dynamically initializes direct draw objects needed for the level. It also
 'shows the statistics of the previous level if there are any.
 Sub LoadLevel (level As Long)
     Dim intLowerCount As Long 'lower range count variable
@@ -1582,9 +1575,8 @@ Sub LoadLevel (level As Long)
     Dim FileFree As Long 'holds an available file handle
     Dim intCount As Long 'standard count variable
     Dim intCount2 As Long 'another count variable
-    Dim TempString As String 'temporary string variable
     Dim LoadingString As String * 30 'string loaded from the binary level file
-    Dim SrcRect As Rectangle2D 'source rectangle structure
+    Dim SrcRect As typeRect 'source rectangle structure
     Dim strStats As String 'string to hold statistics
     Dim strNumEnemiesKilled As String 'string to hold the number of enemies killed
     Dim strTotalNumEnemies As String 'string to hold the total number of enemies on the level
@@ -1600,7 +1592,7 @@ Sub LoadLevel (level As Long)
     End If
 
     For intCount = 0 To UBound(ddsBackgroundObject) 'loop through all the background objects
-        ddsBackgroundObject(intCount) = LoadImage("./dat/gfx/" + BackgroundObject(intCount).PathName) 'Load one of the background bitmaps
+        ddsBackgroundObject(intCount) = LoadImage("./dat/gfx/" + BackgroundObject(intCount).FileName) 'Load one of the background bitmaps
         Assert ddsBackgroundObject(intCount) < -1
     Next
 
@@ -1691,7 +1683,7 @@ Sub LoadLevel (level As Long)
         strTotalNumEnemies = "Total number of enemies in level:" + Str$(lngTotalNumEnemies)
         'set the string with the total number of enemies on the level
         If lngNumEnemiesKilled > 2 Then 'if the player killed more than 1 enemy then
-            strPercent = "Percentage of enemies destroyed:" + Str$(CInt(lngNumEnemiesKilled / lngTotalNumEnemies * 100)) + "%"
+            strPercent = "Percentage of enemies destroyed:" + Str$(CLng(lngNumEnemiesKilled / lngTotalNumEnemies * 100)) + "%"
             'set the string with  the percentage of enemies killed
             strBonus = "Bonus: 10,000 X" + Str$(CLng(lngNumEnemiesKilled / lngTotalNumEnemies * 100)) + "%" + " =" + Str$(CLng(10000 * (lngNumEnemiesKilled / lngTotalNumEnemies)))
             'set the string with any bonus awarded
@@ -1712,24 +1704,22 @@ Sub LoadLevel (level As Long)
         End If
         If intCount > 20 Then intCount = 0 'if the count is larger than 20, set it to 0
         If byteLevel > 1 Then 'if the player has passed level 1 then
-            DrawStringCenter strStats, 80, RGB32(51, 153, 1)
+            DrawStringCenter strStats, 80, ForestGreen
             'display the statistics
-            DrawStringCenter strNumEnemiesKilled, 100, RGB32(51, 153, 1)
+            DrawStringCenter strNumEnemiesKilled, 100, ForestGreen
             'display the number of enemies killed
-            DrawStringCenter strTotalNumEnemies, 120, RGB32(51, 153, 1)
+            DrawStringCenter strTotalNumEnemies, 120, ForestGreen
             'display the total number of enemies on the level
             If lngNumEnemiesKilled > 0 Then 'if any enemies have been killed then
-                DrawStringCenter strPercent, 140, RGB32(51, 153, 1)
+                DrawStringCenter strPercent, 140, ForestGreen
                 'display the percentage of enemies killed
-                DrawStringCenter strBonus, 160, RGB32(51, 153, 1)
+                DrawStringCenter strBonus, 160, ForestGreen
                 'display the bonus awarded
             End If
         End If
-        TempString = "Next level:  Level" + Str$(byteLevel) 'set the temp string with the next level number
-        DrawStringCenter TempString, 200, RGB32(136, 143, 172) 'display the temp string
-        DrawStringCenter strLevelText, 220, RGB32(136, 143, 172) 'display the level text
-        TempString = "(Press enter to continue)" 'set the temp string with this message
-        DrawStringCenter TempString, 450, RGB32(136, 143, 172) 'display the temp string
+        DrawStringCenter "Next level:  Level" + Str$(byteLevel), 200, LightSteelBlue 'display the next level number
+        DrawStringCenter strLevelText, 220, LightSteelBlue 'display the level text
+        DrawStringCenter "(Press ENTER to continue)", 450, LightSteelBlue 'display the string with this message
         If KeyHit = DIK_RETURN Then Exit Do 'if the enter key is pressed
         Delay 0.001 'don't hog the processor
         Display 'flip the direct draw front buffer to display the info
@@ -1782,7 +1772,7 @@ Sub LoadLevel (level As Long)
         End If
     Next
 
-    ddsBackgroundObject(byteLevel - 1) = LoadImage("./dat/gfx/" + BackgroundObject(byteLevel - 1).PathName) 'Now we load only the necessary background object
+    ddsBackgroundObject(byteLevel - 1) = LoadImage("./dat/gfx/" + BackgroundObject(byteLevel - 1).FileName) 'Now we load only the necessary background object
     Assert ddsBackgroundObject(byteLevel - 1) < -1
 
     'Reset the ships' position and velocity
@@ -1807,9 +1797,9 @@ Sub UpdateLevels
     Dim lngStartTime As Integer64 'The beginning time
     Dim TempInfo As typeBackGroundDesc 'Temporary description variable
     Dim blnTempInfo As Byte 'Temporary flag
-    Dim SrcRect As Rectangle2D 'Source rectangle
+    Dim SrcRect As typeRect 'Source rectangle
     Dim lngDelayTime As Integer64 'Stores the amount of delay
-    Dim byteIndex As Byte 'Index count variable
+    Dim byteIndex As Unsigned Byte 'Index count variable
 
     If SectionCount < 0 Then 'If the end of the level is reached
         byteLevel = byteLevel + 1 'Increment the level the player is on
@@ -1854,14 +1844,14 @@ Sub UpdateLevels
             Cls 'fill the back buffer with black
 
             'The next lines all display the winning text
-            DrawStringCenter "You win!!!", 150, RGB32(135, 119, 8)
-            DrawStringCenter "After emerging victorious through 8 different alien galaxies, the enemy has been", 165, RGB32(135, 119, 8)
-            DrawStringCenter "driven to the point of near-extinction. Congratulations on a victory well deserved!", 180, RGB32(135, 119, 8)
-            DrawStringCenter "You return to Earth, triumphant.", 195, RGB32(135, 119, 8)
-            DrawStringCenter "As the peoples of the Earth revel in celebration,", 210, RGB32(135, 119, 8)
-            DrawStringCenter "and the world rejoices from relief of the threat of annihalation, you can't help", 225, RGB32(135, 119, 8)
-            DrawStringCenter "but ponder... were all of the aliens really destroyed?", 240, RGB32(135, 119, 8)
-            DrawStringCenter "The End", 270, RGB32(135, 119, 8)
+            DrawStringCenter "YOU WIN!", 150, DarkGoldenRod
+            DrawStringCenter "After emerging victorious through 8 different alien galaxies, the enemy has been", 165, DarkGoldenRod
+            DrawStringCenter "driven to the point of near-extinction. Congratulations on a victory well deserved!", 180, DarkGoldenRod
+            DrawStringCenter "You return to Earth, triumphant.", 195, DarkGoldenRod
+            DrawStringCenter "As the peoples of the Earth revel in celebration,", 210, DarkGoldenRod
+            DrawStringCenter "and the world rejoices from relief of the threat of annihalation, you can't help", 225, DarkGoldenRod
+            DrawStringCenter "but ponder... were all of the aliens really destroyed?", 240, DarkGoldenRod
+            DrawStringCenter "THE END", 270, DarkGoldenRod
 
             FadeScreen TRUE 'fade the screen in
             lngStartTime = GetTicks 'set the start time
@@ -1984,10 +1974,10 @@ End Sub
 
 'This sub fires the players weapons, and plays the associated wavefile
 Sub FireWeapon
-    Static byteLaserCounter As Byte 'variable to hold the number of times this sub has been called to determine if it is time to let another laser be created
-    Static byteGuidedMissileCounter As Byte 'variable to hold the number of times this sub has been called to determine if it is time to let another guided missile be created
-    Static byteLaser2Counter As Byte 'variable to hold the number of times this sub has been called to determine if it is time to let another level2 laser (left side) be created
-    Static byteLaser3Counter As Byte 'variable to hold the number of times this sub has been called to determine if it is time to let another level2 laser (right side) be created
+    Static byteLaserCounter As Unsigned Byte 'variable to hold the number of times this sub has been called to determine if it is time to let another laser be created
+    Static byteGuidedMissileCounter As Unsigned Byte 'variable to hold the number of times this sub has been called to determine if it is time to let another guided missile be created
+    Static byteLaser2Counter As Unsigned Byte 'variable to hold the number of times this sub has been called to determine if it is time to let another level2 laser (left side) be created
+    Static byteLaser3Counter As Unsigned Byte 'variable to hold the number of times this sub has been called to determine if it is time to let another level2 laser (right side) be created
     Dim intCount As Long 'Standard count variable for loops
 
     'Stage 1 laser
@@ -2104,7 +2094,7 @@ End Sub
 
 
 'This function takes two rectangles and determines if they overlap each other
-Function DetectCollision%% (r1 As Rectangle2D, r2 As Rectangle2D)
+Function DetectCollision%% (r1 As typeRect, r2 As typeRect)
     DetectCollision = Not (r1.left > r2.right Or r2.left > r1.right Or r1.top > r2.bottom Or r2.top > r1.bottom)
 End Function
 
@@ -2152,11 +2142,11 @@ End Sub
 'This also is the largest sub in the program, since it has to increment through
 'everything on the screen
 Sub CheckForCollisions
-    Dim SrcRect As Rectangle2D 'rect structure
-    Dim SrcRect2 As Rectangle2D 'another rect structure
+    Dim SrcRect As typeRect 'rect structure
+    Dim SrcRect2 As typeRect 'another rect structure
     Dim intCount As Long 'counter for loops
     Dim intCount2 As Long 'second loop counter
-    Dim ShipRect As Rectangle2D 'holds the position of the player
+    Dim ShipRect As typeRect 'holds the position of the player
     'TODO: Dim ddTempBltFx As DDBLTFX                                                      'used to hold info about the special effects for flashing the screen when something is hit
     Dim TempDesc As typeBackGroundDesc
     Dim blnTempDesc As Byte
@@ -2255,7 +2245,7 @@ Sub CheckForCollisions
                         Ship.PowerUpState = Ship.PowerUpState - 1 'knock it down a level
                     End If
                 End If
-                UpdateHits TRUE, CLng(EnemyDesc(intCount).XFire), CLng(EnemyDesc(intCount).YFire)
+                UpdateHits TRUE, EnemyDesc(intCount).XFire, EnemyDesc(intCount).YFire
                 'Call the sub that displays a small explosion bitmap where the player was hit
                 'TODO: If IsFF = True Then ef(1).start 1, 0                                'If force feeback is enabled, start the effect
                 Exit Sub
@@ -2279,7 +2269,7 @@ Sub CheckForCollisions
                         Ship.PowerUpState = Ship.PowerUpState - 1 'knock it down a level
                     End If
                 End If
-                UpdateHits TRUE, CLng(ObstacleDesc(intCount).XFire), CLng(ObstacleDesc(intCount).YFire) 'Small explosion sub
+                UpdateHits TRUE, ObstacleDesc(intCount).XFire, ObstacleDesc(intCount).YFire 'Small explosion sub
                 Exit Sub
             End If
         End If
@@ -2735,7 +2725,7 @@ Sub UpdateBackground
     Dim sngFinalY As Single 'the final Y position of the bitmap
     Dim OffsetTop As Long 'The offset of the top of the bitmap
     Dim OffsetBottom As Long 'The offset of the bottom of the bitmap
-    Dim SrcRect As Rectangle2D 'Source rectangle of the bitmap
+    Dim SrcRect As typeRect 'Source rectangle of the bitmap
 
     If boolBackgroundExists = FALSE Then 'If there is no background bitmap,
         Exit Sub 'exit the sub
@@ -2777,7 +2767,7 @@ End Sub
 'This sub creates as well as updates stars
 Sub UpdateStars
     Dim intCount As Long 'count variable
-    Dim SrcRect As Rectangle2D 'source rectangle
+    Dim SrcRect As typeRect 'source rectangle
 
     For intCount = 0 To UBound(StarDesc) 'loop through all the stars
         If StarDesc(intCount).Exists = FALSE Then 'if this star doesn't exist then
@@ -2821,7 +2811,7 @@ Sub UpdateObstacles
     Dim OffsetTop As Long 'the top offset of the animation frame
     Dim OffsetBottom As Long 'the bottom offset of the animation frame
     Dim sngFinalY As Single 'the final Y position of the obstacle
-    Dim SrcRect As Rectangle2D 'source rectangle
+    Dim SrcRect As typeRect 'source rectangle
 
     For intCount = 0 To UBound(ObstacleDesc) 'loop through all obstacles
         If ObstacleDesc(intCount).Exists Then 'if this obstacle exists
@@ -2837,8 +2827,8 @@ Sub UpdateObstacles
                     If ObstacleDesc(intCount).Frame > ObstacleDesc(intCount).NumFrames Then ObstacleDesc(intCount).Frame = 0 'if the animation goes beyond the number of frames it has, reset it to the start
                     TempY = ObstacleDesc(intCount).Frame \ 4 'calculate the left of the animation
                     TempX = ObstacleDesc(intCount).Frame - (TempY * 4) 'calculate the top of the animation
-                    XOffset = CLng(TempX * ObstacleDesc(intCount).W) 'calculate the right of the animation
-                    YOffset = CLng(TempY * ObstacleDesc(intCount).H) 'calculate the bottom of the animation
+                    XOffset = TempX * ObstacleDesc(intCount).W 'calculate the right of the animation
+                    YOffset = TempY * ObstacleDesc(intCount).H 'calculate the bottom of the animation
                 End If
                 If ObstacleDesc(intCount).Y < 0 Then 'if the obstacle is partially off the top of the screen
                     OffsetTop = (Not ObstacleDesc(intCount).Y) + 1 'adjust the rectangle
@@ -2874,7 +2864,7 @@ End Sub
 'This sub updates all the enemies that are being displayed on the screen
 Sub UpdateEnemys
     Dim intCount As Long 'count variable
-    Dim SrcRect As Rectangle2D 'source rectangle for the blit
+    Dim SrcRect As typeRect 'source rectangle for the blit
     Dim intReturnResult As Long 'return holder
     Dim sngChaseSpeed As Single 'chase speed of the enemy
     Dim TempX As Long 'temporary X coordinate
@@ -2976,9 +2966,9 @@ Sub UpdateEnemys
                 TempY = EnemyDesc(intCount).Frame \ 4 'set the starting Y position for this animation frame
                 TempX = EnemyDesc(intCount).Frame - (TempY * 4)
                 'set the starting X position for this animation frame
-                XOffset = CLng(TempX * EnemyDesc(intCount).W)
+                XOffset = TempX * EnemyDesc(intCount).W
                 'set the X offset of the animation frame
-                YOffset = CLng(TempY * EnemyDesc(intCount).H)
+                YOffset = TempY * EnemyDesc(intCount).H
                 'set the Y offset of the animation frame
 
                 SrcRect.top = 0 + YOffset + lngTopOffset 'set the top of the rect
@@ -3117,7 +3107,7 @@ End Sub
 Sub UpdateWeapons
     Dim intCount As Long 'count variable
     Dim intCounter As Long 'another count variable
-    Dim SrcRect As Rectangle2D 'source rectuangle
+    Dim SrcRect As typeRect 'source rectuangle
 
     Do Until intCount > UBound(LaserDesc) 'Loop through all the level 1 lasers
         If LaserDesc(intCount).Exists Then 'if the laser exists
@@ -3269,20 +3259,17 @@ End Sub
 
 'This sub updates the player's ship, and animates it
 Sub UpdateShip
-    Dim SrcRect As Rectangle2D 'source rectangle
+    Dim SrcRect As typeRect 'source rectangle
     Dim TempX As Long 'X poistion of the animation
     Dim TempY As Long 'Y position of the animation
-    Static byteFrameDirection As Byte 'keep track of the direction the animation is moving
+    Static isFrameDirectionReverse As Byte 'keep track of the direction the animation is moving
 
-    If intShipFrameCount > 29 And byteFrameDirection = 0 Then
-        'if the end of the animation is reached
-        byteFrameDirection = 1 'reverse the direction
-    ElseIf intShipFrameCount < 1 And byteFrameDirection = 1 Then
-        'if the end is reached the other direction
-        byteFrameDirection = 0 'reverse the direction
+    ' If the end of the animation is reached in either direction
+    If (intShipFrameCount > 29 And Not isFrameDirectionReverse) Or (intShipFrameCount < 1 And isFrameDirectionReverse) Then
+        isFrameDirectionReverse = Not isFrameDirectionReverse 'reverse the direction
     End If
 
-    If byteFrameDirection = 1 Then 'if the animation is headed backwards
+    If isFrameDirectionReverse Then 'if the animation is headed backwards
         intShipFrameCount = intShipFrameCount - 1 'reduce the frame the animation is on
     Else 'otherwise
         intShipFrameCount = intShipFrameCount + 1 'increment the animation frame
@@ -3290,8 +3277,8 @@ Sub UpdateShip
 
     TempY = intShipFrameCount \ 4 'find the left of the animation
     TempX = intShipFrameCount - (TempY * 4) 'find the top of the animation
-    Ship.XOffset = CLng(TempX * SHIPWIDTH) 'set the X offset of the animation frame
-    Ship.YOffset = CLng(TempY * SHIPHEIGHT) 'set the Y offset of the animation frame
+    Ship.XOffset = TempX * SHIPWIDTH 'set the X offset of the animation frame
+    Ship.YOffset = TempY * SHIPHEIGHT 'set the Y offset of the animation frame
 
     'fill in the values of the animation frame
     SrcRect.top = Ship.YOffset
@@ -3351,7 +3338,7 @@ Sub UpdateInvulnerability
     Dim TempY As Long 'Temporary Y variable
     Dim XOffset As Long 'Offset of the rectangle
     Dim YOffset As Long 'Offset of the rectangle
-    Dim SrcRect As Rectangle2D 'Source rectangle
+    Dim SrcRect As typeRect 'Source rectangle
     Static intInvFrameCount As Long 'Keep track of what animation frame the animation is on
     Static blnInvWarning As Byte 'Flag that is set if it is time to warn the player that the invulnerability is running out
     Static intWarningCount As Long 'Keep track of how many times the player has been warned
@@ -3376,8 +3363,8 @@ Sub UpdateInvulnerability
                 If intInvFrameCount > 49 Then intInvFrameCount = 0 'If the animation goes past the maximum number of frames, reset it
                 TempY = intInvFrameCount \ 4 'Calculate the left of the animation
                 TempX = intInvFrameCount - (TempY * 4) 'Calculate the top of the animation
-                XOffset = CLng(TempX * SHIPWIDTH) 'Calculate the right of the animation
-                YOffset = CLng(TempY * SHIPHEIGHT) 'Calculate the bottom of the animation
+                XOffset = TempX * SHIPWIDTH 'Calculate the right of the animation
+                YOffset = TempY * SHIPHEIGHT 'Calculate the bottom of the animation
                 intInvFrameCount = intInvFrameCount + 1 'Increment the frame count
                 'Input the rectangle values
                 SrcRect.top = YOffset
@@ -3394,8 +3381,8 @@ Sub UpdateInvulnerability
             If intInvFrameCount > 49 Then intInvFrameCount = 0 'If the animation goes past the maximum number of frames, reset it
             TempY = intInvFrameCount \ 4 'Calculate the left of the animation
             TempX = intInvFrameCount - (TempY * 4) 'Calculate the top of the animation
-            XOffset = CLng(TempX * SHIPWIDTH) 'Calculate the right of the animation
-            YOffset = CLng(TempY * SHIPHEIGHT) 'Calculate the bottom of the animation
+            XOffset = TempX * SHIPWIDTH 'Calculate the right of the animation
+            YOffset = TempY * SHIPHEIGHT 'Calculate the bottom of the animation
             intInvFrameCount = intInvFrameCount + 1 'Increment the frame count
             'Input the rectangle values
             SrcRect.top = YOffset
@@ -3414,7 +3401,7 @@ End Sub
 'This sub updates the shield display and also checks whether or not there are any shields left, as well as
 'updating the players lives. If there are no lives left, it will reset the game.
 Sub UpdateShields
-    Dim SrcRect As Rectangle2D 'The source rectangle for the shield indicator
+    Dim SrcRect As typeRect 'The source rectangle for the shield indicator
     Dim lngTime As Integer64 'variable to store the current tick count
     Dim lngTargetTick As Integer64 'variable to stabilize frame rate
     Dim intCount As Long 'standard loop variable
@@ -3426,10 +3413,10 @@ Sub UpdateShields
         SrcRect.left = 0
         SrcRect.right = intShields 'intShields is the right hand side of the rectangle, which will grow smaller as the player takes more damage
 
-        Line (449, 6)-(551, 28), RGB32(255, 255, 255), B 'draw a box for the shield indicator and set the fore color to white
+        Line (449, 6)-(551, 28), White, B 'draw a box for the shield indicator and set the fore color to white
         PutImage (450, 7), ddsShieldIndicator, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom)
         'blt the indicator rectangle to the screen
-        DrawString 380, 10, "Shields:", RGB32(255, 200, 200) 'display some text
+        DrawString "Shields:", 380, 10, MistyRose 'display some text
         If intShields < 25 Then 'if the shields are less than 25% then
             SndLoop dsAlarm 'play the alarm sound effect, and loop it
             Ship.AlarmActive = TRUE 'set the alarm flag to on
@@ -3484,7 +3471,7 @@ Sub UpdateShields
                 UpdateStars 'this too
                 UpdateExplosions 'same here
                 UpdateWeapons 'as well as this
-                DrawString 275, 200, "Lives left:" + Str$(byteLives), RGB32(255, 255, 255)
+                DrawString "Lives left:" + Str$(byteLives), 275, 200, White
                 'display a message letting the player know how many ships are left
                 Display 'flip the front buffer with the back
                 Do Until GetTicks - lngTargetTick > 18 'Make sure the game doesn't get out of control
@@ -3501,7 +3488,7 @@ Sub UpdateShields
                 UpdateBackground
                 UpdateExplosions
                 UpdateWeapons
-                DrawString 275, 200, "Game Over", RGB32(255, 255, 255)
+                DrawString "Game Over", 275, 200, White
                 'display that the game is now over
                 Display 'flip the front and back surfaces
                 Delay 0.001 'don't hog the processor
@@ -3529,7 +3516,7 @@ End Sub
 Sub UpdateBombs
     Dim TempY As Long 'Temporary Y coordinate
     Dim TempX As Long 'Temporary X coordinate
-    Dim SrcRect As Rectangle2D 'Source rectangle structure
+    Dim SrcRect As typeRect 'Source rectangle structure
     Dim XOffset As Long 'Offset for the X coordinate
     Dim YOffset As Long 'Offset for the Y coordinate
     Dim intCount As Long 'Count variable
@@ -3546,8 +3533,8 @@ Sub UpdateBombs
         End If
         TempY = BombFrame \ 4 'get the temporary Y coordinate of the frame
         TempX = BombFrame - (TempY * 4) 'get the temporary X coordinate of the frame
-        XOffset = CLng(TempX * 20) 'offset the rectangle by the X coordinate * the width of the frame
-        YOffset = CLng(TempY * 20) 'offset the rectangle by the Y coordinate * the height of the frame
+        XOffset = TempX * 20 'offset the rectangle by the X coordinate * the width of the frame
+        YOffset = TempY * 20 'offset the rectangle by the Y coordinate * the height of the frame
         'define the source rectangle of the bomb
         SrcRect.top = YOffset 'define the top coordinate of the rectangle
         SrcRect.bottom = SrcRect.top + 20 'the bottom is the top + the height of the bomb
@@ -3567,7 +3554,7 @@ End Sub
 Sub FireMissile
     Dim intCount As Long 'standard count variable
     Dim lngTargetTick As Integer64 'long value to hold the tick count
-    Dim ExplosionRect As Rectangle2D 'rect structure that defines the position of an enemy ship
+    Dim ExplosionRect As typeRect 'rect structure that defines the position of an enemy ship
     Dim As Long w, h
 
     ' Screen x & y max
@@ -3602,9 +3589,10 @@ Sub FireMissile
         If Ship.Invulnerable Then UpdateInvulnerability 'If the player is invulnerable, update the invulenerability animation
         UpdateShields 'Update the shield indicator
         UpdateBombs 'Update the missile animation
-        DrawString 30, 10, "Score:" + Str$(lngScore), RGB32(149, 248, 153) 'Display the score
-        DrawString 175, 10, "Lives:" + Str$(byteLives), RGB32(149, 248, 153) 'Display lives left
-        DrawString 560, 10, "Level:" + Str$(byteLevel), RGB32(149, 248, 153) 'Display the current level
+        DrawString "Score:" + Str$(lngScore), 30, 10, PaleGreen 'Display the score
+        DrawString "Lives:" + Str$(byteLives), 175, 10, PaleGreen 'Display lives left
+        DrawString "Level:" + Str$(byteLevel), 560, 10, PaleGreen 'Display the current level
+
 
         Line (0, 0)-(w, h), RGBA(255, 255, 255, intCount), BF 'Set the palette to our new palette entry values
 
@@ -3612,7 +3600,7 @@ Sub FireMissile
             Do Until GetTicks - lngTargetTick > 18 'Make sure the game doesn't get out of control
             Loop 'speed-wise by looping until we reach the targeted frame rate
         Else
-            DrawString 30, 45, "Uncapped FPS enabled", RGB32(255, 255, 255)
+            DrawString "Uncapped FPS enabled", 30, 45, White
             'Let the player know there is no frame rate limitation
         End If
 
@@ -3673,9 +3661,9 @@ Sub FireMissile
         If Ship.Invulnerable Then UpdateInvulnerability
         UpdateShields
         UpdateBombs
-        DrawString 30, 10, "Score:" + Str$(lngScore), RGB32(149, 248, 153)
-        DrawString 175, 10, "Lives:" + Str$(byteLives), RGB32(149, 248, 153)
-        DrawString 560, 10, "Level:" + Str$(byteLevel), RGB32(149, 248, 153)
+        DrawString "Score:" + Str$(lngScore), 30, 10, PaleGreen 'Display the score
+        DrawString "Lives:" + Str$(byteLives), 175, 10, PaleGreen 'Display lives left
+        DrawString "Level:" + Str$(byteLevel), 560, 10, PaleGreen 'Display the current level
 
         Line (0, 0)-(w, h), RGBA(255, 0, 0, intCount), BF
 
@@ -3683,7 +3671,7 @@ Sub FireMissile
             Do Until GetTicks - lngTargetTick > 18
             Loop
         Else
-            DrawString 30, 45, "Uncapped FPS enabled", RGB32(255, 255, 255)
+            DrawString "Uncapped FPS enabled", 30, 45, White
         End If
         Display
     Next
@@ -3719,7 +3707,6 @@ End Sub
 'loop when a missile is fired
 Sub GetInput
     Dim intCount As Long 'standard count variable
-    'Dim KeyboardState(0 To 255) As Byte 'Byte array to hold the state of the keyboard
     'TODO: Dim JoystickState As DIJOYSTATE                             'joystick state type
     Dim lngTime As Integer64 'variable to hold the time
     Dim lngTargetTime As Integer64 'holds a targeted time
@@ -3782,7 +3769,7 @@ Sub GetInput
             ' pause music
             If MIDIHandle > 0 Then SndPause MIDIHandle
 
-            DrawString 200, 200, "Paused...press Enter to start again", RGB32(255, 50, 100)
+            DrawStringCenter "(Paused - Press ENTER to resume)", 200, OrangeRed
             'display the pause text
             Display 'flip the surfaces to show the back buffer
             'Check the keyboard for keypresses
@@ -3853,11 +3840,11 @@ Sub GetInput
             End If
         ElseIf (KeyCode = 109 Or KeyCode = 77) And Not boolStarted Then
             'if the M key is pressed, and the game has not started
-            If blnMidiEnabled Then 'if midi is enabled
-                blnMidiEnabled = FALSE 'toggle it off
+            If blnMIDIEnabled Then 'if midi is enabled
+                blnMIDIEnabled = FALSE 'toggle it off
                 PlayMIDIFile NULLSTRING 'stop playing any midi
             Else 'otherwise
-                blnMidiEnabled = TRUE 'turn the midi on
+                blnMIDIEnabled = TRUE 'turn the midi on
                 PlayMIDIFile "./dat/sfx/mus/title.mid" 'play the title midi
             End If
         ElseIf KeyCode = 120 Or KeyCode = 88 Then 'if the X key has been pressed
