@@ -890,9 +890,20 @@ End Sub
 
 'This sub displays the title screen, and rotates one of the palette indexes from blue to black
 Sub ShowTitle
-    Dim As Long i
+    Static colorDirection As Byte
+    Dim As Unsigned Long i, c
+
+    If colorDirection = 0 Then colorDirection = 5 ' kickstart the palette animation
 
     PutImage (200, 42), ddsTitle 'blit the entire title screen bitmap to the backbuffer using the source color key as a mask
+
+    ' See the comment on ddsTitle = LoadImage(..., 257)
+    ' Again here index 8 is from trial-and-error. However, it was easy to find because those pixels are at top (beginning)
+    c = PaletteColor(8, ddsTitle)
+    PaletteColor 8, RGB32(Red(c), Green(c), Blue(c) + colorDirection), ddsTitle
+
+    If Blue(c) > 245 Then colorDirection = -5
+    If Blue(c) < 5 Then colorDirection = 5
 
     DrawStringCenter "####===-- HIGH SCORES --===####", 250, PeachPuff 'Display the high scores message
 
@@ -932,8 +943,11 @@ Sub InitializeDD
     FadeScreen TRUE 'flip the front buffer so the splash screen bitmap on the backbuffer is displayed
     PlayMIDIFile "./dat/sfx/mus/title.mid" 'Start playing the title song
 
-    ddsTitle = LoadImageTransparent("./dat/gfx/title.gif") 'Load the title screen bitmap and put in a direct draw surface
+    ddsTitle = LoadImage("./dat/gfx/title.gif", 257) ' Load the title screen bitmap in 8bpp mode for palette tricks
     Assert ddsTitle < -1
+    ' Due to the way the internal QB64-PE 256 color conversion works, the first pixel color is stored at index 0
+    ' How do I know this? Well, I wrote it! :)
+    ClearColor 0, ddsTitle
 
     ddsShip = LoadImageTransparent("./dat/gfx/ship.gif") 'Load the ship bitmap and make it into a direct draw surface
     Assert ddsShip < -1
