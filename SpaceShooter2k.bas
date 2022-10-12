@@ -7,13 +7,18 @@
 '---------------------------------------------------------------------------------------------------------
 ' TODOs
 '---------------------------------------------------------------------------------------------------------
-'   Check any comment labeled with 'TODO'
-'   Remove GetTicks() dependency ?
-'   Map and check all instances of 'ddsBack.BltFast' from the original code
-'   Check all 'PutImage' calls
-'   Remove usage of typeRect types whereever not really required
 '   BUG: Random white lines on bottom and right when rendering spritesheet - probably copying extra pixels from right and bottom
 '   BUG: Picking up invulnerability while one is active does not increase InvulnerableTime
+'   IMPROVEMENT: Replace usage of GetTicks with Limit, Delay & Sleep wherever appropriate
+'   IMPROVEMENT: Remove usage of typeRect types wherever not really required
+'   IMPROVEMENT: The main loop is duplicated in multiple places like FireMissile. This is not a good design and should to be refactored
+'   IMPROVEMENT: String and numeric literals are littered all over the place. These should be consolidated into constants
+'   IMPROVEMENT: Game controller support is missing and should be added back using AXIS, BUTTON, BUTTONCHANGE, STICK, STRIG etc.
+'   IMPROVEMENT: Add mouse support using MOUSEINPUT, MOUSEMOVEMENTX, MOUSEMOVEMENTY, MOUSEBUTTON etc.
+'   IMPROVEMENT: Alignment of the HUD items at the top of the screen is bad and should be corrected
+'   IMPROVEMENT: Implement stars and shield status bar using graphic primitives instead of sprites
+'   IMPROVEMENT: FadeScreen is not used for all screen transitions and should be checked
+'   OTHER: Check any comment labeled with 'TODO'
 '---------------------------------------------------------------------------------------------------------
 
 '---------------------------------------------------------------------------------------------------------
@@ -69,8 +74,9 @@ Const DIK_ESCAPE = 27
 Const SCREEN_WIDTH = 640 'Width for the display mode
 Const SCREEN_HEIGHT = 480 'Height for the display mode
 Const TRANSPARENT_COLOR = RGB32(208, 2, 178) ' transparent color used in all GIF images assets
-Const JOYSTICKCENTERED = 32768 'Center value of the joystick
+Const UPDATES_PER_SECOND = 52 ' This is the desired game FPS
 
+' Powerup stuff
 Const SHIELD = &H0 'Constant for the shield powerup
 Const WEAPON = &H20 'Constant for the weapon powerup
 Const BOMB = &H40 'Constant for the bomb powerup
@@ -310,7 +316,6 @@ Dim Shared boolMaxFrameRate As Byte 'Removes all frame rate limits
 ' PROGRAM ENTRY POINT - This is the entry point for the game. From here everything branches out to all the
 ' subs that handle collisions, enemies, player, weapon fire, sounds, level updating, etc.
 '---------------------------------------------------------------------------------------------------------
-Dim lngTargetTick As Integer64 'Variable to store the targeted tick count time
 Dim lngStartTime As Integer64 'stores the start time of a frame rate count
 Dim lngCurrentTime As Integer64 'stores the current tick for frame rate count
 Dim intFinalFrame As Long 'holds the total number of frames in a second
@@ -319,12 +324,11 @@ Dim intFrameCount As Long 'keeps track of how many frames have elapsed
 InitializeStartup 'Do the startup routines
 LoadHighScores 'Call the sub to load the high scores
 lngNextExtraLifeScore = EXTRALIFETARGET 'Initialize the extra life score to 100,000
-Sleep 2 ' Sleep for 2 extra seconds
+Sleep 1 ' Wait for a second
 FadeScreen FALSE ' Fade out the loading screen
 ClearInput ' Clear any cached input
 
 Do 'The main loop of the game.
-    lngTargetTick = GetTicks 'Store the current time of the loop
     GetInput 'call sub that checks for player input
     Cls 'fill the back buffer with black
     UpdateBackground 'Update the background bitmaps
@@ -369,15 +373,14 @@ Do 'The main loop of the game.
         'display the frame rate
     End If
 
-    If Not boolMaxFrameRate Then
-        Do Until GetTicks - lngTargetTick > 18 'Make sure the game doesn't get out of control
-        Loop 'speed-wise by looping until we reach the targeted frame rate
-    Else
+    If boolMaxFrameRate Then
         DrawString "Uncapped FPS enabled", 30, 45, White 'Let the player know there is no frame rate limitation
+    Else
+        Limit UPDATES_PER_SECOND ' Make sure the game doesn't get out of control
     End If
+
     Display 'Flip the front buffer with the back
 
-    Delay 0.001 'Let the system process stuff
     If boolStarted And KeyDown(DIK_ESCAPE) Then 'If the game has started, and the player presses escape
         'TODO: If IsFF = True Then ef(2).Unload                            'unload the laser force feedback effect
         ResetGame 'call the sub to reset the game variables
@@ -449,7 +452,6 @@ Sub InitializeStartup
 
     MouseHide 'don't show the cursor while DX is active
     blnMIDIEnabled = TRUE 'turn on the midi by default
-    Delay 0.001 'don't hog the processor while we are loading
     byteNewHighScore = 255 'set the new high score to no new high score
     InitializeDS
     InitializeDD 'call the sub that initialized direct draw
@@ -764,30 +766,37 @@ Sub InitializeStartup
 
     'Setup the data for all the background bitmaps
 
+    BackgroundObject(0).FileName = "nebulae1.gif"
     BackgroundObject(0).W = 600
     BackgroundObject(0).H = 400
-    BackgroundObject(0).FileName = "nebulae1.gif"
+
+    BackgroundObject(1).FileName = "asteroid field.gif"
     BackgroundObject(1).W = 600
     BackgroundObject(1).H = 400
-    BackgroundObject(1).FileName = "asteroid field.gif"
+
+    BackgroundObject(2).FileName = "red giant.gif"
     BackgroundObject(2).W = 600
     BackgroundObject(2).H = 400
-    BackgroundObject(2).FileName = "red giant.gif"
+
+    BackgroundObject(3).FileName = "nebulae2.gif"
     BackgroundObject(3).W = 600
     BackgroundObject(3).H = 400
-    BackgroundObject(3).FileName = "nebulae2.gif"
+
+    BackgroundObject(4).FileName = "cometary.gif"
     BackgroundObject(4).W = 600
     BackgroundObject(4).H = 460
-    BackgroundObject(4).FileName = "cometary.gif"
+
+    BackgroundObject(5).FileName = "nebulae5.gif"
     BackgroundObject(5).W = 600
     BackgroundObject(5).H = 400
-    BackgroundObject(5).FileName = "nebulae5.gif"
+
+    BackgroundObject(6).FileName = "nebulae3.gif"
     BackgroundObject(6).W = 600
     BackgroundObject(6).H = 400
-    BackgroundObject(6).FileName = "nebulae3.gif"
+
+    BackgroundObject(7).FileName = "nebulae4.gif"
     BackgroundObject(7).W = 600
     BackgroundObject(7).H = 400
-    BackgroundObject(7).FileName = "nebulae4.gif"
 End Sub
 
 
@@ -880,8 +889,7 @@ Sub CheckScore
     End If
 
     If lngTargetTime > GetTicks And blnExtraLifeDisplay Then 'As long as the target time is larger than the current time, and the extra life display flag is set
-        DrawStringCenter "EXTRA LIFE!", 250, Tomato
-        'Display the extra life message
+        DrawStringCenter "EXTRA LIFE!", 250, Tomato 'Display the extra life message
     Else
         blnExtraLifeDisplay = FALSE 'Otherwise, if we have gone past the display duration, turn the display flag off
     End If
@@ -1105,10 +1113,8 @@ Sub FadeScreen (isIn As Byte) ' Optional FadeIn As Boolean
             Line (0, 0)-(w, h), RGBA32(0, 0, 0, i), BF
         End If
 
-        ' Flip the framebuffer
-        Display
-        ' Delay a bit
-        Delay 0.002
+        Display ' Flip the framebuffer
+        Delay 0.002 ' Delay a bit
     Next
 
     FreeImage tmp
@@ -1691,18 +1697,13 @@ Sub LoadLevel (level As Long)
     strLevelText = Trim$(strLevelText) 'Trim any spaces from the loading string
 
     If byteLevel > 1 Then 'If the player is has passed level 1 then show statistics for the completed level
-        strStats = "Last level statistics" 'Display a message
-        strNumEnemiesKilled = "Number of enemies destroyed:" + Str$(lngNumEnemiesKilled)
-        'set the string with the number of enemies killed
-        strTotalNumEnemies = "Total number of enemies in level:" + Str$(lngTotalNumEnemies)
-        'set the string with the total number of enemies on the level
+        strStats = "LAST LEVEL STATISTICS" 'Display a message
+        strNumEnemiesKilled = "Number of enemies destroyed:" + Str$(lngNumEnemiesKilled) 'set the string with the number of enemies killed
+        strTotalNumEnemies = "Total number of enemies in level:" + Str$(lngTotalNumEnemies) 'set the string with the total number of enemies on the level
         If lngNumEnemiesKilled > 2 Then 'if the player killed more than 1 enemy then
-            strPercent = "Percentage of enemies destroyed:" + Str$(CLng(lngNumEnemiesKilled / lngTotalNumEnemies * 100)) + "%"
-            'set the string with  the percentage of enemies killed
-            strBonus = "Bonus: 10,000 X" + Str$(CLng(lngNumEnemiesKilled / lngTotalNumEnemies * 100)) + "%" + " =" + Str$(CLng(10000 * (lngNumEnemiesKilled / lngTotalNumEnemies)))
-            'set the string with any bonus awarded
-            lngScore = lngScore + CLng(10000 * (lngNumEnemiesKilled / lngTotalNumEnemies))
-            'add the bonus to the players score
+            strPercent = "Percentage of enemies destroyed:" + Str$(CLng(lngNumEnemiesKilled / lngTotalNumEnemies * 100)) + "%" 'set the string with  the percentage of enemies killed
+            strBonus = "Bonus: 10,000 X" + Str$(CLng(lngNumEnemiesKilled / lngTotalNumEnemies * 100)) + "%" + " =" + Str$(CLng(10000 * (lngNumEnemiesKilled / lngTotalNumEnemies))) 'set the string with any bonus awarded
+            lngScore = lngScore + CLng(10000 * (lngNumEnemiesKilled / lngTotalNumEnemies)) 'add the bonus to the players score
         End If
     End If
 
@@ -1718,17 +1719,12 @@ Sub LoadLevel (level As Long)
         End If
         If intCount > 20 Then intCount = 0 'if the count is larger than 20, set it to 0
         If byteLevel > 1 Then 'if the player has passed level 1 then
-            DrawStringCenter strStats, 80, ForestGreen
-            'display the statistics
-            DrawStringCenter strNumEnemiesKilled, 100, ForestGreen
-            'display the number of enemies killed
-            DrawStringCenter strTotalNumEnemies, 120, ForestGreen
-            'display the total number of enemies on the level
+            DrawStringCenter strStats, 80, ForestGreen 'display the statistics
+            DrawStringCenter strNumEnemiesKilled, 100, ForestGreen 'display the number of enemies killed
+            DrawStringCenter strTotalNumEnemies, 120, ForestGreen 'display the total number of enemies on the level
             If lngNumEnemiesKilled > 0 Then 'if any enemies have been killed then
-                DrawStringCenter strPercent, 140, ForestGreen
-                'display the percentage of enemies killed
-                DrawStringCenter strBonus, 160, ForestGreen
-                'display the bonus awarded
+                DrawStringCenter strPercent, 140, ForestGreen 'display the percentage of enemies killed
+                DrawStringCenter strBonus, 160, ForestGreen 'display the bonus awarded
             End If
         End If
         DrawStringCenter "Next level:  Level" + Str$(byteLevel), 200, LightSteelBlue 'display the next level number
@@ -1812,7 +1808,6 @@ Sub UpdateLevels
     Dim TempInfo As typeBackGroundDesc 'Temporary description variable
     Dim blnTempInfo As Byte 'Temporary flag
     Dim SrcRect As typeRect 'Source rectangle
-    Dim lngDelayTime As Integer64 'Stores the amount of delay
     Dim byteIndex As Unsigned Byte 'Index count variable
 
     If SectionCount < 0 Then 'If the end of the level is reached
@@ -1821,7 +1816,9 @@ Sub UpdateLevels
             PlayMIDIFile NULLSTRING 'Stop playing any midi
             SndStop dsAlarm 'Turn off any alarm
             SndStop dsInvulnerability 'Stop any invulnerability sound effect
+
             Cls 'fill the back buffer with black
+
             lngStartTime = GetTicks 'grab the current time
 
             Do While lngStartTime + 8000 > GetTicks 'loop this routine for 8 seconds
@@ -1838,11 +1835,11 @@ Sub UpdateLevels
                     Else 'otherwise
                         byteIndex = 0 'set it to the first
                     End If
+
                     CreateExplosion SrcRect, byteIndex, TRUE 'create the explosion, and we don't give the player any credit for killing an enemy since there are none
-                    lngDelayTime = GetTicks 'grab the current time
-                    Do While lngDelayTime + 35 > GetTicks 'loop for 35 milliseconds
-                        Delay 0.001 'don't hog the processor while looping
-                    Loop
+
+                    Delay 0.035 ' Wait for 35 milliseconds
+
                     SndPlayCopy dsExplosion 'play the explosion sound
                 End If
                 Display 'Flip the front buffer with the back
@@ -1868,10 +1865,7 @@ Sub UpdateLevels
             DrawStringCenter "THE END", 270, DarkGoldenRod
 
             FadeScreen TRUE 'fade the screen in
-            lngStartTime = GetTicks 'set the start time
-            Do While lngStartTime + 20000 > GetTicks 'display the winning message for 20 seconds
-                Delay 0.001 'don't hog the processor
-            Loop
+            Sleep 20 ' Display the winning message for 20 seconds
             FadeScreen FALSE 'fade the screen to black again
             intShields = 100 'shields are at 100%
             Ship.X = 300 'reset the players X
@@ -3417,7 +3411,6 @@ End Sub
 Sub UpdateShields
     Dim SrcRect As typeRect 'The source rectangle for the shield indicator
     Dim lngTime As Integer64 'variable to store the current tick count
-    Dim lngTargetTick As Integer64 'variable to stabilize frame rate
     Dim intCount As Long 'standard loop variable
 
     If intShields > 0 Then 'if there is more than 0% shields left
@@ -3479,35 +3472,34 @@ Sub UpdateShields
         If SectionCount > 999 Then SectionCount = 999 'Make sure we don't go over the limit
         If byteLives > 0 Then 'If the player still has lives left then
             Do Until GetTicks > lngTime + 2000 'Loop this for two seconds
-                lngTargetTick = GetTicks 'get the current time
                 Cls 'fill the back buffer with black
+
                 UpdateBackground 'you seen this before
                 UpdateStars 'this too
                 UpdateExplosions 'same here
                 UpdateWeapons 'as well as this
-                DrawString "Lives left:" + Str$(byteLives), 275, 200, White
-                'display a message letting the player know how many ships are left
+                DrawString "Lives left:" + Str$(byteLives), 275, 200, White 'display a message letting the player know how many ships are left
+
+                Limit UPDATES_PER_SECOND ' Make sure the game doesn't get out of control
+
                 Display 'flip the front buffer with the back
-                Do Until GetTicks - lngTargetTick > 18 'Make sure the game doesn't get out of control
-                Loop 'speed-wise by looping until we reach the targeted frame rate
             Loop 'keep looping until two seconds pass
             SndSetPos dsEnergize, 0 'set the energize sound effect to the beginning
             SndPlay dsEnergize 'play the energize sound effect
             'TODO: If IsFF Then ef(2).Download              'start the trigger force feedback again
         Else 'If the player has no lives left
             Do Until GetTicks > lngTime + 3000 'Loop for three seconds
-                lngTargetTick = GetTicks 'get the current time
                 Cls 'fill the back buffer with black
+
                 UpdateStars 'these lines are the same as above
                 UpdateBackground
                 UpdateExplosions
                 UpdateWeapons
-                DrawString "Game Over", 275, 200, White
-                'display that the game is now over
+                DrawString "Game Over", 275, 200, White 'display that the game is now over
+
+                Limit UPDATES_PER_SECOND ' Make sure the game doesn't get out of control
+
                 Display 'flip the front and back surfaces
-                Delay 0.001 'don't hog the processor
-                Do Until GetTicks - lngTargetTick > 18 'Make sure the game doesn't get out of control
-                Loop
             Loop 'continues looping for three seconds
             FadeScreen FALSE 'Fade the screen to black
             intShields = 100 'shields are at 100%
@@ -3567,7 +3559,6 @@ End Sub
 'This routine fires a missle if the player has one in his possesion
 Sub FireMissile
     Dim intCount As Long 'standard count variable
-    Dim lngTargetTick As Integer64 'long value to hold the tick count
     Dim ExplosionRect As typeRect 'rect structure that defines the position of an enemy ship
     Dim As Long w, h
 
@@ -3578,7 +3569,6 @@ Sub FireMissile
     If Ship.NumBombs = 0 Then Exit Sub 'if there aren't any missiles, exit the sub
     Ship.NumBombs = Ship.NumBombs - 1 'otherwise, decrement the number of bombs the player has
     For intCount = 0 To 255 Step 20 'cycle through the palette
-        lngTargetTick = GetTicks 'get the current time and store it
         FrameCount = FrameCount + 1 'Keep track of the frame increment
         If FrameCount >= 20 Then 'When 20 frames elapsed
             SectionCount = SectionCount - 1 'Reduce the section the player is on
@@ -3610,12 +3600,10 @@ Sub FireMissile
 
         Line (0, 0)-(w, h), RGBA(255, 255, 255, intCount), BF 'Set the palette to our new palette entry values
 
-        If Not boolMaxFrameRate Then
-            Do Until GetTicks - lngTargetTick > 18 'Make sure the game doesn't get out of control
-            Loop 'speed-wise by looping until we reach the targeted frame rate
+        If boolMaxFrameRate Then
+            DrawString "Uncapped FPS enabled", 30, 45, White 'Let the player know there is no frame rate limitation
         Else
-            DrawString "Uncapped FPS enabled", 30, 45, White
-            'Let the player know there is no frame rate limitation
+            Limit UPDATES_PER_SECOND ' Make sure the game doesn't get out of control
         End If
 
         Display 'Flip the front buffer with the back buffer
@@ -3654,7 +3642,6 @@ Sub FireMissile
     'The rest of the sub takes the red index, and increments it back to black, while mainting normal gameplay procedures
 
     For intCount = 255 To 0 Step -5
-        lngTargetTick = GetTicks
         FrameCount = FrameCount + 1
         If FrameCount >= 20 Then
             SectionCount = SectionCount - 1
@@ -3681,12 +3668,12 @@ Sub FireMissile
 
         Line (0, 0)-(w, h), RGBA(255, 0, 0, intCount), BF
 
-        If Not boolMaxFrameRate Then
-            Do Until GetTicks - lngTargetTick > 18
-            Loop
+        If boolMaxFrameRate Then
+            DrawString "Uncapped FPS enabled", 30, 45, White 'Let the player know there is no frame rate limitation
         Else
-            DrawString "Uncapped FPS enabled", 30, 45, White
+            Limit UPDATES_PER_SECOND ' Make sure the game doesn't get out of control
         End If
+
         Display
     Next
 
@@ -3710,10 +3697,10 @@ Sub DoCredits
     FreeImage ddsEndCredits 'release our direct draw surface
 
     FadeScreen TRUE 'Fade the screen in
-    Sleep 2
+    Sleep 2 ' Wait for 2 seconds
 
     FadeScreen FALSE 'Fade the screen out
-    Sleep 1
+    Sleep 1 ' Wait for a second
 End Sub
 
 
@@ -3722,8 +3709,6 @@ End Sub
 Sub GetInput
     Dim intCount As Long 'standard count variable
     'TODO: Dim JoystickState As DIJOYSTATE                             'joystick state type
-    Dim lngTime As Integer64 'variable to hold the time
-    Dim lngTargetTime As Integer64 'holds a targeted time
     Dim TempTime As Integer64
 
     ' TODO: Game controller
@@ -3791,10 +3776,9 @@ Sub GetInput
                 'If the enter key is pressed, exit the loop
                 Delay 0.001
             Loop
-            Do Until lngTargetTime > (lngTime + 200) 'Loop for two hundred milliseconds
-                lngTargetTime = GetTicks 'get the elapsed time
-                Delay 0.001
-            Loop
+
+            Sleep 1 ' Wait for a second
+
             ' resume music
             If MIDIHandle > 0 Then SndLoop MIDIHandle
             If Ship.Invulnerable Then 'if the ship was invulnerable
@@ -3867,8 +3851,6 @@ Sub GetInput
             Else 'otherwise
                 boolMaxFrameRate = TRUE 'toggle it on
             End If
-        ElseIf KeyCode = 9 Then ' Wha....?
-            EndGame
         End If
     End If
 End Sub
