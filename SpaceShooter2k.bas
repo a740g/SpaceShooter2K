@@ -329,7 +329,7 @@ Do 'The main loop of the game.
     Cls 'fill the back buffer with black
     UpdateBackground 'Update the background bitmaps
     UpdateStars 'Update the stars
-    If boolStarted And boolGettingInput = FALSE Then 'If the game has started, and we are not getting high score input from the player
+    If boolStarted And Not boolGettingInput Then 'If the game has started, and we are not getting high score input from the player
         FrameCount = FrameCount + 1 'Keep track of the frame increment
         If FrameCount >= 20 Then 'When 20 frames elapsed
             SectionCount = SectionCount - 1 'Reduce the section the player is on
@@ -352,7 +352,7 @@ Do 'The main loop of the game.
         DrawString "Lives:" + Str$(byteLives), 175, 10, PaleGreen 'Display lives left.
         DrawString "Level:" + Str$(byteLevel), 560, 10, PaleGreen 'Display the current level
         CheckScore
-    ElseIf boolStarted = FALSE And boolGettingInput = FALSE Then 'If we haven't started, and we aren't getting high score input from the player
+    ElseIf Not boolStarted And Not boolGettingInput Then 'If we haven't started, and we aren't getting high score input from the player
         ShowTitle 'Show the title screen with high scores and directions
     ElseIf boolGettingInput Then 'If we are getting input from the player, then
         CheckHighScore 'call the high score subroutine
@@ -1100,9 +1100,9 @@ Sub FadeScreen (isIn As Byte) ' Optional FadeIn As Boolean
         PutImage (0, 0), tmp
         ' Now draw a black box over the image with changing alpha
         If isIn Then
-            Line (0, 0)-(w, h), RGBA(0, 0, 0, 255 - i), BF
+            Line (0, 0)-(w, h), RGBA32(0, 0, 0, 255 - i), BF
         Else
-            Line (0, 0)-(w, h), RGBA(0, 0, 0, i), BF
+            Line (0, 0)-(w, h), RGBA32(0, 0, 0, i), BF
         End If
 
         ' Flip the framebuffer
@@ -1239,7 +1239,7 @@ Sub CheckHighScore
     Dim intCount As Long 'another counting variable
     Dim intCount2 As Long 'a second counter variable
 
-    If boolGettingInput = FALSE Then 'if the player isn't entering a name then
+    If Not boolGettingInput Then 'if the player isn't entering a name then
         ClearInput
         boolEnterPressed = FALSE 'the enter key hasn't been pressed
         lngCount = 0 'reset the count
@@ -1258,7 +1258,7 @@ Sub CheckHighScore
         PlayMIDIFile "./dat/sfx/mus/inbtween.mid" 'play the inbetween levels & title screen midi
     End If
 
-    If boolGettingInput And boolEnterPressed = FALSE Then 'as long as we are getting input, and the player hasn't pressed enter
+    If boolGettingInput And Not boolEnterPressed Then 'as long as we are getting input, and the player hasn't pressed enter
         If Len(strName) < HIGH_SCORE_TEXT_LEN And strBuffer <> NULLSTRING Then 'if we haven't reached the limit of characters for the name, and the buffer isn't empty then
             If Asc(strBuffer) > 65 Or strBuffer = Chr$(32) Then strName = strName + strBuffer 'if the buffer contains a letter or a space, add it to the buffer
         End If
@@ -1302,7 +1302,7 @@ Sub UpdatePowerUps (CreatePowerup As Byte) ' Optional CreatePowerup As Boolean
 
     If CreatePowerup Then 'If there it is time to create a power-up
         intCount = 0 'reset the count variable
-        Do Until PowerUp(intCount).Exists = FALSE 'find an empty power up index
+        Do While PowerUp(intCount).Exists 'find an empty power up index
             intCount = intCount + 1 'increment the count
         Loop
         If intCount < UBound(PowerUp) Then 'if there was an empty spot found
@@ -1340,7 +1340,7 @@ Sub UpdatePowerUps (CreatePowerup As Byte) ' Optional CreatePowerup As Boolean
             If PowerUp(intCount).Y + POWERUPHEIGHT > SCREEN_HEIGHT Then 'If the power-up goes off screen,
                 PowerUp(intCount).Exists = FALSE 'destroy it
             Else
-                PutImage (PowerUp(intCount).X, PowerUp(intCount).Y), ddsPowerUp, , (byteFrameOffset, 0)-(byteFrameOffset + POWERUPWIDTH, POWERUPHEIGHT) 'otherwise, blit it to the back buffer,
+                PutImage (PowerUp(intCount).X, PowerUp(intCount).Y), ddsPowerUp, , (byteFrameOffset, 0)-(byteFrameOffset + POWERUPWIDTH - 1, POWERUPHEIGHT - 1) 'otherwise, blit it to the back buffer,
             End If
 
             PowerUp(intCount).Y = PowerUp(intCount).Y + 1.25 'and increment its' Y position
@@ -1355,7 +1355,7 @@ End Sub
 Sub CreateExplosion (Coordinates As typeRect, ExplosionIndex As Unsigned Byte, NoCredit As Byte) ' Optional NoCredit As Boolean = False
     Dim lngCount As Long 'Standard count variable
 
-    If NoCredit = FALSE Then 'If the NoCredit flag is not set
+    If Not NoCredit Then 'If the NoCredit flag is not set
         intEnemiesKilled = intEnemiesKilled + 1 'The number of enemies the player has killed that count toward a powerup being triggered is incremented
         lngNumEnemiesKilled = lngNumEnemiesKilled + 1 'The total number of enemies the player has killed is incremented
         If intEnemiesKilled = 25 Then 'If the number of enemies the player has killed exceeds 25, then
@@ -1365,7 +1365,7 @@ Sub CreateExplosion (Coordinates As typeRect, ExplosionIndex As Unsigned Byte, N
     End If
 
     For lngCount = 0 To UBound(ExplosionDesc) 'loop through the whole explosion array
-        If ExplosionDesc(lngCount).Exists = FALSE Then 'if we find an empty array element
+        If Not ExplosionDesc(lngCount).Exists Then 'if we find an empty array element
             ExplosionDesc(lngCount).ExplosionIndex = ExplosionIndex 'Set the explosion type to the enemys'
             ExplosionDesc(lngCount).Exists = TRUE 'this array element now exists
             ExplosionDesc(lngCount).Frame = 0 'set its' frame to the first one
@@ -1405,7 +1405,7 @@ Sub UpdateExplosions
         SrcRect.top = 0
         SrcRect.left = 0
         SrcRect.right = 0
-        If ExplosionDesc(lngCount).Exists = TRUE Then 'If this explosion exists then
+        If ExplosionDesc(lngCount).Exists Then 'If this explosion exists then
             FinalX = ExplosionDesc(lngCount).X 'Start by getting the X coorindate of the explosion
             FinalY = ExplosionDesc(lngCount).Y 'Get the Y coordinate of the explosion
             If ExplosionDesc(lngCount).X + ExplosionDesc(lngCount).W > SCREEN_WIDTH Then
@@ -1439,8 +1439,7 @@ Sub UpdateExplosions
                 FinalY = 0 'The Y coordinate is set to 0
             End If
 
-            If ExplosionDesc(lngCount).Frame > ExplosionDesc(lngCount).NumFrames Then
-                'If the animation frame goes beyond the number of frames the that the explosion has
+            If ExplosionDesc(lngCount).Frame > ExplosionDesc(lngCount).NumFrames Then 'If the animation frame goes beyond the number of frames the that the explosion has
                 ExplosionDesc(lngCount).Frame = 0 'Reset the frame to the first one
                 ExplosionDesc(lngCount).Exists = FALSE 'The explosion no longer exists
                 Exit Sub
@@ -1457,6 +1456,7 @@ Sub UpdateExplosions
             SrcRect.bottom = SrcRect.top + lngBottomOffset
             SrcRect.left = 0 + XOffset + lngLeftOffset
             SrcRect.right = SrcRect.left + lngRightOffset
+
             If SrcRect.top >= SrcRect.bottom Then Exit Sub
             If SrcRect.left >= SrcRect.right Then Exit Sub
 
@@ -1901,7 +1901,7 @@ Sub UpdateLevels
         If SectionInfo(SectionCount, intCount) < 255 Then
             'If there is something in the this slot
             Do Until intCount2 > UBound(EnemyDesc) 'Loop through all the enemies
-                If EnemyDesc(intCount2).Exists = FALSE Then 'If this index is open
+                If Not EnemyDesc(intCount2).Exists Then 'If this index is open
                     If EnemyDesc(intCount2).HasFired Then 'If the old enemy has a weapon that had fired still on the screen
                         blnTempInfo = TRUE 'flag that we need to pass some information to the new enemy
                         TempInfo = EnemyDesc(intCount2) 'store the information on this enemy temporarily
@@ -1938,7 +1938,7 @@ Sub UpdateLevels
         If ObstacleInfo(SectionCount, intCount) < 255 Then
             'if the obstacle section has something in it
             Do Until intCount2 > UBound(ObstacleDesc) 'loop through all obsctacles
-                If ObstacleDesc(intCount2).Exists = FALSE Then
+                If Not ObstacleDesc(intCount2).Exists Then
                     'if there is an open slot begin filling in the info for this obstacle
                     If ObstacleDesc(intCount2).HasFired Then
                         'if the obstacle has fired
@@ -1973,7 +1973,7 @@ Sub UpdateLevels
         End If
     Next
 
-    If ObstacleSectionNotEmpty = FALSE And EnemySectionNotEmpty = FALSE Then
+    If Not ObstacleSectionNotEmpty And Not EnemySectionNotEmpty Then
         'if the both sections are empty then
         NumberEmptySections = NumberEmptySections + 1 'increment the number of empty sections
         If NumberEmptySections = 40 Then 'if 40 empty sections are reached
@@ -1999,7 +1999,7 @@ Sub FireWeapon
     byteLaserCounter = byteLaserCounter + 1 'increment the number of lasers by 1
     If byteLaserCounter = 5 Then 'if we have looped through the sub 5 times
         Do Until intCount > UBound(LaserDesc) ' TODO: Why was this 7? - loop through all the lasers
-            If LaserDesc(intCount).Exists = FALSE Then 'and see if there is an empty slot, and if there is
+            If Not LaserDesc(intCount).Exists Then 'and see if there is an empty slot, and if there is
                 'create a new laser description
                 LaserDesc(intCount).Exists = TRUE 'the laser exists
                 LaserDesc(intCount).X = Ship.X + ((SHIPWIDTH \ 2) - (LASER1WIDTH \ 2))
@@ -2023,7 +2023,7 @@ Sub FireWeapon
         byteGuidedMissileCounter = byteGuidedMissileCounter + 1 'increment the counter
         If byteGuidedMissileCounter = 20 Then 'if we called the sub 20 times, then
             Do Until intCount > UBound(GuidedMissile) 'loop through all the guided missile types
-                If GuidedMissile(intCount).Exists = FALSE Then 'if we find an empty slot
+                If Not GuidedMissile(intCount).Exists Then 'if we find an empty slot
                     'create a new guided missile
                     GuidedMissile(intCount).Exists = TRUE 'the guided missile exists
                     GuidedMissile(intCount).X = Ship.X + (SHIPWIDTH / 2) 'center the x coordinate
@@ -2048,7 +2048,7 @@ Sub FireWeapon
         If byteLaser2Counter > 15 Then
             byteLaser2Counter = 0
             Do Until intCount > UBound(Laser2RDesc)
-                If Laser2RDesc(intCount).Exists = FALSE Then
+                If Not Laser2RDesc(intCount).Exists Then
                     Laser2RDesc(intCount).Exists = TRUE
                     Laser2RDesc(intCount).X = (Ship.X + SHIPWIDTH) - 15
                     Laser2RDesc(intCount).Y = Ship.Y + 14
@@ -2064,7 +2064,7 @@ Sub FireWeapon
             Loop
 
             Do Until intCount > UBound(Laser2LDesc)
-                If Laser2LDesc(intCount).Exists = FALSE Then
+                If Not Laser2LDesc(intCount).Exists Then
                     Laser2LDesc(intCount).Exists = TRUE
                     Laser2LDesc(intCount).X = Ship.X + 5
                     Laser2LDesc(intCount).Y = Ship.Y + 14
@@ -2086,7 +2086,7 @@ Sub FireWeapon
         byteLaser3Counter = byteLaser3Counter + 1
         If byteLaser3Counter = 35 Then
             Do Until intCount > UBound(Laser3Desc)
-                If Laser3Desc(intCount).Exists = FALSE Then
+                If Not Laser3Desc(intCount).Exists Then
                     Laser3Desc(intCount).Exists = TRUE
                     Laser3Desc(intCount).X = Ship.X + ((SHIPWIDTH \ 2) - (Laser3Desc(intCount).W \ 2))
                     Laser3Desc(intCount).Y = Ship.Y
@@ -2120,7 +2120,7 @@ Sub UpdateHits (NewHit As Byte, x As Long, y As Long) ' Optional NewHit As Boole
 
     If NewHit Then 'If this is a new hit
         For intCount = 0 To UBound(HitDesc) 'Loop through the hit array
-            If HitDesc(intCount).Exists = FALSE Then 'If we find a spot that is free
+            If Not HitDesc(intCount).Exists Then 'If we find a spot that is free
                 'Add in the coordinates of the new hit
                 HitDesc(intCount).Exists = TRUE 'This hit now exists
                 HitDesc(intCount).X = x - 2 'Center the x if the hit
@@ -2261,7 +2261,7 @@ Sub CheckForCollisions
                 End If
                 UpdateHits TRUE, EnemyDesc(intCount).XFire, EnemyDesc(intCount).YFire
                 'Call the sub that displays a small explosion bitmap where the player was hit
-                'TODO: If IsFF = True Then ef(1).start 1, 0                                'If force feeback is enabled, start the effect
+                'TODO: If IsFF Then ef(1).start 1, 0                                'If force feeback is enabled, start the effect
                 Exit Sub
             End If
         End If
@@ -2575,7 +2575,7 @@ Sub CheckForCollisions
                     SrcRect.left = EnemyDesc(intCount).X
                     SrcRect.right = SrcRect.left + EnemyDesc(intCount).W
 
-                    If DetectCollision(SrcRect, SrcRect2) And Laser3Desc(intCount2).StillColliding = FALSE Then
+                    If DetectCollision(SrcRect, SrcRect2) And Not Laser3Desc(intCount2).StillColliding Then
                         Laser3Desc(intCount2).StillColliding = TRUE
                         EnemyDesc(intCount).TimesHit = EnemyDesc(intCount).TimesHit + Laser3Desc(intCount2).Damage
                         If EnemyDesc(intCount).TimesHit > EnemyDesc(intCount).TimesDies And Not EnemyDesc(intCount).Invulnerable Then
@@ -2590,7 +2590,7 @@ Sub CheckForCollisions
                             UpdateHits TRUE, SrcRect2.left, SrcRect2.top
                             Exit Sub
                         End If
-                    ElseIf DetectCollision(SrcRect, SrcRect2) = FALSE And Laser3Desc(intCount2).StillColliding = TRUE Then
+                    ElseIf Not DetectCollision(SrcRect, SrcRect2) And Laser3Desc(intCount2).StillColliding Then
                         Laser3Desc(intCount2).StillColliding = FALSE
                     End If
                 End If
@@ -2604,7 +2604,7 @@ Sub CheckForCollisions
                     SrcRect.left = ObstacleDesc(intCount).X
                     SrcRect.right = SrcRect.left + ObstacleDesc(intCount).W
 
-                    If DetectCollision(SrcRect, SrcRect2) And Laser3Desc(intCount2).StillColliding = FALSE Then
+                    If DetectCollision(SrcRect, SrcRect2) And Not Laser3Desc(intCount2).StillColliding Then
                         Laser3Desc(intCount2).StillColliding = TRUE
                         ObstacleDesc(intCount).TimesHit = ObstacleDesc(intCount).TimesHit + Laser3Desc(intCount2).Damage
                         If ObstacleDesc(intCount).TimesHit > ObstacleDesc(intCount).TimesDies Then
@@ -2640,7 +2640,7 @@ Sub CheckForCollisions
                             UpdateHits TRUE, SrcRect2.left, SrcRect2.top
                             Exit Sub
                         End If
-                    ElseIf DetectCollision(SrcRect, SrcRect2) = FALSE And Laser3Desc(intCount2).StillColliding = TRUE Then
+                    ElseIf Not DetectCollision(SrcRect, SrcRect2) And Laser3Desc(intCount2).StillColliding Then
                         Laser3Desc(intCount2).StillColliding = FALSE
                     End If
                 End If
@@ -2649,7 +2649,7 @@ Sub CheckForCollisions
     Next
 
     For intCount2 = 0 To UBound(GuidedMissile)
-        If GuidedMissile(intCount2).Exists = TRUE Then
+        If GuidedMissile(intCount2).Exists Then
 
             SrcRect2.top = GuidedMissile(intCount2).Y
             SrcRect2.bottom = SrcRect2.top + MISSILEDIMENSIONS
@@ -2741,7 +2741,7 @@ Sub UpdateBackground
     Dim OffsetBottom As Long 'The offset of the bottom of the bitmap
     Dim SrcRect As typeRect 'Source rectangle of the bitmap
 
-    If boolBackgroundExists = FALSE Then 'If there is no background bitmap,
+    If Not boolBackgroundExists Then 'If there is no background bitmap,
         Exit Sub 'exit the sub
     Else 'otherwise
         sngBackgroundY = sngBackgroundY + 0.1 'increment the Y position of the bitmap
@@ -2784,7 +2784,7 @@ Sub UpdateStars
     Dim SrcRect As typeRect 'source rectangle
 
     For intCount = 0 To UBound(StarDesc) 'loop through all the stars
-        If StarDesc(intCount).Exists = FALSE Then 'if this star doesn't exist then
+        If Not StarDesc(intCount).Exists Then 'if this star doesn't exist then
             If (Int((3500 - 1) * Rnd) + 1) <= 25 Then 'if a number between 3500 and 1 is less than 25 then
                 'begin creating a new star
                 StarDesc(intCount).Exists = TRUE 'the star exists
@@ -3000,7 +3000,7 @@ Sub UpdateEnemys
             End If
         End If
 
-        If EnemyDesc(intCount).HasFired = FALSE And EnemyDesc(intCount).Exists = TRUE And EnemyDesc(intCount).DoesFire And EnemyDesc(intCount).Y > 0 And (EnemyDesc(intCount).Y + EnemyDesc(intCount).H) < SCREEN_HEIGHT And EnemyDesc(intCount).X > 0 And (EnemyDesc(intCount).X + EnemyDesc(intCount).W) < SCREEN_WIDTH Then
+        If Not EnemyDesc(intCount).HasFired And EnemyDesc(intCount).Exists And EnemyDesc(intCount).DoesFire And EnemyDesc(intCount).Y > 0 And (EnemyDesc(intCount).Y + EnemyDesc(intCount).H) < SCREEN_HEIGHT And EnemyDesc(intCount).X > 0 And (EnemyDesc(intCount).X + EnemyDesc(intCount).W) < SCREEN_WIDTH Then
             'This incredibly long line has a very important job. It makes sure that the enemy hasn't fired, that it exists, and that it is visible on the screen
             intReturnResult = Int((1500 - 1) * Rnd + 1) 'make a random number to to determine whether the enemy will fire
             If intReturnResult < 20 Then 'if the random number is less than 20, make the enemy fire
@@ -3025,7 +3025,7 @@ Sub UpdateEnemys
                 EnemyDesc(intCount).HasFired = TRUE 'the enemy has fired
             End If
 
-        ElseIf EnemyDesc(intCount).HasFired = TRUE Then 'otherwise, if the enemy has fired
+        ElseIf EnemyDesc(intCount).HasFired Then 'otherwise, if the enemy has fired
             If EnemyDesc(intCount).FireType = TARGETEDFIRE Then
                 'if the type of fire that the enemy uses aims in the general direction of the player then
                 EnemyDesc(intCount).XFire = EnemyDesc(intCount).XFire + EnemyDesc(intCount).TargetX
@@ -3068,7 +3068,7 @@ Sub UpdateEnemys
     'except it does it for any of the obstacles that have the ability to fire
 
     For intCount = 0 To UBound(ObstacleDesc)
-        If ObstacleDesc(intCount).HasFired = FALSE And ObstacleDesc(intCount).Exists = TRUE And ObstacleDesc(intCount).DoesFire Then
+        If Not ObstacleDesc(intCount).HasFired And ObstacleDesc(intCount).Exists And ObstacleDesc(intCount).DoesFire Then
             intReturnResult = Int((3000 - 1) * Rnd + 1)
             If intReturnResult < 20 Then
 
@@ -3088,7 +3088,7 @@ Sub UpdateEnemys
                 ObstacleDesc(intCount).YFire = (ObstacleDesc(intCount).H / 2) + ObstacleDesc(intCount).Y
                 ObstacleDesc(intCount).HasFired = TRUE
             End If
-        ElseIf ObstacleDesc(intCount).HasFired = TRUE Then
+        ElseIf ObstacleDesc(intCount).HasFired Then
             ObstacleDesc(intCount).XFire = ObstacleDesc(intCount).XFire + ObstacleDesc(intCount).TargetX
             ObstacleDesc(intCount).YFire = ObstacleDesc(intCount).YFire + ObstacleDesc(intCount).TargetY
             If ObstacleDesc(intCount).FireFrameCount > 3 Then
@@ -3207,7 +3207,7 @@ Sub UpdateWeapons
     intCount = 0 'reset the count variable
     Do Until intCount > UBound(GuidedMissile) 'loop through all the guided missle indexes
         If GuidedMissile(intCount).Exists Then 'if the missil exists
-            If GuidedMissile(intCount).TargetSet = FALSE Then
+            If Not GuidedMissile(intCount).TargetSet Then
                 'and the target for it has not been set
                 For intCounter = 0 To UBound(EnemyDesc) 'loop through all the enemies
                     If EnemyDesc(intCounter).Exists Then 'if the first enemy encountered exists
@@ -3441,8 +3441,8 @@ Sub UpdateShields
     Else 'The player has died
         SndSetPos dsPlayerDies, 0 'set the dies wave to the beginning
         SndPlay dsPlayerDies 'play the explosion sound
-        'TODO: If IsFF = True Then ef(3).start 1, 0                'if force feedback is enabled then start the death effect
-        'TODO: If IsFF = True Then ef(2).Unload                    'disable the trigger force feedback effect
+        'TODO: If IsFF Then ef(3).start 1, 0                'if force feedback is enabled then start the death effect
+        'TODO: If IsFF Then ef(2).Unload                    'disable the trigger force feedback effect
         SndStop dsAlarm 'stop playing the alarm sound effect
         'setup a rectangle structure for the explosion
         SrcRect.top = Ship.Y
@@ -3493,7 +3493,7 @@ Sub UpdateShields
             Loop 'keep looping until two seconds pass
             SndSetPos dsEnergize, 0 'set the energize sound effect to the beginning
             SndPlay dsEnergize 'play the energize sound effect
-            'TODO: If IsFF = True Then ef(2).Download              'start the trigger force feedback again
+            'TODO: If IsFF Then ef(2).Download              'start the trigger force feedback again
         Else 'If the player has no lives left
             Do Until GetTicks > lngTime + 3000 'Loop for three seconds
                 lngTargetTick = GetTicks 'get the current time
@@ -3623,7 +3623,7 @@ Sub FireMissile
 
     SndSetPos dsMissile, 0 'set the missile wav buffer position to 0
     SndPlay dsMissile 'play the missile wav
-    'TODO: If IsFF = True Then ef(0).start 1, 0                        'if force feedback exists, start the missile effect
+    'TODO: If IsFF Then ef(0).start 1, 0                        'if force feedback exists, start the missile effect
     For intCount = 0 To UBound(EnemyDesc) 'loop through all the enemies
         If EnemyDesc(intCount).Exists And Not EnemyDesc(intCount).Invulnerable Then
             'if the enemy exists on screen, and is not invulnerable
@@ -3751,11 +3751,11 @@ Sub GetInput
         If KeyDown(DIK_SPACE) Then 'if the space bar is down
             FireWeapon 'call the sub to fire the weapon
         End If
-        If KeyDown(DIK_RCONTROL) And Ship.FiringMissile = FALSE And Ship.NumBombs > 0 Then
+        If KeyDown(DIK_RCONTROL) And Not Ship.FiringMissile And Ship.NumBombs > 0 Then
             Ship.FiringMissile = TRUE 'if the control key is pressed
             FireMissile 'fire the missile
         End If
-        If KeyDown(DIK_LCONTROL) And Ship.FiringMissile = FALSE And Ship.NumBombs > 0 Then
+        If KeyDown(DIK_LCONTROL) And Not Ship.FiringMissile And Ship.NumBombs > 0 Then
             Ship.FiringMissile = TRUE 'if the control key is pressed
             FireMissile 'fire the missile
         End If
@@ -3768,7 +3768,7 @@ Sub GetInput
         '    If JoystickState.buttons(0) And &H80 Then           'if button 0 is pressed
         '         FireWeapon                                 'fire the weapon
         '    End If
-        '    If JoystickState.buttons(1) And &H80 And Ship.FiringMissile = False And Ship.NumBombs > 0 Then 'if button 1 is pressed, and the ship isn't firing a missile and the player has missile to fire then
+        '    If JoystickState.buttons(1) And &H80 And Not Ship.FiringMissile And Ship.NumBombs > 0 Then 'if button 1 is pressed, and the ship isn't firing a missile and the player has missile to fire then
         '        Ship.FiringMissile = True                       'the ship is now firing a missile
         '         FireMissile                                'fire the missile
         '    End If
@@ -3823,7 +3823,7 @@ Sub GetInput
         ElseIf KeyCode = DIK_RETURN Then
             'if the enter key is pressed then
             boolStarted = TRUE 'the game has started
-            'TODO: If Not ef(2) Is Nothing And IsFF = True Then ef(2).Download
+            'TODO: If Not ef(2) Is Nothing And IsFF Then ef(2).Download
             'download the force feedback effect for firing lasers
             FadeScreen FALSE 'fade the current screen
             StartIntro 'show the intro text
