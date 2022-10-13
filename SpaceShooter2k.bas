@@ -10,6 +10,7 @@
 '   BUG: Random white lines on bottom and right when rendering spritesheet - probably copying extra pixels from right and bottom
 '   BUG: Picking up invulnerability while one is active does not increase InvulnerableTime
 '   BUG: High score name entry does not allow upper case A
+'   BUG: Missiles do not originate centered from the player ship
 '   IMPROVEMENT: The game tries to clip sprites when it is [partially] off-screen. These checks are not required with QB64-PE and can be removed
 '   IMPROVEMENT: Replace usage of GetTicks with Limit, Delay & Sleep wherever appropriate
 '   IMPROVEMENT: Remove usage of typeRect types wherever not really required
@@ -92,6 +93,9 @@ Const LASER2WIDTH = 8 'Width of the stage 2 laser fire
 Const LASER2HEIGHT = 8 'Height of the stage 2 laser fire
 Const LASER3HEIGHT = 5 'Height of the stage 3 laser fire
 Const LASER3WIDTH = 17 'Width of the stage 3 laser fire
+Const BOMB_WIDTH = 20 ' Width of each bomb frame
+Const BOMB_HEIGHT = 20 ' Height of each bomb frame
+Const BOMB_FRAMES = 10 ' Total frames in the bomb spritesheet
 Const NUMOBSTACLES = 150 'The maximum number of second-layer objects that can appear
 Const POWERUPHEIGHT = 17 'Height of the powerups
 Const POWERUPWIDTH = 16 'Width of the powerups
@@ -3337,7 +3341,7 @@ Sub UpdateShields
                 UpdateBackground
                 UpdateExplosions
                 UpdateWeapons
-                DrawString "G A M E    O V E R", 275, 200, White 'display that the game is now over
+                DrawStringCenter "G A M E    O V E R", 200, White 'display that the game is now over
 
                 Limit UPDATES_PER_SECOND ' Make sure the game doesn't get out of control
 
@@ -3362,37 +3366,26 @@ End Sub
 
 'This sub updates the animated bombs that appear at the top of the screen when the player gets one
 Sub UpdateBombs
-    Dim TempY As Long 'Temporary Y coordinate
-    Dim TempX As Long 'Temporary X coordinate
-    Dim SrcRect As typeRect 'Source rectangle structure
+    Static BombFrame As Long 'Keeps track of which animation frame the bombs are one
+    Static BombFrameCount As Long 'The number of game frames that elapse before advancing the animation frame
     Dim XOffset As Long 'Offset for the X coordinate
     Dim YOffset As Long 'Offset for the Y coordinate
     Dim intCount As Long 'Count variable
-    Static BombFrame As Long 'Keeps track of which animation frame the bombs are one
-    Static BombCount As Long 'The number of game frames that elapse before advancing the animation frame
 
     If Ship.NumBombs > 0 Then 'if the player does have a bomb
-        BombCount = BombCount + 1 'increment the bomb frame count
-        If BombCount = 2 Then 'if we go through 2 game frames
-            BombCount = 0 'reset the bomb frame count
+        BombFrameCount = BombFrameCount + 1 'increment the bomb frame count
+
+        If BombFrameCount = 2 Then 'if we go through 2 game frames
+            BombFrameCount = 0 'reset the bomb frame count
             BombFrame = BombFrame + 1 'increment the bomb frame
-            If BombFrame > 9 Then BombFrame = 0 'there are 10 frames of animation for the bomb, if the count reaches
-            'the end of the number of frames, reset it to the first frame
+            If BombFrame >= BOMB_FRAMES Then BombFrame = 0 'there are 10 frames of animation for the bomb, if the count reaches the end of the number of frames, reset it to the first frame
         End If
-        TempY = BombFrame \ 4 'get the temporary Y coordinate of the frame
-        TempX = BombFrame - (TempY * 4) 'get the temporary X coordinate of the frame
-        XOffset = TempX * 20 'offset the rectangle by the X coordinate * the width of the frame
-        YOffset = TempY * 20 'offset the rectangle by the Y coordinate * the height of the frame
-        'define the source rectangle of the bomb
-        SrcRect.top = YOffset 'define the top coordinate of the rectangle
-        SrcRect.bottom = SrcRect.top + 20 'the bottom is the top + the height of the bomb
-        SrcRect.left = XOffset 'define the left coordinate of the bomb
-        SrcRect.right = SrcRect.left + 20 'the right is the left + the width of the bomb
+
+        XOffset = (BombFrame Mod 4) * BOMB_WIDTH 'Calculate the left of the rectangle
+        YOffset = (BombFrame \ 4) * BOMB_HEIGHT 'Calculate the top of the rectangle
 
         For intCount = 1 To Ship.NumBombs 'loop through the number of bombs the player has
-            PutImage (250 + (intCount * 22), 5), ddsDisplayBomb, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom)
-            'draw as many bombs as the player has, adding a two pixel space
-            'between them
+            PutImage (250 + (intCount * BOMB_WIDTH), 5), ddsDisplayBomb, , (XOffset, YOffset)-(XOffset + BOMB_WIDTH - 1, YOffset + BOMB_HEIGHT - 1) 'draw as many bombs as the player has
         Next
     End If
 End Sub
