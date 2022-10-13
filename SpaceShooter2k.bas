@@ -9,7 +9,8 @@
 '---------------------------------------------------------------------------------------------------------
 '   BUG: Random white lines on bottom and right when rendering spritesheet - probably copying extra pixels from right and bottom
 '   BUG: Picking up invulnerability while one is active does not increase InvulnerableTime
-'   IMPROVEMENT: The game tries to clip sprites when it is partially off-screen. These checks are not required with QB64-PE and can be removed
+'   BUG: High score name entry does not allow upper case A
+'   IMPROVEMENT: The game tries to clip sprites when it is [partially] off-screen. These checks are not required with QB64-PE and can be removed
 '   IMPROVEMENT: Replace usage of GetTicks with Limit, Delay & Sleep wherever appropriate
 '   IMPROVEMENT: Remove usage of typeRect types wherever not really required
 '   IMPROVEMENT: The main loop is duplicated in multiple places like FireMissile. This is not a good design and should to be refactored
@@ -1332,9 +1333,9 @@ Sub UpdatePowerUps (CreatePowerup As Byte) ' Optional CreatePowerup As Boolean
 
             byteFrameOffset = (POWERUPWIDTH * byteFrameCount) + PowerUp(intCount).Index 'determine the offset for the surfces rectangle
 
-            If PowerUp(intCount).Y + POWERUPHEIGHT > SCREEN_HEIGHT Then 'If the power-up goes off screen,
+            If PowerUp(intCount).Y >= SCREEN_HEIGHT Then 'If the power-up goes off screen,
                 PowerUp(intCount).Exists = FALSE 'destroy it
-            Else
+            ElseIf PowerUp(intCount).Y + POWERUPHEIGHT > 0 Then ' Only render if onscreen
                 PutImage (PowerUp(intCount).X, PowerUp(intCount).Y), ddsPowerUp, , (byteFrameOffset, 0)-(byteFrameOffset + POWERUPWIDTH - 1, POWERUPHEIGHT - 1) 'otherwise, blit it to the back buffer,
             End If
 
@@ -2642,9 +2643,9 @@ Sub UpdateBackground
     If boolBackgroundExists Then 'If there is a background bitmap
         sngBackgroundY = sngBackgroundY + 0.1 'increment the Y position of the bitmap
 
-        If sngBackgroundY >= SCREEN_HEIGHT - 1 Then 'if the bitmap has moved below the screen
+        If sngBackgroundY >= SCREEN_HEIGHT Then 'if the bitmap has moved below the screen
             boolBackgroundExists = FALSE 'the bitmap no longer exists, since it has left the screen
-        Else 'otherwise
+        ElseIf sngBackgroundY + BackgroundObject(intObjectIndex).H > 0 Then ' Only render if onscreen
             PutImage (sngBackgroundX, sngBackgroundY), ddsBackgroundObject(intObjectIndex) 'blit the background object to the backbuffer, using a source color key
         End If
     End If
@@ -2669,11 +2670,11 @@ Sub UpdateStars
         Else
             StarDesc(intCount).Y = StarDesc(intCount).Y + StarDesc(intCount).Speed
             'increment the stars position by its' speed
-            If StarDesc(intCount).Y >= SCREEN_HEIGHT - 1 Then
+            If StarDesc(intCount).Y >= SCREEN_HEIGHT Then
                 'if the star goes off the screen
                 StarDesc(intCount).Y = 0 'set the stars Y position to 0
                 StarDesc(intCount).Exists = FALSE 'the star no longer exists
-            Else 'otherwise
+            ElseIf StarDesc(intCount).Y >= 0 Then ' Only render if it is oncreen
                 PSet (StarDesc(intCount).X, StarDesc(intCount).Y), StarDesc(intCount).Index 'blit the star to the screen
             End If
         End If
@@ -2693,7 +2694,7 @@ Sub UpdateObstacles
 
             If ObstacleDesc(intCount).Y >= SCREEN_HEIGHT Then 'if the obstacle goes completely off the screen
                 ObstacleDesc(intCount).Exists = FALSE 'the obstacle no longer exists
-            Else 'otherwise
+            ElseIf ObstacleDesc(intCount).Y + ObstacleDesc(intCount).H > 0 Then ' Only render if onscreen
                 If ObstacleDesc(intCount).NumFrames > 0 Then 'if this obstacle has an animation
                     ObstacleDesc(intCount).Frame = ObstacleDesc(intCount).Frame + 1 'increment the frame the animation is on
                     If ObstacleDesc(intCount).Frame > ObstacleDesc(intCount).NumFrames Then ObstacleDesc(intCount).Frame = 0 'if the animation goes beyond the number of frames it has, reset it to the start
@@ -2738,19 +2739,23 @@ Sub UpdateEnemys
         YOffset = 0
         If EnemyDesc(intCount).Exists Then 'if the enemy exists
             EnemyDesc(intCount).Y = EnemyDesc(intCount).Y + EnemyDesc(intCount).Speed
+
             'increment the enemies Y position by its' speed
             FinalY = EnemyDesc(intCount).Y 'start off with the final Y the same as the enemies Y
+
             If EnemyDesc(intCount).Y + EnemyDesc(intCount).H > SCREEN_HEIGHT Then 'if the enemy is partially off the bottom of the screen
                 lngBottomOffset = (SCREEN_HEIGHT - (EnemyDesc(intCount).Y + EnemyDesc(intCount).H)) + EnemyDesc(intCount).H 'adjust the offset of the rectangle to compensate
             Else 'otherwise
                 lngBottomOffset = EnemyDesc(intCount).H 'blit the whole enemy
             End If
+
             If EnemyDesc(intCount).Y < 0 Then 'if the enemy is partially off the top of the screen
                 lngTopOffset = Abs(EnemyDesc(intCount).Y)
                 'adjust the top offset of the rectangle to compensate
                 lngBottomOffset = EnemyDesc(intCount).H + EnemyDesc(intCount).Y 'also adjust the bottom offset of the rectangle to compensate
                 FinalY = 0 'the Y position of the rectangle will be zero
             End If
+
             If EnemyDesc(intCount).Y < SCREEN_HEIGHT Then
                 'if the enemy is on the screen then
                 If Ship.Y > EnemyDesc(intCount).Y Then 'if the the enemyies Y coorindate is larger than the players ship
