@@ -9,6 +9,7 @@
 '---------------------------------------------------------------------------------------------------------
 '   BUG: Random white lines on bottom and right when rendering spritesheet - probably copying extra pixels from right and bottom
 '   BUG: Picking up invulnerability while one is active does not increase InvulnerableTime
+'   IMPROVEMENT: The game tries to clip sprites when it is partially off-screen. These checks are not required with QB64-PE and can be removed
 '   IMPROVEMENT: Replace usage of GetTicks with Limit, Delay & Sleep wherever appropriate
 '   IMPROVEMENT: Remove usage of typeRect types wherever not really required
 '   IMPROVEMENT: The main loop is duplicated in multiple places like FireMissile. This is not a good design and should to be refactored
@@ -903,7 +904,7 @@ Sub ShowTitle
 
     If colorDirection = 0 Then colorDirection = 5 ' kickstart the palette animation
 
-    PutImage (200, 42), ddsTitle 'blit the entire title screen bitmap to the backbuffer using the source color key as a mask
+    PutImage (200, 42), ddsTitle 'blit the entire title screen bitmap to the backbuffer
 
     ' See the comment on ddsTitle = LoadImage(..., 257)
     ' Again here index 8 is from trial-and-error. However, it was easy to find because those pixels are at top (beginning)
@@ -1386,91 +1387,24 @@ End Sub
 'This subroutine updates the animation for the large explosions
 Sub UpdateExplosions
     Dim lngCount As Long 'count variable
-    Dim SrcRect As typeRect 'source rectangle
-    Dim lngRightOffset As Long 'offset for the animation rectangle
-    Dim lngLeftOffset As Long 'offset for the animation rectangle
-    Dim lngTopOffset As Long 'offset for the animation rectangle
-    Dim lngBottomOffset As Long 'offset for the animation rectangle
-    Dim FinalX As Long 'Final X coordinate for the rectangle
-    Dim FinalY As Long 'FInal Y coordinate for the rectangle
-    Dim TempY As Long 'Temporary Y position
-    Dim TempX As Long 'Temporary X position
     Dim XOffset As Long 'X offset of the animation frame
     Dim YOffset As Long 'Y offset of the animation frame
 
     For lngCount = 0 To UBound(ExplosionDesc) 'Loop through all explosions
-        lngLeftOffset = 0 'Set all the variables to 0
-        lngTopOffset = 0 'Set all the variables to 0
-        lngBottomOffset = 0 'Set all the variables to 0
-        TempX = 0 'Set all the variables to 0
-        TempY = 0 'Set all the variables to 0
-        XOffset = 0 'Set all the variables to 0
-        YOffset = 0 'Set all the variables to 0
-        'Set all the variables to 0
-        SrcRect.bottom = 0
-        SrcRect.top = 0
-        SrcRect.left = 0
-        SrcRect.right = 0
         If ExplosionDesc(lngCount).Exists Then 'If this explosion exists then
-            FinalX = ExplosionDesc(lngCount).X 'Start by getting the X coorindate of the explosion
-            FinalY = ExplosionDesc(lngCount).Y 'Get the Y coordinate of the explosion
-            If ExplosionDesc(lngCount).X + ExplosionDesc(lngCount).W > SCREEN_WIDTH Then
-                'If the explosion hangs off the right edge of the screen
-                lngRightOffset = (SCREEN_WIDTH - (ExplosionDesc(lngCount).X + ExplosionDesc(lngCount).W)) + ExplosionDesc(lngCount).W
-                'Adjust the rectangle to compensate
-            Else 'Otherwise
-                lngRightOffset = ExplosionDesc(lngCount).W
-                'The rectangle width is equal to the width of a single explosion frame
-            End If
-            If ExplosionDesc(lngCount).X < 0 Then 'If the explosion is off the left hand side of the screen
-                lngLeftOffset = Abs(ExplosionDesc(lngCount).X)
-                'Adjust the rectangle to compensate
-                lngRightOffset = ExplosionDesc(lngCount).W + ExplosionDesc(lngCount).X
-                'Adjust the width of the rectangle
-                FinalX = 0 'The X coordinate is 0
-            End If
-            If ExplosionDesc(lngCount).Y + ExplosionDesc(lngCount).H > SCREEN_HEIGHT Then
-                'If the bottom of the explosion hangs off the bottom of the screen
-                lngBottomOffset = (SCREEN_HEIGHT - (ExplosionDesc(lngCount).Y + ExplosionDesc(lngCount).H)) + ExplosionDesc(lngCount).H
-                'Adjust the rectangle to compensate
-            Else 'Otherwise
-                lngBottomOffset = ExplosionDesc(lngCount).H
-                'The explosion rectangle is equal to the height of the explosion
-            End If
-            If ExplosionDesc(lngCount).Y < 0 Then 'If the explosion hangs off the top of the screen
-                lngTopOffset = Abs(ExplosionDesc(lngCount).Y)
-                'Adjust the top of the rectangle to compensate
-                lngBottomOffset = ExplosionDesc(lngCount).H + ExplosionDesc(lngCount).Y
-                'Adjust the height of the rectangle as well
-                FinalY = 0 'The Y coordinate is set to 0
-            End If
 
+            XOffset = (ExplosionDesc(lngCount).Frame Mod 4) * ExplosionDesc(lngCount).W 'Calculate the left of the rectangle
+            YOffset = (ExplosionDesc(lngCount).Frame \ 4) * ExplosionDesc(lngCount).H 'Calculate the top of the rectangle
+
+            PutImage (ExplosionDesc(lngCount).X, ExplosionDesc(lngCount).Y), ddsExplosion(ExplosionDesc(lngCount).ExplosionIndex), , (XOffset, YOffset)-(XOffset + ExplosionDesc(lngCount).W - 1, YOffset + ExplosionDesc(lngCount).H - 1) 'Blit the explosion frame to the screen
+
+            ExplosionDesc(lngCount).Frame = ExplosionDesc(lngCount).Frame + 1 'Increment the frame the explosion is on
             If ExplosionDesc(lngCount).Frame > ExplosionDesc(lngCount).NumFrames Then 'If the animation frame goes beyond the number of frames the that the explosion has
                 ExplosionDesc(lngCount).Frame = 0 'Reset the frame to the first one
                 ExplosionDesc(lngCount).Exists = FALSE 'The explosion no longer exists
-                Exit Sub
             End If
-            TempY = ExplosionDesc(lngCount).Frame \ 4 'Calculate the left of the rectangle
-            TempX = ExplosionDesc(lngCount).Frame - (TempY * 4)
-            'Calculate the top of the rectang;e
-            XOffset = TempX * ExplosionDesc(lngCount).W
-            'Calculate the right of the rectangle
-            YOffset = TempY * ExplosionDesc(lngCount).H
-            'Calculate the bottom of the rectangle
-            'Place the above calculated values in the rectangle struct
-            SrcRect.top = 0 + YOffset + lngTopOffset
-            SrcRect.bottom = SrcRect.top + lngBottomOffset
-            SrcRect.left = 0 + XOffset + lngLeftOffset
-            SrcRect.right = SrcRect.left + lngRightOffset
-
-            If SrcRect.top >= SrcRect.bottom Then Exit Sub
-            If SrcRect.left >= SrcRect.right Then Exit Sub
-
-            PutImage (FinalX, FinalY), ddsExplosion(ExplosionDesc(lngCount).ExplosionIndex), , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom) 'Blit the explosion frame to the screen
-            ExplosionDesc(lngCount).Frame = ExplosionDesc(lngCount).Frame + 1 'Increment the frame the explosion is on
         End If
     Next
-
 End Sub
 
 
