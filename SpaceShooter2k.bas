@@ -17,7 +17,6 @@
 '   IMPROVEMENT: Game controller support is missing and should be added back using AXIS, BUTTON, BUTTONCHANGE, STICK, STRIG etc.
 '   IMPROVEMENT: Add mouse support using MOUSEINPUT, MOUSEMOVEMENTX, MOUSEMOVEMENTY, MOUSEBUTTON etc.
 '   IMPROVEMENT: Alignment of the HUD items at the top of the screen is bad and should be corrected
-'   IMPROVEMENT: Implement stars and shield status bar using graphic primitives instead of sprites
 '   IMPROVEMENT: FadeScreen is not used for all screen transitions and should be checked
 '   OTHER: Check any comment labeled with 'TODO'
 '---------------------------------------------------------------------------------------------------------
@@ -108,6 +107,7 @@ Const CHASEOFF = 0 'The object doesn't follow the players' X coordinates
 Const CHASESLOW = 1 'The object does follow the players' X coordinates, but slowly
 Const CHASEFAST = 2 'The object does follow the players' X coordinates, but fast
 Const EXTRALIFETARGET = 250000 'If the player exceeds this value he gets an extra life
+Const SHIELD_MAX = 100 ' Maximum sheild value
 
 ' High score stuff
 Const HIGH_SCORE_FILENAME = "highscore.csv" ' High score file
@@ -154,7 +154,7 @@ Type typeBackGroundDesc 'UDT to define any small background objects (stars, enem
     TimesDies As Unsigned Byte 'Max number of hits when enemy dies
     CollisionDamage As Unsigned Byte 'If the player collides with this enemy, the amount of damage it does
     Score As Long 'The score added to the player when this is destroyed
-    Index As Unsigned Byte 'Index of the container for this bitmap -or- How many frames the bitmap has existed
+    Index As Unsigned Long 'Index of the container for this bitmap -or- How many frames the bitmap has existed
     Frame As Unsigned Byte 'The current frame number
     NumFrames As Unsigned Byte 'The number of frames the bitmap contains/How many frames the bitmap should exist
     FrameDelay As Unsigned Byte 'Used to delay the incrementing of frames to slow down frame animation, if needed
@@ -227,10 +227,8 @@ Dim Shared ddsLaser2R As Long 'Right diagonal laser
 Dim Shared ddsLaser2L As Long 'Left diagonal laser
 Dim Shared ddsLaser3 As Long 'Laser 3 laser surface
 Dim Shared ddsGuidedMissile As Long 'Guided Missile
-Dim Shared ddsStar As Long 'Star
 Dim Shared ddsEnemyFire As Long 'Enemy laser fire
 Dim Shared ddsPowerUp As Long 'Power Up dd surface
-Dim Shared ddsShieldIndicator As Long 'Shield indicator bitmap
 Dim Shared ddsTitle As Long 'Title Screen surface
 Dim Shared ddsHit As Long 'Direct draw surface for small explosions
 Dim Shared ddsBackgroundObject(0 To 7) As Long 'Background objects
@@ -415,10 +413,10 @@ Sub ResetGame
     For intCount = 0 To UBound(PowerUp)
         PowerUp(intCount).Exists = FALSE 'if there are any power ups currently on screen, get rid of them
     Next
-    intShields = 100 'shields are at full again
 
     FadeScreen FALSE 'Fade the screen to black
-    intShields = 100 'shields are at 100%
+
+    intShields = SHIELD_MAX 'shields are at 100%
 
     Ship.X = 300 'center the ships' X
     Ship.Y = 300 'and Y
@@ -961,9 +959,6 @@ Sub InitializeDD
     ddsShip = LoadImageTransparent("./dat/gfx/ship.gif") 'Load the ship bitmap and make it into a direct draw surface
     Assert ddsShip < -1
 
-    ddsShieldIndicator = LoadImage("./dat/gfx/shields.gif") 'Load the shield indicator bitmap and put in a direct draw surface
-    Assert ddsShieldIndicator < -1
-
     ddsPowerUp = LoadImageTransparent("./dat/gfx/powerups.gif") 'Load the shield indicator bitmap and put in a direct draw surface
     Assert ddsPowerUp < -1
 
@@ -1033,9 +1028,6 @@ Sub InitializeDD
 
     ddsEnemyFire = LoadImageTransparent("./dat/gfx/enemyfire1.gif")
     Assert ddsEnemyFire < -1
-
-    ddsStar = LoadImage("./dat/gfx/stars.gif")
-    Assert ddsStar < -1
 
     ddsGuidedMissile = LoadImageTransparent("./dat/gfx/guidedmissile.gif")
     Assert ddsGuidedMissile < -1
@@ -1192,8 +1184,6 @@ Sub EndGame
     ddsLaser2L = NULL
     If ddsLaser3 < -1 Then FreeImage ddsLaser3 'laser3 surface to nothing
     ddsLaser3 = NULL
-    If ddsStar < -1 Then FreeImage ddsStar 'set the stars surface to nothing
-    ddsStar = NULL
     If ddsEnemyFire < -1 Then FreeImage ddsEnemyFire 'enemy fire to nothing
     ddsEnemyFire = NULL
     If ddsGuidedMissile < -1 Then FreeImage ddsGuidedMissile 'guided missiles to nothing
@@ -1202,8 +1192,6 @@ Sub EndGame
     ddsTitle = NULL
     If ddsPowerUp < -1 Then FreeImage ddsPowerUp 'power up to nothing
     ddsPowerUp = NULL
-    If ddsShieldIndicator < -1 Then FreeImage ddsShieldIndicator 'shield indicator to nothing (getting tired of this yet?)
-    ddsShieldIndicator = NULL
     If ddsShip < -1 Then FreeImage ddsShip 'ship to nothing
     ddsShip = NULL
     If ddsExplosion(0) < -1 Then FreeImage ddsExplosion(0) 'explosion to nothing
@@ -1269,7 +1257,7 @@ Sub CheckHighScore
         If Len(strName) < HIGH_SCORE_TEXT_LEN And strBuffer <> NULLSTRING Then 'if we haven't reached the limit of characters for the name, and the buffer isn't empty then
             If Asc(strBuffer) > 65 Or strBuffer = Chr$(32) Then strName = strName + strBuffer 'if the buffer contains a letter or a space, add it to the buffer
         End If
-        DrawStringCenter "New high score -" + Str$(HighScore(NUM_HIGH_SCORES - 1).score), 200, White 'Display the new high score message
+        DrawStringCenter "NEW HIGH SCORE:" + Str$(HighScore(NUM_HIGH_SCORES - 1).score), 200, White 'Display the new high score message
         DrawStringCenter "Enter your name: " + strName + Chr$(179), 220, Yellow 'Give the player a cursor, and display the buffer
     ElseIf boolGettingInput And boolEnterPressed Then 'If we are getting input, and the player presses then enter key then
         HighScore(NUM_HIGH_SCORES - 1).text = strName 'assign the new high score name the string contained in the buffer
@@ -1313,7 +1301,7 @@ Sub UpdatePowerUps (CreatePowerup As Byte) ' Optional CreatePowerup As Boolean
             intCount = intCount + 1 'increment the count
         Loop
         If intCount < UBound(PowerUp) Then 'if there was an empty spot found
-            intRandomNumber = Int((900 - 1) * Rnd) + 1 'Create a random number to see which power up
+            intRandomNumber = RandomBetween(0, 899) 'Create a random number to see which power up
             If intRandomNumber <= 400 Then 'see what value the random number is
                 PowerUp(intCount).Index = SHIELD 'make it a shield powerup
             ElseIf intRandomNumber > 400 And intRandomNumber < 600 Then
@@ -1323,7 +1311,7 @@ Sub UpdatePowerUps (CreatePowerup As Byte) ' Optional CreatePowerup As Boolean
             ElseIf intRandomNumber >= 800 And intRandomNumber < 900 Then
                 PowerUp(intCount).Index = INVULNERABILITY 'Make it an invulnerability powerup
             End If
-            PowerUp(intCount).X = Int(((SCREEN_WIDTH - POWERUPWIDTH) - 1) * Rnd + 1) 'Create the power-up, and set a random X position
+            PowerUp(intCount).X = RandomBetween(0, SCREEN_WIDTH - POWERUPWIDTH - 1) 'Create the power-up, and set a random X position
             PowerUp(intCount).Y = 0 'Make the power-up start at the top of the screen
             PowerUp(intCount).Exists = TRUE 'The power up now exists
         End If
@@ -1511,9 +1499,8 @@ Sub StartIntro
     ClearInput
 
     Do
-        If KeyHit = DIK_RETURN Then Exit Do 'if the enter key is pressed, exit the loop
-        Delay 0.001 'don't hog the processor
-    Loop
+        Sleep 'don't hog the processor
+    Loop Until KeyHit = DIK_RETURN 'if the enter key is pressed, exit the loop
 
     ClearInput
 
@@ -1524,13 +1511,10 @@ End Sub
 'This sub loads a level and dynamically initializes direct draw objects needed for the level. It also
 'shows the statistics of the previous level if there are any.
 Sub LoadLevel (level As Long)
-    Dim intLowerCount As Long 'lower range count variable
-    Dim intUpperCount As Long 'upper range count variable
     Dim FileFree As Long 'holds an available file handle
     Dim intCount As Long 'standard count variable
     Dim intCount2 As Long 'another count variable
     Dim LoadingString As String * 30 'string loaded from the binary level file
-    Dim SrcRect As typeRect 'source rectangle structure
     Dim strStats As String 'string to hold statistics
     Dim strNumEnemiesKilled As String 'string to hold the number of enemies killed
     Dim strTotalNumEnemies As String 'string to hold the total number of enemies on the level
@@ -1607,16 +1591,8 @@ Sub LoadLevel (level As Long)
         Next
     Next
 
-    'set the source rectangle for the star surface
-    SrcRect.top = 0
-    SrcRect.bottom = 1
-    SrcRect.left = 4
-    SrcRect.right = 5
-
     For intCount = 1 To 500 'loop this 500 times
-        intLowerCount = Int((SCREEN_HEIGHT - 1) * Rnd) + 1 'find a random Y coordinate
-        intUpperCount = Int((SCREEN_WIDTH - 1) * Rnd) + 1 'find a random X coordinate
-        PutImage (intUpperCount, intLowerCount), ddsStar, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom) 'blit a star in to the random coordinates
+        PSet (RandomBetween(0, SCREEN_WIDTH - 1), RandomBetween(0, SCREEN_HEIGHT - 1)), RGB32(RandomBetween(192, 255), RandomBetween(192, 255), RandomBetween(192, 255))
     Next
 
     intCount = 1 'set the count variable to 1
@@ -1664,10 +1640,11 @@ Sub LoadLevel (level As Long)
         DrawStringCenter "Next level:  Level" + Str$(byteLevel), 200, LightSteelBlue 'display the next level number
         DrawStringCenter strLevelText, 220, LightSteelBlue 'display the level text
         DrawStringCenter "(Press ENTER to continue)", 450, LightSteelBlue 'display the string with this message
-        If KeyHit = DIK_RETURN Then Exit Do 'if the enter key is pressed
-        Delay 0.001 'don't hog the processor
+
         Display 'flip the direct draw front buffer to display the info
-    Loop
+
+        Limit UPDATES_PER_SECOND 'don't hog the processor
+    Loop Until KeyDown(DIK_RETURN) 'if the enter key is pressed
 
     ClearInput
 
@@ -1681,8 +1658,7 @@ Sub LoadLevel (level As Long)
         intObjectIndex = 0 'set the index to 0
     Else
         boolBackgroundExists = TRUE 'reset background
-        sngBackgroundX = (SCREEN_WIDTH \ 2) - (BackgroundObject(intObjectIndex).W \ 2)
-        'set the coorindates of the background object to be centered
+        sngBackgroundX = (SCREEN_WIDTH \ 2) - (BackgroundObject(intObjectIndex).W \ 2) 'set the coorindates of the background object to be centered
         sngBackgroundY = -100 - BackgroundObject(intObjectIndex).H
         'set the starting Y position of the object off the screen
     End If
@@ -1801,7 +1777,7 @@ Sub UpdateLevels
             FadeScreen TRUE 'fade the screen in
             Sleep 20 ' Display the winning message for 20 seconds
             FadeScreen FALSE 'fade the screen to black again
-            intShields = 100 'shields are at 100%
+            intShields = SHIELD_MAX 'shields are at 100%
             Ship.X = 300 'reset the players X
             Ship.Y = 300 'and Y coordinates
             Ship.PowerUpState = 0 'no powerups
@@ -2112,7 +2088,7 @@ Sub CheckForCollisions
             If PowerUp(intCount).Index = SHIELD Then 'if it is a shield powerup
                 intShields = intShields + 20 'increase the shields by 20
                 lngScore = lngScore + 100 'player gets a 100 points for this
-                If intShields > 100 Then intShields = 100 'if the shields are already maxed out, make sure it doesn't go beyond max
+                If intShields > SHIELD_MAX Then intShields = SHIELD_MAX 'if the shields are already maxed out, make sure it doesn't go beyond max
                 PowerUp(intCount).Exists = FALSE 'the power up no longer exists
                 SndSetPos dsPowerUp, 0 'set the playback buffer position to 0
                 SndPlay dsPowerUp 'play the wav
@@ -2187,8 +2163,7 @@ Sub CheckForCollisions
                         Ship.PowerUpState = Ship.PowerUpState - 1 'knock it down a level
                     End If
                 End If
-                UpdateHits TRUE, EnemyDesc(intCount).XFire, EnemyDesc(intCount).YFire
-                'Call the sub that displays a small explosion bitmap where the player was hit
+                UpdateHits TRUE, EnemyDesc(intCount).XFire, EnemyDesc(intCount).YFire 'Call the sub that displays a small explosion bitmap where the player was hit
                 'TODO: If IsFF Then ef(1).start 1, 0                                'If force feeback is enabled, start the effect
                 Exit Sub
             End If
@@ -2664,43 +2639,13 @@ End Sub
 
 'This sub updates the large slow scrolling bitmap in the background of the level
 Sub UpdateBackground
-    Dim sngFinalY As Single 'the final Y position of the bitmap
-    Dim OffsetTop As Long 'The offset of the top of the bitmap
-    Dim OffsetBottom As Long 'The offset of the bottom of the bitmap
-    Dim SrcRect As typeRect 'Source rectangle of the bitmap
-
-    If Not boolBackgroundExists Then 'If there is no background bitmap,
-        Exit Sub 'exit the sub
-    Else 'otherwise
+    If boolBackgroundExists Then 'If there is a background bitmap
         sngBackgroundY = sngBackgroundY + 0.1 'increment the Y position of the bitmap
-        If sngBackgroundY + BackgroundObject(intObjectIndex).H < 0 Then Exit Sub
-        'if the y position is less than 0 exit the sub
-        If sngBackgroundY >= SCREEN_HEIGHT - 1 Then 'if the bitmap is less that the height of the screen then
+
+        If sngBackgroundY >= SCREEN_HEIGHT - 1 Then 'if the bitmap has moved below the screen
             boolBackgroundExists = FALSE 'the bitmap no longer exists, since it has left the screen
         Else 'otherwise
-            If sngBackgroundY + BackgroundObject(intObjectIndex).H >= SCREEN_HEIGHT Then
-                'if bitmap is partially on the bottom of the screen
-                OffsetBottom = SCREEN_HEIGHT - (sngBackgroundY + BackgroundObject(intObjectIndex).H)
-                'set the offset amount to adjust for this
-            Else 'otherwise
-                OffsetBottom = 0 'there is no offset
-            End If
-            If sngBackgroundY <= 0 Then 'if the bitmap Y coordinate is partially off the top of the screen
-                OffsetTop = Not sngBackgroundY 'set the offset to reflect this
-                If OffsetTop < 0 Then OffsetTop = 0 'if the offset is less than 0, set the offset to 0
-                sngFinalY = 0 'the final Y coordinate is 0
-            Else 'otherwise
-                sngFinalY = sngBackgroundY 'the finaly Y coordinate is the same as the background Y coordinate
-                OffsetTop = 0 'and there is no offset
-            End If
-
-            ' Define the source rectangle for the background bitmap
-            SrcRect.top = OffsetTop 'the top is the topoffset variable
-            SrcRect.bottom = BackgroundObject(intObjectIndex).H + OffsetBottom 'for the bottom of the rect, and the height of the object plus the offset
-            SrcRect.left = 0 'left is always 0
-            SrcRect.right = SrcRect.left + BackgroundObject(intObjectIndex).W 'right is set to the width of the bitmap
-
-            PutImage (sngBackgroundX, sngFinalY), ddsBackgroundObject(intObjectIndex), , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom) 'blit the background object to the backbuffer, using a source color key
+            PutImage (sngBackgroundX, sngBackgroundY), ddsBackgroundObject(intObjectIndex) 'blit the background object to the backbuffer, using a source color key
         End If
     End If
 End Sub
@@ -2709,17 +2654,16 @@ End Sub
 'This sub creates as well as updates stars
 Sub UpdateStars
     Dim intCount As Long 'count variable
-    Dim SrcRect As typeRect 'source rectangle
 
     For intCount = 0 To UBound(StarDesc) 'loop through all the stars
         If Not StarDesc(intCount).Exists Then 'if this star doesn't exist then
             If (Int((3500 - 1) * Rnd) + 1) <= 25 Then 'if a number between 3500 and 1 is less than 25 then
                 'begin creating a new star
                 StarDesc(intCount).Exists = TRUE 'the star exists
-                StarDesc(intCount).X = Int((SCREEN_WIDTH - 1) * Rnd) + 1
+                StarDesc(intCount).X = RandomBetween(0, SCREEN_WIDTH - 1)
                 'set a random X coordinate
                 StarDesc(intCount).Y = 0 'start at the top of the screen
-                StarDesc(intCount).Index = Int((5 - 1) * Rnd) + 1 'set a random number for a color
+                StarDesc(intCount).Index = RGB32(RandomBetween(192, 255), RandomBetween(192, 255), RandomBetween(192, 255)) 'set a random number for a color
                 StarDesc(intCount).Speed = ((2 - 0.4) * Rnd) + 0.4 'set a random number for the speed of the star
             End If
         Else
@@ -2730,13 +2674,7 @@ Sub UpdateStars
                 StarDesc(intCount).Y = 0 'set the stars Y position to 0
                 StarDesc(intCount).Exists = FALSE 'the star no longer exists
             Else 'otherwise
-                'set the stars rectangle coordinates
-                SrcRect.top = 0
-                SrcRect.bottom = SrcRect.top + 1
-                SrcRect.left = StarDesc(intCount).Index
-                SrcRect.right = SrcRect.left + 1
-
-                PutImage (StarDesc(intCount).X, StarDesc(intCount).Y), ddsStar, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom) 'blit the star to the screen
+                PSet (StarDesc(intCount).X, StarDesc(intCount).Y), StarDesc(intCount).Index 'blit the star to the screen
             End If
         End If
     Next
@@ -2746,57 +2684,27 @@ End Sub
 'This sub updates all the obstacles on the screen, and animates them if there are any animations for the obstacle
 Sub UpdateObstacles
     Dim intCount As Long 'count variable
-    Dim TempX As Long 'variable for left of the rectangle
-    Dim TempY As Long 'variable for top of the rectangle
     Dim XOffset As Long 'offset for the right of the rectangle
     Dim YOffset As Long 'offset for the bottom of the rectangle
-    Dim OffsetTop As Long 'the top offset of the animation frame
-    Dim OffsetBottom As Long 'the bottom offset of the animation frame
-    Dim sngFinalY As Single 'the final Y position of the obstacle
-    Dim SrcRect As typeRect 'source rectangle
 
     For intCount = 0 To UBound(ObstacleDesc) 'loop through all obstacles
         If ObstacleDesc(intCount).Exists Then 'if this obstacle exists
-            ObstacleDesc(intCount).Y = ObstacleDesc(intCount).Y + ObstacleDesc(intCount).Speed
-            'increment the obstacle by its' speed
+            ObstacleDesc(intCount).Y = ObstacleDesc(intCount).Y + ObstacleDesc(intCount).Speed 'increment the obstacle by its' speed
+
             If ObstacleDesc(intCount).Y >= SCREEN_HEIGHT Then 'if the obstacle goes completely off the screen
                 ObstacleDesc(intCount).Exists = FALSE 'the obstacle no longer exists
             Else 'otherwise
-                XOffset = 0 'reset the X offset
-                YOffset = 0 'reset the Y offset
                 If ObstacleDesc(intCount).NumFrames > 0 Then 'if this obstacle has an animation
                     ObstacleDesc(intCount).Frame = ObstacleDesc(intCount).Frame + 1 'increment the frame the animation is on
                     If ObstacleDesc(intCount).Frame > ObstacleDesc(intCount).NumFrames Then ObstacleDesc(intCount).Frame = 0 'if the animation goes beyond the number of frames it has, reset it to the start
-                    TempY = ObstacleDesc(intCount).Frame \ 4 'calculate the left of the animation
-                    TempX = ObstacleDesc(intCount).Frame - (TempY * 4) 'calculate the top of the animation
-                    XOffset = TempX * ObstacleDesc(intCount).W 'calculate the right of the animation
-                    YOffset = TempY * ObstacleDesc(intCount).H 'calculate the bottom of the animation
+                Else
+                    ObstacleDesc(intCount).Frame = 0 ' Else we always stick to the first frame
                 End If
-                If ObstacleDesc(intCount).Y < 0 Then 'if the obstacle is partially off the top of the screen
-                    OffsetTop = (Not ObstacleDesc(intCount).Y) + 1 'adjust the rectangle
-                    sngFinalY = 0 'the Y of the obstacle is 0
-                Else 'otherwise
-                    sngFinalY = ObstacleDesc(intCount).Y 'set the y position of the obstacle
-                    OffsetTop = 0 'there is no top offset for the obstacle
-                End If
-                If ObstacleDesc(intCount).Y + ObstacleDesc(intCount).H >= SCREEN_HEIGHT Then 'if the obstacle is partially off the bottom of the screen
-                    OffsetBottom = ObstacleDesc(intCount).H + (SCREEN_HEIGHT - (ObstacleDesc(intCount).Y + ObstacleDesc(intCount).H)) 'adjust the rectangle
-                Else 'otherwise
-                    OffsetBottom = ObstacleDesc(intCount).H 'the bottom is the entire height of the obstacle
-                End If
-                'enter in the values for the rectangle
-                SrcRect.top = OffsetTop + YOffset
-                SrcRect.bottom = OffsetBottom + YOffset
-                SrcRect.left = XOffset
-                SrcRect.right = SrcRect.left + ObstacleDesc(intCount).W
 
-                If SrcRect.top < SrcRect.bottom Then 'if the rectangle is valid then
-                    'If ObstacleDesc(intCount).Solid Then 'if the obstacle is a solid obstacle
-                    'PutImage (ObstacleDesc(intCount).X, sngFinalY), ddsObstacle(ObstacleDesc(intCount).Index), , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom) 'blit the obstacle with no color key
-                    'Else
-                    PutImage (ObstacleDesc(intCount).X, sngFinalY), ddsObstacle(ObstacleDesc(intCount).Index), , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom) 'otherwise blit it with a color key
-                    'End If
-                End If
+                XOffset = (ObstacleDesc(intCount).Frame Mod 4) * ObstacleDesc(intCount).W 'Calculate the left of the rectangle
+                YOffset = (ObstacleDesc(intCount).Frame \ 4) * ObstacleDesc(intCount).H 'Calculate the top of the rectangle
+
+                PutImage (ObstacleDesc(intCount).X, ObstacleDesc(intCount).Y), ddsObstacle(ObstacleDesc(intCount).Index), , (XOffset, YOffset)-(XOffset + ObstacleDesc(intCount).W - 1, YOffset + ObstacleDesc(intCount).H - 1) 'otherwise blit it with a color key
             End If
         End If
     Next
@@ -3343,19 +3251,14 @@ End Sub
 'This sub updates the shield display and also checks whether or not there are any shields left, as well as
 'updating the players lives. If there are no lives left, it will reset the game.
 Sub UpdateShields
-    Dim SrcRect As typeRect 'The source rectangle for the shield indicator
     Dim lngTime As Integer64 'variable to store the current tick count
     Dim intCount As Long 'standard loop variable
+    Dim SrcRect As typeRect
 
     If intShields > 0 Then 'if there is more than 0% shields left
-        'define the shield indicator coordinates
-        SrcRect.top = 0
-        SrcRect.bottom = 20
-        SrcRect.left = 0
-        SrcRect.right = intShields 'intShields is the right hand side of the rectangle, which will grow smaller as the player takes more damage
+        Line (449, 6)-(551, 28), White, B 'draw a box for the shield indicator and set the border to white
+        Line (450, 7)-(450 + intShields, 27), RGB32(255 - (255 * intShields / SHIELD_MAX), 0, 255 * intShields / SHIELD_MAX), BF 'intShields is the right hand side of the rectangle, which will grow smaller as the player takes more damage
 
-        Line (449, 6)-(551, 28), White, B 'draw a box for the shield indicator and set the fore color to white
-        PutImage (450, 7), ddsShieldIndicator, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom)
         'blt the indicator rectangle to the screen
         DrawString "Shields:", 380, 10, MistyRose 'display some text
         If intShields < 25 Then 'if the shields are less than 25% then
@@ -3394,7 +3297,7 @@ Sub UpdateShields
             PowerUp(intCount).Exists = FALSE 'if there is a power up currently on screen, get rid of it
         Next
         byteLives = byteLives - 1 'the player loses a life
-        intShields = 100 'shields are at full again
+        intShields = SHIELD_MAX 'shields are at full again
 
         Ship.X = 300 'center the ships' X
         Ship.Y = 300 'and Y
@@ -3429,14 +3332,14 @@ Sub UpdateShields
                 UpdateBackground
                 UpdateExplosions
                 UpdateWeapons
-                DrawString "Game Over", 275, 200, White 'display that the game is now over
+                DrawString "G A M E    O V E R", 275, 200, White 'display that the game is now over
 
                 Limit UPDATES_PER_SECOND ' Make sure the game doesn't get out of control
 
                 Display 'flip the front and back surfaces
             Loop 'continues looping for three seconds
             FadeScreen FALSE 'Fade the screen to black
-            intShields = 100 'shields are at 100%
+            intShields = SHIELD_MAX 'shields are at 100%
             Ship.X = 300 'reset the players X
             Ship.Y = 300 'and Y coordinates
             Ship.PowerUpState = 0 'no powerups
@@ -3702,16 +3605,13 @@ Sub GetInput
             ' pause music
             If MIDIHandle > 0 Then SndPause MIDIHandle
 
-            DrawStringCenter "(Paused - Press ENTER to resume)", 200, OrangeRed
-            'display the pause text
+            DrawStringCenter "(Paused - Press ENTER to resume)", 200, OrangeRed 'display the pause text
             Display 'flip the surfaces to show the back buffer
-            'Check the keyboard for keypresses
-            Do Until KeyDown(DIK_RETURN)
-                'If the enter key is pressed, exit the loop
-                Delay 0.001
-            Loop
 
-            Sleep 1 ' Wait for a second
+            'Check the keyboard for keypresses
+            Do
+                Sleep ' don't hog the CPU
+            Loop Until KeyDown(DIK_RETURN)
 
             ' resume music
             If MIDIHandle > 0 Then SndLoop MIDIHandle
@@ -3746,7 +3646,7 @@ Sub GetInput
             FadeScreen FALSE 'fade the current screen
             StartIntro 'show the intro text
             byteLives = 3 'Set lives
-            intShields = 100 'Set shields
+            intShields = SHIELD_MAX 'Set shields
             byteLevel = 1 'level 1 to start with
             SectionCount = 999 'start at the first section and count down
             LoadLevel byteLevel 'load level 1
@@ -3827,5 +3727,10 @@ Sub ClearInput
     Wend
     KeyClear
 End Sub
+
+' Generates a random number between lo & hi
+Function RandomBetween& (lo As Long, hi As Long)
+    RandomBetween = lo + Rnd * (hi - lo)
+End Function
 '---------------------------------------------------------------------------------------------------------
 
