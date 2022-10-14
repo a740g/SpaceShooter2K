@@ -7,11 +7,6 @@
 '---------------------------------------------------------------------------------------------------------
 ' TODOs
 '---------------------------------------------------------------------------------------------------------
-'   BUG: Random white lines on bottom and right when rendering spritesheet - probably copying extra pixels from right and bottom
-'   BUG: Picking up invulnerability while one is active does not increase InvulnerableTime
-'   BUG: High score name entry does not allow upper case A
-'   BUG: Missiles do not originate centered from the player ship
-'   IMPROVEMENT: The game tries to clip sprites when it is [partially] off-screen. These checks are not required with QB64-PE and can be removed
 '   IMPROVEMENT: Replace usage of GetTicks with Limit, Delay & Sleep wherever appropriate
 '   IMPROVEMENT: Remove usage of typeRect types wherever not really required
 '   IMPROVEMENT: The main loop is duplicated in multiple places like FireMissile. This is not a good design and should to be refactored
@@ -96,6 +91,9 @@ Const LASER3WIDTH = 17 'Width of the stage 3 laser fire
 Const BOMB_WIDTH = 20 ' Width of each bomb frame
 Const BOMB_HEIGHT = 20 ' Height of each bomb frame
 Const BOMB_FRAMES = 10 ' Total frames in the bomb spritesheet
+Const ENEMY_FIRE_WIDTH = 5 ' Width of enemy fire frame
+Const ENEMY_FIRE_HEIGHT = 5 ' Height of enemy fire frame
+Const ENEMY_FIRE_FRAMES = 4 ' Number of screen frames we will show each sprite frame
 Const NUMOBSTACLES = 150 'The maximum number of second-layer objects that can appear
 Const POWERUPHEIGHT = 17 'Height of the powerups
 Const POWERUPWIDTH = 16 'Width of the powerups
@@ -113,6 +111,8 @@ Const CHASESLOW = 1 'The object does follow the players' X coordinates, but slow
 Const CHASEFAST = 2 'The object does follow the players' X coordinates, but fast
 Const EXTRALIFETARGET = 250000 'If the player exceeds this value he gets an extra life
 Const SHIELD_MAX = 100 ' Maximum sheild value
+Const BOMBS_MAX = 5 ' Maximum number of bombs
+Const LIVES_DEFAULT = 3 ' Number lives we start with
 
 ' High score stuff
 Const HIGH_SCORE_FILENAME = "highscore.csv" ' High score file
@@ -437,7 +437,7 @@ Sub ResetGame
     boolStarted = FALSE 'the game hasn't been started
     SectionCount = 999 'start at the beginning of the level
     byteLevel = 1 'player is at level 1 again
-    byteLives = 3 'the player has 3 lives left
+    byteLives = LIVES_DEFAULT 'the player has 3 lives left
     boolBackgroundExists = FALSE 'there is no background picture
     CheckHighScore 'call the sub to see if the player got a high score
 End Sub
@@ -995,7 +995,7 @@ Sub InitializeDD
         HitDesc(intCount).W = 8
     Next
 
-    ddsLaser = LoadImageTransparent("./dat/gfx/laser.bmp")
+    ddsLaser = LoadImageTransparent("./dat/gfx/laser.gif")
     Assert ddsLaser < -1
 
     For intCount = 0 To UBound(LaserDesc)
@@ -1260,7 +1260,7 @@ Sub CheckHighScore
 
     If boolGettingInput And Not boolEnterPressed Then 'as long as we are getting input, and the player hasn't pressed enter
         If Len(strName) < HIGH_SCORE_TEXT_LEN And strBuffer <> NULLSTRING Then 'if we haven't reached the limit of characters for the name, and the buffer isn't empty then
-            If Asc(strBuffer) > 65 Or strBuffer = Chr$(32) Then strName = strName + strBuffer 'if the buffer contains a letter or a space, add it to the buffer
+            strName = strName + strBuffer 'if the buffer contains a letter or a space, add it to the buffer
         End If
         DrawStringCenter "NEW HIGH SCORE:" + Str$(HighScore(NUM_HIGH_SCORES - 1).score), 200, White 'Display the new high score message
         DrawStringCenter "Enter your name: " + strName + Chr$(179), 220, Yellow 'Give the player a cursor, and display the buffer
@@ -1732,18 +1732,16 @@ Sub UpdateLevels
             SndStop dsAlarm 'Turn off any alarm
             SndStop dsInvulnerability 'Stop any invulnerability sound effect
 
-            Cls 'fill the back buffer with black
-
             lngStartTime = GetTicks 'grab the current time
 
             Do While lngStartTime + 8000 > GetTicks 'loop this routine for 8 seconds
-                If Int((75 * Rnd) + 1) < 25 Then 'if we get a number that is between 1-25 then
-                    intCount = Int((SCREEN_WIDTH * Rnd) + 1) 'get a random X coordinate
-                    intCount2 = Int((SCREEN_HEIGHT * Rnd) + 1) 'get a random Y coordinate
+                Cls 'fill the back buffer with black
+
+                If Int(75 * Rnd) < 25 Then 'if we get a number that is between 1-25 then
                     'Enter the rectangle values
-                    SrcRect.top = intCount2
+                    SrcRect.top = Int((SCREEN_HEIGHT - 1) * Rnd) 'get a random Y coordinate
                     SrcRect.bottom = SrcRect.top + 10
-                    SrcRect.left = intCount
+                    SrcRect.left = Int((SCREEN_WIDTH - 1) * Rnd) 'get a random X coordinate
                     SrcRect.right = SrcRect.left + 10
                     If Int((20 * Rnd) + 1) > 10 Then 'if we get a random number that is greater than ten
                         byteIndex = 1 'set the explosion index to the second explosion
@@ -1752,14 +1750,14 @@ Sub UpdateLevels
                     End If
 
                     CreateExplosion SrcRect, byteIndex, TRUE 'create the explosion, and we don't give the player any credit for killing an enemy since there are none
-
-                    Delay 0.035 ' Wait for 35 milliseconds
-
                     SndPlayCopy dsExplosion 'play the explosion sound
                 End If
-                Display 'Flip the front buffer with the back
-                Cls 'fill the back buffer with black
+
                 UpdateExplosions 'update the explosions
+
+                Display 'Flip the front buffer with the back
+
+                Limit UPDATES_PER_SECOND
             Loop
 
             FadeScreen FALSE 'fade the screen to black
@@ -1771,12 +1769,12 @@ Sub UpdateLevels
 
             'The next lines all display the winning text
             DrawStringCenter "YOU WIN!", 150, DarkGoldenRod
-            DrawStringCenter "After emerging victorious through 8 different alien galaxies, the enemy has been", 165, DarkGoldenRod
-            DrawStringCenter "driven to the point of near-extinction. Congratulations on a victory well deserved!", 180, DarkGoldenRod
-            DrawStringCenter "You return to Earth, triumphant.", 195, DarkGoldenRod
+            DrawStringCenter "After emerging victorious through 8 different alien galaxies, the enemy has", 165, DarkGoldenRod
+            DrawStringCenter "been driven to the point of near-extinction. Congratulations on a victory", 180, DarkGoldenRod
+            DrawStringCenter "well deserved! You return to Earth, triumphant.", 195, DarkGoldenRod
             DrawStringCenter "As the peoples of the Earth revel in celebration,", 210, DarkGoldenRod
-            DrawStringCenter "and the world rejoices from relief of the threat of annihalation, you can't help", 225, DarkGoldenRod
-            DrawStringCenter "but ponder... were all of the aliens really destroyed?", 240, DarkGoldenRod
+            DrawStringCenter "and the world rejoices from relief of the threat of annihalation, you can't", 225, DarkGoldenRod
+            DrawStringCenter "help but ponder... were all of the aliens really destroyed?", 240, DarkGoldenRod
             DrawStringCenter "THE END", 270, DarkGoldenRod
 
             FadeScreen TRUE 'fade the screen in
@@ -1790,7 +1788,7 @@ Sub UpdateLevels
             Ship.Invulnerable = FALSE 'no longer invulnerable
             Ship.AlarmActive = FALSE 'make sure the low shield alarm is off
             boolStarted = FALSE 'the game hasn't been started
-            byteLives = 3 'the player has 3 lives left
+            byteLives = LIVES_DEFAULT 'the player has 3 lives left
             byteLevel = 1 'reset to level 1
             SectionCount = 999 'start at the first section
             NumberEmptySections = 0 'all the sections are filled again
@@ -1911,7 +1909,7 @@ Sub FireWeapon
             If Not LaserDesc(intCount).Exists Then 'and see if there is an empty slot, and if there is
                 'create a new laser description
                 LaserDesc(intCount).Exists = TRUE 'the laser exists
-                LaserDesc(intCount).X = Ship.X + ((SHIPWIDTH \ 2) - (LASER1WIDTH \ 2))
+                LaserDesc(intCount).X = Ship.X + SHIPWIDTH \ 2 - LASER1WIDTH \ 2
                 'center the laser fire
                 LaserDesc(intCount).Y = Ship.Y 'the laser starts at the same Y as the ship
                 LaserDesc(intCount).Damage = 1 'the amount of damage this laser does
@@ -1935,8 +1933,8 @@ Sub FireWeapon
                 If Not GuidedMissile(intCount).Exists Then 'if we find an empty slot
                     'create a new guided missile
                     GuidedMissile(intCount).Exists = TRUE 'the guided missile exists
-                    GuidedMissile(intCount).X = Ship.X + (SHIPWIDTH / 2) 'center the x coordinate
-                    GuidedMissile(intCount).Y = Ship.Y + (SHIPHEIGHT / 2) 'center the y coordinate
+                    GuidedMissile(intCount).X = Ship.X + SHIPWIDTH \ 2 - MISSILEDIMENSIONS \ 2 'center the x coordinate
+                    GuidedMissile(intCount).Y = Ship.Y + SHIPHEIGHT \ 2 - MISSILEDIMENSIONS \ 2 'center the y coordinate
                     GuidedMissile(intCount).XVelocity = 0 'set the velocity to 0
                     GuidedMissile(intCount).YVelocity = -4.5 'set the y velocity to 4.5 pixels every frame
                     GuidedMissile(intCount).Damage = 3 'the guided missile does 3 points of damage
@@ -2107,7 +2105,7 @@ Sub CheckForCollisions
                 SndPlay dsPowerUp 'play the wav
                 Exit Sub
             ElseIf PowerUp(intCount).Index = BOMB Then 'the power up is a bomb powerup
-                If Ship.NumBombs < 5 Then Ship.NumBombs = Ship.NumBombs + 1 'if we haven't reached the maxiumum number of bomb, increase the number of bombs the player has
+                If Ship.NumBombs < BOMBS_MAX Then Ship.NumBombs = Ship.NumBombs + 1 'if we haven't reached the maxiumum number of bomb, increase the number of bombs the player has
                 lngScore = lngScore + 200 'give the player a score increase, even if the bombs are at max
                 PowerUp(intCount).Exists = FALSE 'the power up no longer exists
                 SndSetPos dsPowerUp, 0 'set the playback buffer position to 0
@@ -2719,56 +2717,19 @@ End Sub
 'This sub updates all the enemies that are being displayed on the screen
 Sub UpdateEnemys
     Dim intCount As Long 'count variable
-    Dim SrcRect As typeRect 'source rectangle for the blit
-    Dim intReturnResult As Long 'return holder
     Dim sngChaseSpeed As Single 'chase speed of the enemy
-    Dim TempX As Long 'temporary X coordinate
-    Dim TempY As Long 'temporary Y coordinate
     Dim XOffset As Long 'X offset of the animation frame
     Dim YOffset As Long 'Y offset of the animation frame
-    Dim FinalY As Long 'Finaly Y position of the enemy
-    Dim FinalX As Long 'Final X position of the enemy
-    Dim lngTopOffset As Long 'Offset of the top of the rectangle
-    Dim lngBottomOffset As Long 'Offset of the bottom of the rectangle
-    Dim lngRightOffset As Long 'Offset of the right of the rectangle
-    Dim lngLeftOffset As Long 'Offset of the left of the rectangle
 
     For intCount = 0 To UBound(EnemyDesc) 'loop through all the enemies
-        'these next lines reset all the variables to zero
-        lngTopOffset = 0
-        lngBottomOffset = 0
-        lngRightOffset = 0
-        lngLeftOffset = 0
-        XOffset = 0
-        YOffset = 0
         If EnemyDesc(intCount).Exists Then 'if the enemy exists
-            EnemyDesc(intCount).Y = EnemyDesc(intCount).Y + EnemyDesc(intCount).Speed
+            EnemyDesc(intCount).Y = EnemyDesc(intCount).Y + EnemyDesc(intCount).Speed 'increment the enemies Y position by its' speed
 
-            'increment the enemies Y position by its' speed
-            FinalY = EnemyDesc(intCount).Y 'start off with the final Y the same as the enemies Y
-
-            If EnemyDesc(intCount).Y + EnemyDesc(intCount).H > SCREEN_HEIGHT Then 'if the enemy is partially off the bottom of the screen
-                lngBottomOffset = (SCREEN_HEIGHT - (EnemyDesc(intCount).Y + EnemyDesc(intCount).H)) + EnemyDesc(intCount).H 'adjust the offset of the rectangle to compensate
-            Else 'otherwise
-                lngBottomOffset = EnemyDesc(intCount).H 'blit the whole enemy
-            End If
-
-            If EnemyDesc(intCount).Y < 0 Then 'if the enemy is partially off the top of the screen
-                lngTopOffset = Abs(EnemyDesc(intCount).Y)
-                'adjust the top offset of the rectangle to compensate
-                lngBottomOffset = EnemyDesc(intCount).H + EnemyDesc(intCount).Y 'also adjust the bottom offset of the rectangle to compensate
-                FinalY = 0 'the Y position of the rectangle will be zero
-            End If
-
-            If EnemyDesc(intCount).Y < SCREEN_HEIGHT Then
-                'if the enemy is on the screen then
+            If EnemyDesc(intCount).Y < SCREEN_HEIGHT Then 'if the enemy is on the screen then
                 If Ship.Y > EnemyDesc(intCount).Y Then 'if the the enemyies Y coorindate is larger than the players ship
-                    If EnemyDesc(intCount).ChaseValue > 0 Then
-                        'if the enemy has a chase value
-                        If EnemyDesc(intCount).ChaseValue = CHASEFAST Then sngChaseSpeed = 0.2
-                        'if the enemy is supposed to rapidly follow the players X coordinate, set it to a large increment
-                        If EnemyDesc(intCount).ChaseValue = CHASESLOW Then sngChaseSpeed = 0.05
-                        'if the enemy is supposed to slowly follow the players X coordinate, set it to a smaller increment
+                    If EnemyDesc(intCount).ChaseValue > 0 Then 'if the enemy has a chase value
+                        If EnemyDesc(intCount).ChaseValue = CHASEFAST Then sngChaseSpeed = 0.2 'if the enemy is supposed to rapidly follow the players X coordinate, set it to a large increment
+                        If EnemyDesc(intCount).ChaseValue = CHASESLOW Then sngChaseSpeed = 0.05 'if the enemy is supposed to slowly follow the players X coordinate, set it to a smaller increment
 
                         If (Ship.X + (SHIPWIDTH \ 2)) < (EnemyDesc(intCount).X + (EnemyDesc(intCount).W \ 2)) Then 'if the player is to the left of the enemy
                             EnemyDesc(intCount).XVelocity = EnemyDesc(intCount).XVelocity - sngChaseSpeed 'make the enemy move to the left
@@ -2782,63 +2743,30 @@ Sub UpdateEnemys
                     End If
                 End If
 
-                EnemyDesc(intCount).X = EnemyDesc(intCount).X + EnemyDesc(intCount).XVelocity
-                'increment the X position of the enemy by its' velocity
-                FinalX = EnemyDesc(intCount).X 'the final X will be set to the enemies X coordinate
-                If EnemyDesc(intCount).X + EnemyDesc(intCount).W > SCREEN_WIDTH Then
-                    'if the enemy is partially off the screen to the right
-                    lngRightOffset = (SCREEN_WIDTH - (EnemyDesc(intCount).X + EnemyDesc(intCount).W)) + EnemyDesc(intCount).W
-                    'set the right offset of the animation rectangle to compensate
-                Else 'otherwise
-                    lngRightOffset = EnemyDesc(intCount).W
-                    'the right offset is equal to the width of the animation frame
-                End If
-                If EnemyDesc(intCount).X < 0 Then 'if the enemy is partially off the screen to the left
-                    lngLeftOffset = Abs(EnemyDesc(intCount).X)
-                    'set the left offset to compensate
-                    lngRightOffset = EnemyDesc(intCount).W + EnemyDesc(intCount).X
-                    'set the right offset of the rectangle so the correct width will be displayed
-                    FinalX = 0 'the X will be set to zero, since we can't pass a negative number
-                End If
+                EnemyDesc(intCount).X = EnemyDesc(intCount).X + EnemyDesc(intCount).XVelocity 'increment the X position of the enemy by its' velocity
 
                 If EnemyDesc(intCount).FrameDelay > 0 Then
                     'if the frame delay count of this enemy is greater than zero,
                     'it means this enemy should have a delay in the number of frames
                     'that are displayed
-                    EnemyDesc(intCount).FrameDelayCount = EnemyDesc(intCount).FrameDelayCount + 1
-                    'increment it by one
-                    If EnemyDesc(intCount).FrameDelayCount > EnemyDesc(intCount).FrameDelay Then
-                        'if the delay count is larger than the frame delay
-                        EnemyDesc(intCount).FrameDelayCount = 0
-                        'reset the count
-                        EnemyDesc(intCount).Frame = EnemyDesc(intCount).Frame + 1
-                        'increment the animation frame by one
+                    EnemyDesc(intCount).FrameDelayCount = EnemyDesc(intCount).FrameDelayCount + 1 'increment it by one
+                    If EnemyDesc(intCount).FrameDelayCount > EnemyDesc(intCount).FrameDelay Then 'if the delay count is larger than the frame delay
+                        EnemyDesc(intCount).FrameDelayCount = 0 'reset the count
+                        EnemyDesc(intCount).Frame = EnemyDesc(intCount).Frame + 1 'increment the animation frame by one
                     End If
                 Else 'otherwise,
-                    EnemyDesc(intCount).Frame = EnemyDesc(intCount).Frame + 1
-                    'increment the frame displayed
+                    EnemyDesc(intCount).Frame = EnemyDesc(intCount).Frame + 1 'increment the frame displayed
                 End If
 
+                ' If the frame number goes over the number of frames this enemy has, reset the animation frame to the beginning
                 If EnemyDesc(intCount).Frame > EnemyDesc(intCount).NumFrames Then EnemyDesc(intCount).Frame = 0
-                'if the frame number goes over the number of frames this enemy
-                'has, reset the animation frame to the beginning
-                TempY = EnemyDesc(intCount).Frame \ 4 'set the starting Y position for this animation frame
-                TempX = EnemyDesc(intCount).Frame - (TempY * 4)
-                'set the starting X position for this animation frame
-                XOffset = TempX * EnemyDesc(intCount).W
-                'set the X offset of the animation frame
-                YOffset = TempY * EnemyDesc(intCount).H
-                'set the Y offset of the animation frame
 
-                SrcRect.top = 0 + YOffset + lngTopOffset 'set the top of the rect
-                SrcRect.bottom = SrcRect.top + lngBottomOffset 'the bottom is the top plus the bottom offset
-                SrcRect.left = 0 + XOffset + lngLeftOffset 'set the left offset
-                SrcRect.right = SrcRect.left + lngRightOffset 'the right is the left plus the right offset
+                XOffset = (EnemyDesc(intCount).Frame Mod 4) * EnemyDesc(intCount).W 'set the X offset of the animation frame
+                YOffset = (EnemyDesc(intCount).Frame \ 4) * EnemyDesc(intCount).H 'set the Y offset of the animation frame
 
-                If (EnemyDesc(intCount).W + EnemyDesc(intCount).X) > 1 And EnemyDesc(intCount).X < SCREEN_WIDTH And SrcRect.right > SrcRect.left And SrcRect.bottom > SrcRect.top Then
-                    'make sure that the enemy is within the bounds for blitting
-                    PutImage (FinalX, FinalY), ddsEnemyContainer(EnemyDesc(intCount).Index), , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom)
-                    'blit the enemy with a transparent key
+                If EnemyDesc(intCount).X + EnemyDesc(intCount).W > 0 And EnemyDesc(intCount).X < SCREEN_WIDTH And EnemyDesc(intCount).Y + EnemyDesc(intCount).H > 0 Then 'make sure that the enemy is within the bounds for blitting
+                    ' Blit the enemy with a transparent key
+                    PutImage (EnemyDesc(intCount).X, EnemyDesc(intCount).Y), ddsEnemyContainer(EnemyDesc(intCount).Index), , (XOffset, YOffset)-(XOffset + EnemyDesc(intCount).W - 1, YOffset + EnemyDesc(intCount).H - 1)
                 End If
             Else
                 EnemyDesc(intCount).Exists = FALSE 'otherwise, this enemy no longer exists
@@ -2847,8 +2775,7 @@ Sub UpdateEnemys
 
         If Not EnemyDesc(intCount).HasFired And EnemyDesc(intCount).Exists And EnemyDesc(intCount).DoesFire And EnemyDesc(intCount).Y > 0 And (EnemyDesc(intCount).Y + EnemyDesc(intCount).H) < SCREEN_HEIGHT And EnemyDesc(intCount).X > 0 And (EnemyDesc(intCount).X + EnemyDesc(intCount).W) < SCREEN_WIDTH Then
             'This incredibly long line has a very important job. It makes sure that the enemy hasn't fired, that it exists, and that it is visible on the screen
-            intReturnResult = Int((1500 - 1) * Rnd + 1) 'make a random number to to determine whether the enemy will fire
-            If intReturnResult < 20 Then 'if the random number is less than 20, make the enemy fire
+            If Int((1500 - 1) * Rnd + 1) < 20 Then 'if the random number is less than 20, make the enemy fire
 
                 SndPlayCopy dsEnemyFire, , (2 * (EnemyDesc(intCount).X + EnemyDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the duplicate sound buffer
 
@@ -2863,13 +2790,10 @@ Sub UpdateEnemys
                 Else 'otherwise
                     EnemyDesc(intCount).TargetY = -3 'set the enemy fire to move -3 pixels every frame
                 End If
-                EnemyDesc(intCount).XFire = (EnemyDesc(intCount).W / 2) + EnemyDesc(intCount).X
-                'center the enemies X fire
-                EnemyDesc(intCount).YFire = (EnemyDesc(intCount).H / 2) + EnemyDesc(intCount).Y
-                'center the eneies Y fire
+                EnemyDesc(intCount).XFire = EnemyDesc(intCount).X + EnemyDesc(intCount).W \ 2 - ENEMY_FIRE_WIDTH \ 2 'center the enemies X fire
+                EnemyDesc(intCount).YFire = EnemyDesc(intCount).Y + EnemyDesc(intCount).H \ 2 - ENEMY_FIRE_HEIGHT \ 2 'center the eneies Y fire
                 EnemyDesc(intCount).HasFired = TRUE 'the enemy has fired
             End If
-
         ElseIf EnemyDesc(intCount).HasFired Then 'otherwise, if the enemy has fired
             If EnemyDesc(intCount).FireType = TARGETEDFIRE Then
                 'if the type of fire that the enemy uses aims in the general direction of the player then
@@ -2878,33 +2802,23 @@ Sub UpdateEnemys
                 EnemyDesc(intCount).YFire = EnemyDesc(intCount).YFire + EnemyDesc(intCount).TargetY
                 'increment the enemy Y fire in the direction specified
             Else 'otherwise
-                EnemyDesc(intCount).YFire = EnemyDesc(intCount).YFire + 5
-                'increment the Y fire only, by 5 pixels
+                EnemyDesc(intCount).YFire = EnemyDesc(intCount).YFire + 5 'increment the Y fire only, by 5 pixels
             End If
-            If EnemyDesc(intCount).FireFrameCount > 3 Then
-                'if we have reached the end of the number of frames to wait until it is time to change the fire animation frame then
+
+            If EnemyDesc(intCount).FireFrameCount >= ENEMY_FIRE_FRAMES Then 'if we have reached the end of the number of frames to wait until it is time to change the fire animation frame then
                 EnemyDesc(intCount).FireFrameCount = 0 'reset the counter
-                If EnemyDesc(intCount).FireFrame = 5 Then
-                    'if the enemy animation frame is on the second frame
-                    EnemyDesc(intCount).FireFrame = 0 'reset the animation frame to the first one
-                Else 'otherwise
-                    EnemyDesc(intCount).FireFrame = 5 'change it to the second one
-                End If
+
+                EnemyDesc(intCount).FireFrame = ENEMY_FIRE_WIDTH - EnemyDesc(intCount).FireFrame ' bounce between frames
             Else 'otherwise
                 EnemyDesc(intCount).FireFrameCount = EnemyDesc(intCount).FireFrameCount + 1
                 'increment the wait time
             End If
 
-            SrcRect.top = 0 'set the top of the enemy fire animation
-            SrcRect.bottom = 5 'the animation is 5 pixels high
-            SrcRect.left = EnemyDesc(intCount).FireFrame 'set the left to which frame we are on
-            SrcRect.right = SrcRect.left + 5 'the width of the fire is 5 pixels
-
-            If EnemyDesc(intCount).XFire > SCREEN_WIDTH - 5 Or EnemyDesc(intCount).XFire < 0 Or EnemyDesc(intCount).YFire > SCREEN_HEIGHT - 5 Or EnemyDesc(intCount).YFire < 0 Then
+            If EnemyDesc(intCount).XFire >= SCREEN_WIDTH Or EnemyDesc(intCount).XFire + ENEMY_FIRE_WIDTH <= 0 Or EnemyDesc(intCount).YFire >= SCREEN_HEIGHT Or EnemyDesc(intCount).YFire + ENEMY_FIRE_HEIGHT <= 0 Then
                 'if the enemy fire is off the visible screen
                 EnemyDesc(intCount).HasFired = FALSE 'the enemy hasn't fired
             Else 'otherwise
-                PutImage (EnemyDesc(intCount).XFire, EnemyDesc(intCount).YFire), ddsEnemyFire, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom) 'blit the enemy fire
+                PutImage (EnemyDesc(intCount).XFire, EnemyDesc(intCount).YFire), ddsEnemyFire, , (EnemyDesc(intCount).FireFrame, 0)-(EnemyDesc(intCount).FireFrame + ENEMY_FIRE_WIDTH - 1, ENEMY_FIRE_HEIGHT - 1) 'blit the enemy fire
             End If
         End If
     Next
@@ -2914,8 +2828,7 @@ Sub UpdateEnemys
 
     For intCount = 0 To UBound(ObstacleDesc)
         If Not ObstacleDesc(intCount).HasFired And ObstacleDesc(intCount).Exists And ObstacleDesc(intCount).DoesFire Then
-            intReturnResult = Int((3000 - 1) * Rnd + 1)
-            If intReturnResult < 20 Then
+            If Int((3000 - 1) * Rnd + 1) < 20 Then
 
                 SndPlayCopy dsEnemyFire, , (2 * (ObstacleDesc(intCount).X + ObstacleDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the duplicate sound buffer
 
@@ -2929,33 +2842,26 @@ Sub UpdateEnemys
                 Else
                     ObstacleDesc(intCount).TargetY = -3
                 End If
-                ObstacleDesc(intCount).XFire = (ObstacleDesc(intCount).W / 2) + ObstacleDesc(intCount).X
-                ObstacleDesc(intCount).YFire = (ObstacleDesc(intCount).H / 2) + ObstacleDesc(intCount).Y
+                ObstacleDesc(intCount).XFire = ObstacleDesc(intCount).X + ObstacleDesc(intCount).W \ 2 - ENEMY_FIRE_WIDTH \ 2
+                ObstacleDesc(intCount).YFire = ObstacleDesc(intCount).Y + ObstacleDesc(intCount).H \ 2 - ENEMY_FIRE_HEIGHT \ 2
                 ObstacleDesc(intCount).HasFired = TRUE
             End If
         ElseIf ObstacleDesc(intCount).HasFired Then
             ObstacleDesc(intCount).XFire = ObstacleDesc(intCount).XFire + ObstacleDesc(intCount).TargetX
             ObstacleDesc(intCount).YFire = ObstacleDesc(intCount).YFire + ObstacleDesc(intCount).TargetY
-            If ObstacleDesc(intCount).FireFrameCount > 3 Then
+
+            If ObstacleDesc(intCount).FireFrameCount >= ENEMY_FIRE_FRAMES Then
                 ObstacleDesc(intCount).FireFrameCount = 0
-                If ObstacleDesc(intCount).FireFrame = 5 Then
-                    ObstacleDesc(intCount).FireFrame = 0
-                Else
-                    ObstacleDesc(intCount).FireFrame = 5
-                End If
+
+                ObstacleDesc(intCount).FireFrame = ENEMY_FIRE_WIDTH - ObstacleDesc(intCount).FireFrame
             Else
                 ObstacleDesc(intCount).FireFrameCount = ObstacleDesc(intCount).FireFrameCount + 1
             End If
 
-            SrcRect.top = 0
-            SrcRect.bottom = 5
-            SrcRect.left = ObstacleDesc(intCount).FireFrame
-            SrcRect.right = SrcRect.left + 5
-
-            If ObstacleDesc(intCount).XFire > SCREEN_WIDTH - 5 Or ObstacleDesc(intCount).XFire < 0 Or ObstacleDesc(intCount).YFire > SCREEN_HEIGHT - 5 Or ObstacleDesc(intCount).YFire < 0 Then
+            If ObstacleDesc(intCount).XFire >= SCREEN_WIDTH Or ObstacleDesc(intCount).XFire + ENEMY_FIRE_WIDTH <= 0 Or ObstacleDesc(intCount).YFire >= SCREEN_HEIGHT Or ObstacleDesc(intCount).YFire + ENEMY_FIRE_HEIGHT <= 0 Then
                 ObstacleDesc(intCount).HasFired = FALSE
             Else
-                PutImage (ObstacleDesc(intCount).XFire, ObstacleDesc(intCount).YFire), ddsEnemyFire, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom)
+                PutImage (ObstacleDesc(intCount).XFire, ObstacleDesc(intCount).YFire), ddsEnemyFire, , (ObstacleDesc(intCount).FireFrame, 0)-(ObstacleDesc(intCount).FireFrame + ENEMY_FIRE_WIDTH - 1, ENEMY_FIRE_HEIGHT - 1)
             End If
         End If
     Next
@@ -3193,65 +3099,54 @@ End Sub
 
 'This sub updates the invulnerability animation, and starts and stops the sound that goes with it
 Sub UpdateInvulnerability
-    Dim TempX As Long 'Temporary X variable
-    Dim TempY As Long 'Temporary Y variable
-    Dim XOffset As Long 'Offset of the rectangle
-    Dim YOffset As Long 'Offset of the rectangle
-    Dim SrcRect As typeRect 'Source rectangle
     Static intInvFrameCount As Long 'Keep track of what animation frame the animation is on
     Static blnInvWarning As Byte 'Flag that is set if it is time to warn the player that the invulnerability is running out
     Static intWarningCount As Long 'Keep track of how many times the player has been warned
+    Dim XOffset As Long 'Offset of the rectangle
+    Dim YOffset As Long 'Offset of the rectangle
 
     If GetTicks > Ship.InvulnerableTime Then 'If the amount of invulenrability exceeds the time alloted to the player
         Ship.Invulnerable = FALSE 'The ship is no longer invulnerable
         intInvFrameCount = 0 'The animation is reset to the starting frame
+
         SndStop dsInvulnerability 'Stop playing the invulnerable sound effect
         SndPlay dsInvPowerDown 'Play the power down sound effect
+
         blnInvWarning = FALSE 'No longer warning the player
         intWarningCount = 0 'Reset the warning count
     Else 'Otherwise, the ship is invulnerable
-        If (Ship.InvulnerableTime - GetTicks) < 3000 Then 'If there are only three seconds left
-            blnInvWarning = TRUE 'Toggle the warning flag to on
-        End If
+        blnInvWarning = (Ship.InvulnerableTime - GetTicks) < 3000 'If there are only three seconds left, then toggle the warning flag to on
 
         If blnInvWarning Then 'If the player is being warned
             intWarningCount = intWarningCount + 1 'Increment the warning count
+
             If intWarningCount > 30 Then intWarningCount = 0 'If the warning count goes through 30 frames, reset it
+
             If intWarningCount < 15 Then 'If the warning count is less than 30 frames
                 SndLoop dsInvulnerability 'Play the invulnerability sound effect
-                If intInvFrameCount > 49 Then intInvFrameCount = 0 'If the animation goes past the maximum number of frames, reset it
-                TempY = intInvFrameCount \ 4 'Calculate the left of the animation
-                TempX = intInvFrameCount - (TempY * 4) 'Calculate the top of the animation
-                XOffset = TempX * SHIPWIDTH 'Calculate the right of the animation
-                YOffset = TempY * SHIPHEIGHT 'Calculate the bottom of the animation
-                intInvFrameCount = intInvFrameCount + 1 'Increment the frame count
-                'Input the rectangle values
-                SrcRect.top = YOffset
-                SrcRect.bottom = SrcRect.top + SHIPHEIGHT
-                SrcRect.left = XOffset
-                SrcRect.right = SrcRect.left + SHIPWIDTH
 
-                PutImage (Ship.X, Ship.Y), ddsInvulnerable, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom)
-                'Blit the animation frame
+                If intInvFrameCount > 49 Then intInvFrameCount = 0 'If the animation goes past the maximum number of frames, reset it
+
+                intInvFrameCount = intInvFrameCount + 1 'Increment the frame count
+
+                XOffset = (intInvFrameCount Mod 4) * SHIPWIDTH 'set the X offset of the animation frame
+                YOffset = (intInvFrameCount \ 4) * SHIPHEIGHT 'set the Y offset of the animation frame
+
+                PutImage (Ship.X, Ship.Y), ddsInvulnerable, , (XOffset, YOffset)-(XOffset + SHIPWIDTH - 1, YOffset + SHIPHEIGHT - 1) 'Blit the animation frame
             Else
                 SndStop dsInvulnerability 'If we are above 15 frames of animation, stop playing the invulnerability sound effect
             End If
         Else 'Otherwise, the player is not in warning mode
             If intInvFrameCount > 49 Then intInvFrameCount = 0 'If the animation goes past the maximum number of frames, reset it
-            TempY = intInvFrameCount \ 4 'Calculate the left of the animation
-            TempX = intInvFrameCount - (TempY * 4) 'Calculate the top of the animation
-            XOffset = TempX * SHIPWIDTH 'Calculate the right of the animation
-            YOffset = TempY * SHIPHEIGHT 'Calculate the bottom of the animation
-            intInvFrameCount = intInvFrameCount + 1 'Increment the frame count
-            'Input the rectangle values
-            SrcRect.top = YOffset
-            SrcRect.bottom = SrcRect.top + SHIPHEIGHT
-            SrcRect.left = XOffset
-            SrcRect.right = SrcRect.left + SHIPWIDTH
 
-            PutImage (Ship.X, Ship.Y), ddsInvulnerable, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom)
-            'Blit the animation frame
+            intInvFrameCount = intInvFrameCount + 1 'Increment the frame count
+
+            XOffset = (intInvFrameCount Mod 4) * SHIPWIDTH 'set the X offset of the animation frame
+            YOffset = (intInvFrameCount \ 4) * SHIPHEIGHT 'set the Y offset of the animation frame
+
+            PutImage (Ship.X, Ship.Y), ddsInvulnerable, , (XOffset, YOffset)-(XOffset + SHIPWIDTH - 1, YOffset + SHIPHEIGHT - 1) 'Blit the animation frame
         End If
+
         SndBal dsInvulnerability, (2 * (Ship.X + SHIPWIDTH / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'If we are above 15 frames of animation, stop playing the invulnerability sound effect
     End If
 End Sub
@@ -3355,7 +3250,7 @@ Sub UpdateShields
             Ship.NumBombs = 0 'the player has no bombs
             SectionCount = 999 'start at the beginning
             byteLevel = 1 'level 1 starts over
-            byteLives = 3 'the player has 3 lives left
+            byteLives = LIVES_DEFAULT 'the player has 3 lives left
             boolBackgroundExists = FALSE 'there is no background picture
             CheckHighScore 'call the sub to see if the player got a high score
             boolStarted = FALSE 'the game hasn't been started
@@ -3542,7 +3437,6 @@ End Sub
 'This subroutine gets input from the player using Direct Input. The boolean flag is so that the missile fire routine doesn't
 'loop when a missile is fired
 Sub GetInput
-    Dim intCount As Long 'standard count variable
     'TODO: Dim JoystickState As DIJOYSTATE                             'joystick state type
     Dim TempTime As Integer64
 
@@ -3627,11 +3521,9 @@ Sub GetInput
         KeyCode = KeyHit
 
         If boolGettingInput Then 'If the game is getting high score input then
-            If KeyCode > 64 And KeyCode < 123 Then 'if the keys are alpha keys then
+            If (KeyCode > 64 And KeyCode < 91) Or (KeyCode > 96 And KeyCode < 123) Or KeyCode = 32 Then 'if the keys are alpha keys then
                 strBuffer = Chr$(KeyCode) 'add this key to the buffer
-            ElseIf KeyCode = 32 Then 'if a space has been entered
-                strBuffer = Chr$(KeyCode) 'add it to the buffer
-            ElseIf KeyCode = 13 Then 'if enter has been pressed
+            ElseIf KeyCode = 13 And Trim$(strName) <> NULLSTRING Then 'if enter has been pressed
                 boolEnterPressed = TRUE 'toggle the enter pressed flag to on
             ElseIf KeyCode = 8 Then 'if backspace was pressed
                 If Len(strName) > 0 Then strName = Left$(strName, Len(strName) - 1) 'make the buffer is not empty, and delete any existing character
@@ -3643,15 +3535,14 @@ Sub GetInput
             'download the force feedback effect for firing lasers
             FadeScreen FALSE 'fade the current screen
             StartIntro 'show the intro text
-            byteLives = 3 'Set lives
+            byteLives = LIVES_DEFAULT 'Set lives
             intShields = SHIELD_MAX 'Set shields
             byteLevel = 1 'level 1 to start with
             SectionCount = 999 'start at the first section and count down
             LoadLevel byteLevel 'load level 1
             PlayMIDIFile "./dat/sfx/mus/level1.mid" 'start the level 1 midi
-            For intCount = 0 To UBound(StarDesc) 'reset all the stars
-                StarDesc(intCount).Exists = FALSE 'they no longer exist
-            Next
+            ' Stars were reset here before. This is not needed
+            ' Stars can be recycled and beginning a new level does not feel jarring
         ElseIf KeyCode = DIK_ESCAPE Then 'if the escape key is pressed,
             DoCredits 'Show the credits
             EndGame 'Call sub to reset all variables
