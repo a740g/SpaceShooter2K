@@ -15,6 +15,7 @@
 '   IMPROVEMENT: Add mouse support using MOUSEINPUT, MOUSEMOVEMENTX, MOUSEMOVEMENTY, MOUSEBUTTON etc.
 '   IMPROVEMENT: Alignment of the HUD items at the top of the screen is bad and should be corrected
 '   IMPROVEMENT: FadeScreen is not used for all screen transitions and should be checked
+'   IMPROVEMENT: There are some extra sprite sheets that are not used - shiptransform, shiptransform2. Use these for cool effects / upgrades?
 '   OTHER: Check any comment labeled with 'TODO'
 '---------------------------------------------------------------------------------------------------------
 
@@ -320,11 +321,6 @@ Dim Shared boolMaxFrameRate As Byte 'Removes all frame rate limits
 ' PROGRAM ENTRY POINT - This is the entry point for the game. From here everything branches out to all the
 ' subs that handle collisions, enemies, player, weapon fire, sounds, level updating, etc.
 '---------------------------------------------------------------------------------------------------------
-Dim lngStartTime As Integer64 'stores the start time of a frame rate count
-Dim lngCurrentTime As Integer64 'stores the current tick for frame rate count
-Dim intFinalFrame As Long 'holds the total number of frames in a second
-Dim intFrameCount As Long 'keeps track of how many frames have elapsed
-
 InitializeStartup 'Do the startup routines
 LoadHighScores 'Call the sub to load the high scores
 lngNextExtraLifeScore = EXTRALIFETARGET 'Initialize the extra life score to 100,000
@@ -365,17 +361,8 @@ Do 'The main loop of the game.
     ElseIf boolGettingInput Then 'If we are getting input from the player, then
         CheckHighScore 'call the high score subroutine
     End If
-    If boolFrameRate Then 'If the frame rate display is toggled
-        intFrameCount = intFrameCount + 1 'increment the frame count
-        lngCurrentTime = GetTicks 'get the current tick count
-        If lngCurrentTime > lngStartTime + 1000 Then 'if one second has elapsed
-            intFinalFrame = intFrameCount 'the total number of frames is stored in intFinalFrame
-            intFrameCount = 0 'reset the frame count
-            lngStartTime = GetTicks 'get a new start time
-        End If
-        DrawString "FPS:" + Str$(intFinalFrame), 30, 30, White
-        'display the frame rate
-    End If
+
+    If boolFrameRate Then DrawString "FPS:" + Str$(CalculateFPS), 30, 30, White 'display the frame rate
 
     If boolMaxFrameRate Then
         DrawString "Uncapped FPS enabled", 30, 45, White 'Let the player know there is no frame rate limitation
@@ -949,6 +936,7 @@ Sub InitializeDD
     Assert ddsSplash < -1
 
     PutImage (0, 0), ddsSplash 'blit the splash screen to the back buffer
+    Locate 30, 1: Print OS$;
 
     FreeImage ddsSplash 'release the splash screen, since we don't need it anymore
 
@@ -3426,6 +3414,8 @@ Sub DoCredits
 
     FreeImage ddsEndCredits 'release our direct draw surface
 
+    DrawString "Samuel Gomes - QB64-PE source port", 32, 290, Yellow ' Shameless plug XD
+
     FadeScreen TRUE 'Fade the screen in
     Sleep 2 ' Wait for 2 seconds
 
@@ -3620,6 +3610,24 @@ End Sub
 ' Generates a random number between lo & hi
 Function RandomBetween& (lo As Long, hi As Long)
     RandomBetween = lo + Rnd * (hi - lo)
+End Function
+
+' Calculates and returns the FPS when repeatedly called inside a loop
+Function CalculateFPS~&
+    Static As Unsigned Long counter, finalFPS
+    Static lastTime As Integer64
+    Dim currentTime As Integer64
+
+    counter = counter + 1
+
+    currentTime = GetTicks
+    If currentTime > lastTime + 1000 Then
+        lastTime = currentTime
+        finalFPS = counter
+        counter = 0
+    End If
+
+    CalculateFPS = finalFPS
 End Function
 '---------------------------------------------------------------------------------------------------------
 
