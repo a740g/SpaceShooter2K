@@ -20,17 +20,15 @@
 '---------------------------------------------------------------------------------------------------------
 
 '---------------------------------------------------------------------------------------------------------
+' HEADER FILES
+'---------------------------------------------------------------------------------------------------------
+'$Include:'Common.bi'
+'---------------------------------------------------------------------------------------------------------
+
+'---------------------------------------------------------------------------------------------------------
 ' METACOMMANDS
 '---------------------------------------------------------------------------------------------------------
-$NoPrefix
-DefLng A-Z
-Option Explicit
-Option ExplicitArray
-'$Static
-Option Base 1
 $Asserts
-$Color:32
-$Resize:Smooth
 $Unstable:Midi
 $MidiSoundFont:Default
 $ExeIcon:'./SpaceShooter2k.ico'
@@ -50,24 +48,8 @@ $VersionInfo:PRODUCTVERSION#=2,0,0,0
 '---------------------------------------------------------------------------------------------------------
 ' CONSTANTS
 '---------------------------------------------------------------------------------------------------------
-Const FALSE = 0, TRUE = Not FALSE
-Const NULL = 0
-Const NULLSTRING = ""
-
 ' Game constants
 Const APP_NAME = "Space Shooter 2000"
-
-' Keyboard key codes
-Const DIK_UP = 18432
-Const DIK_DOWN = 20480
-Const DIK_LEFT = 19200
-Const DIK_RIGHT = 19712
-Const DIK_SPACE = 32
-Const DIK_RCONTROL = 100305
-Const DIK_LCONTROL = 100306
-Const DIK_BACK = 8
-Const DIK_RETURN = 13
-Const DIK_ESCAPE = 27
 
 Const SCREEN_WIDTH = 640 'Width for the display mode
 Const SCREEN_HEIGHT = 480 'Height for the display mode
@@ -372,7 +354,7 @@ Do 'The main loop of the game.
 
     Display 'Flip the front buffer with the back
 
-    If boolStarted And KeyDown(DIK_ESCAPE) Then 'If the game has started, and the player presses escape
+    If boolStarted And KeyDown(KEY_ESCAPE) Then 'If the game has started, and the player presses escape
         'TODO: If IsFF = True Then ef(2).Unload                            'unload the laser force feedback effect
         ResetGame 'call the sub to reset the game variables
     End If 'If the escape key is preseed, reset the game and go back to the title screen
@@ -1493,7 +1475,7 @@ Sub StartIntro
 
     Do
         Sleep 'don't hog the processor
-    Loop Until KeyHit = DIK_RETURN 'if the enter key is pressed, exit the loop
+    Loop Until KeyHit = KEY_ENTER 'if the enter key is pressed, exit the loop
 
     ClearInput
 
@@ -1637,7 +1619,7 @@ Sub LoadLevel (level As Long)
         Display 'flip the direct draw front buffer to display the info
 
         Limit UPDATES_PER_SECOND 'don't hog the processor
-    Loop Until KeyDown(DIK_RETURN) 'if the enter key is pressed
+    Loop Until KeyDown(KEY_ENTER) 'if the enter key is pressed
 
     ClearInput
 
@@ -3440,26 +3422,26 @@ Sub GetInput
     If boolStarted And Not boolGettingInput Then 'if the game has started and we aren't getting input for high scores from the regular form key press events
 
         'Keyboard
-        If KeyDown(DIK_UP) Then 'if the up arrow is down
+        If KeyDown(KEY_UP_ARROW) Then 'if the up arrow is down
             Ship.YVelocity = Ship.YVelocity - DISPLACEMENT 'the constant displacement is subtracted from the ships Y velocity
         End If
-        If KeyDown(DIK_DOWN) Then 'if the down arrow is pressed down
+        If KeyDown(KEY_DOWN_ARROW) Then 'if the down arrow is pressed down
             Ship.YVelocity = Ship.YVelocity + DISPLACEMENT 'the constant displacement is added to the ships Y velocity
         End If
-        If KeyDown(DIK_LEFT) Then 'if the left arrow is pressed down
+        If KeyDown(KEY_LEFT_ARROW) Then 'if the left arrow is pressed down
             Ship.XVelocity = Ship.XVelocity - DISPLACEMENT 'the constant displacement is subtracted from the ships X velocity
         End If
-        If KeyDown(DIK_RIGHT) Then 'if the right arrow is down
+        If KeyDown(KEY_RIGHT_ARROW) Then 'if the right arrow is down
             Ship.XVelocity = Ship.XVelocity + DISPLACEMENT 'the constant displacement is added to the ships X velocity
         End If
-        If KeyDown(DIK_SPACE) Then 'if the space bar is down
+        If KeyDown(KEY_SPACE_BAR) Then 'if the space bar is down
             FireWeapon 'call the sub to fire the weapon
         End If
-        If KeyDown(DIK_RCONTROL) And Not Ship.FiringMissile And Ship.NumBombs > 0 Then
+        If KeyDown(KEY_RIGHT_CONTROL) And Not Ship.FiringMissile And Ship.NumBombs > 0 Then
             Ship.FiringMissile = TRUE 'if the control key is pressed
             FireMissile 'fire the missile
         End If
-        If KeyDown(DIK_LCONTROL) And Not Ship.FiringMissile And Ship.NumBombs > 0 Then
+        If KeyDown(KEY_LEFT_CONTROL) And Not Ship.FiringMissile And Ship.NumBombs > 0 Then
             Ship.FiringMissile = TRUE 'if the control key is pressed
             FireMissile 'fire the missile
         End If
@@ -3478,7 +3460,7 @@ Sub GetInput
         '    End If
         'End If
 
-        If KeyDown(DIK_BACK) Then 'if the backspace key is pressed
+        If KeyDown(KEY_BACKSPACE) Then 'if the backspace key is pressed
             If Ship.Invulnerable Then 'if the ship is invulnerable
                 SndStop dsInvulnerability 'stop playing the invulnerability sound
                 TempTime = Ship.InvulnerableTime - GetTicks 'capture the current time so the player doesn't lose the amount of time he has left to be invulnerable
@@ -3493,7 +3475,7 @@ Sub GetInput
             'Check the keyboard for keypresses
             Do
                 Sleep ' don't hog the CPU
-            Loop Until KeyDown(DIK_RETURN)
+            Loop Until KeyDown(KEY_ENTER)
 
             ' resume music
             If MIDIHandle > 0 Then SndLoop MIDIHandle
@@ -3518,7 +3500,7 @@ Sub GetInput
             ElseIf KeyCode = 8 Then 'if backspace was pressed
                 If Len(strName) > 0 Then strName = Left$(strName, Len(strName) - 1) 'make the buffer is not empty, and delete any existing character
             End If
-        ElseIf KeyCode = DIK_RETURN Then
+        ElseIf KeyCode = KEY_ENTER Then
             'if the enter key is pressed then
             boolStarted = TRUE 'the game has started
             'TODO: If Not ef(2) Is Nothing And IsFF Then ef(2).Download
@@ -3533,7 +3515,7 @@ Sub GetInput
             PlayMIDIFile "./dat/sfx/mus/level1.mid" 'start the level 1 midi
             ' Stars were reset here before. This is not needed
             ' Stars can be recycled and beginning a new level does not feel jarring
-        ElseIf KeyCode = DIK_ESCAPE Then 'if the escape key is pressed,
+        ElseIf KeyCode = KEY_ESCAPE Then 'if the escape key is pressed,
             DoCredits 'Show the credits
             EndGame 'Call sub to reset all variables
             System 'Exit the application
