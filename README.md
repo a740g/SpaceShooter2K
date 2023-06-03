@@ -1,15 +1,15 @@
-# Space Shooter 2000
+# SPACE SHOOTER 2000
+
+This is a [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe) source port of the Space Shooter 2000 [Visual Basic 6](https://winworldpc.com/product/microsoft-visual-bas/60) game that came with Microsoft's [DirectX 7 SDK](https://github.com/oxiKKK/dx7sdk).
 
 ![Screenshot](screenshots/screenshot1.png)
 ![Screenshot](screenshots/screenshot2.png)
 ![Screenshot](screenshots/screenshot3.png)
 ![Screenshot](screenshots/screenshot4.png)
 
-This is a [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe) source port of the Space Shooter 2000 [Visual Basic 6](https://winworldpc.com/product/microsoft-visual-bas/60) game that came with Microsoft's [DirectX 7 SDK](https://github.com/oxiKKK/dx7sdk).
-
 The original [Visual Basic 6](https://winworldpc.com/product/microsoft-visual-bas/60) sources can be found [here](https://github.com/oxiKKK/dx7sdk/tree/main/dx7sdk-700.1/samples/multimedia/vbsamples/dxmisc/src/spaceshooter) and [here](https://github.com/orbitersim/orbiter/tree/main/Extern/mssdk_dx7/samples/Multimedia/VBSamples/DXMisc/src/SpaceShooter).
 
-This conversion has multiple changes and improvements over the Visual Basic 6 version. These are:
+## FEATURES
 
 - Works natively on Windows, Linux & macOS
 - No [DirectX](https://en.wikipedia.org/wiki/DirectX) dependencies
@@ -20,17 +20,31 @@ This conversion has multiple changes and improvements over the Visual Basic 6 ve
 - No sound buffer copy limit unlike the original code
 - Alt + Enter puts the game in window mode
 
-The source port still has some rough edges and bugs. You can see these under the [TODO](https://github.com/a740g/SpaceShooter2K/blob/master/SpaceShooter2k.bas#L7) section in the source code. Joystick / game controller support is WIP. I will gradually work through these as and when I get time.
+## USAGE
 
-The source port also uses new features introduced in [QB64-PE v3.3.0+](https://github.com/QB64-Phoenix-Edition/QB64pe/releases) and as such may not work correctly or reliably with older versions of QB64-PE or any version of QB64. You've been warned. Please don't nag me about backwards compatiblity.
+- Clone the repository to a directory of your choice
+- Open Terminal and change to the directory using an appropriate OS command
+- Run `git submodule update --init --recursive` to initialize, fetch and checkout git submodules
+- Open *SpaceShooter2k.bas* in the QB64-PE IDE and press `F5` to compile and run
+- To use the library in your project add the [Toolbox64](https://github.com/a740g/Toolbox64) repositiory as a [Git submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
+
+## NOTES
+
+- This requires the latest version of [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases)
+- When you clone a repository that contains submodules, the submodules are not automatically cloned by default
+- You will need to use the `git submodule update --init --recursive` to initialize, fetch and checkout git submodules
+- The source port still has some rough edges and bugs. You can see these under the [TODO](https://github.com/a740g/SpaceShooter2K/blob/master/SpaceShooter2k.bas#L7) section in the source code
+- Joystick / game controller support is WIP. I will gradually work through these as and when I get time
+
+## ASSETS
 
 Icon by [Everaldo / Yellowicon](https://iconarchive.com/artist/everaldo.html)
 
+## CREDITS
+
 There is a [YouTube Playthrough](https://www.youtube.com/watch?v=LnUwmS-mYPA) that helped me a lot while doing the source port. Shoutout to [David Coleman](https://www.youtube.com/user/TheFieryDreamer) for posting the video.
 
-As usual, I do not accept responsibility for any effects, adverse or otherwise, that this code may have on you, your computer, your sanity, your dog, and anything else that you can think of. Use it at your own risk.
-
-## Original Credits
+## ORIGINAL CREDITS
 
 Main programming, graphics, and MIDI music are by Adam "Gollum" Lonnberg.
 

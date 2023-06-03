@@ -1,12 +1,12 @@
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 ' SPACE SHOOTER 2000!
 ' Copyright (c) 2022 Samuel Gomes
 ' Copyright (c) 2000 Adam "Gollum" Lonnberg
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 ' TODOs
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 '   IMPROVEMENT: Replace usage of GetTicks with Limit, Delay & Sleep wherever appropriate
 '   IMPROVEMENT: Remove usage of typeRect types wherever not really required
 '   IMPROVEMENT: The main loop is duplicated in multiple places like FireMissile. This is not a good design and should to be refactored
@@ -17,20 +17,28 @@
 '   IMPROVEMENT: FadeScreen is not used for all screen transitions and should be checked
 '   IMPROVEMENT: There are some extra sprite sheets that are not used - shiptransform, shiptransform2. Use these for cool effects / upgrades?
 '   OTHER: Check any comment labeled with 'TODO'
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 ' HEADER FILES
-'---------------------------------------------------------------------------------------------------------
-'$Include:'Common.bi'
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
+'$Include:'include/FileOps.bi'
+$If WINDOWS Then
+    '$Include:'include/WinMIDIPlayer.bi'
+$End If
+'-----------------------------------------------------------------------------------------------------------------------
 
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 ' METACOMMANDS
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
+$NoPrefix
+$Resize:Smooth
+$Color:32
 $Asserts
-$Unstable:Midi
-$MidiSoundFont:Default
+$If WINDOWS = UNDEFINED Then
+        $Unstable:Midi
+        $MidiSoundFont:Default
+$End If
 $ExeIcon:'./SpaceShooter2k.ico'
 $VersionInfo:ProductName='Space Shooter 2000'
 $VersionInfo:CompanyName='Samuel Gomes'
@@ -43,11 +51,11 @@ $VersionInfo:OriginalFilename='SpaceShooter2k.exe'
 $VersionInfo:FileDescription='Space Shooter 2000 executable'
 $VersionInfo:FILEVERSION#=2,0,1,0
 $VersionInfo:PRODUCTVERSION#=2,0,0,0
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 ' CONSTANTS
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 ' Game constants
 Const APP_NAME = "Space Shooter 2000"
 
@@ -101,11 +109,11 @@ Const LIVES_DEFAULT = 3 ' Number lives we start with
 Const HIGH_SCORE_FILENAME = "highscore.csv" ' High score file
 Const NUM_HIGH_SCORES = 10 ' Number of high scores
 Const HIGH_SCORE_TEXT_LEN = 14 ' The max length of the name in a high score
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 ' USER DEFINED TYPES
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 Type typeRect
     left As Long
     top As Long
@@ -189,20 +197,11 @@ Type typeHighScore
     text As String
     score As Long
 End Type
+'-----------------------------------------------------------------------------------------------------------------------
 
-'---------------------------------------------------------------------------------------------------------
-
-'---------------------------------------------------------------------------------------------------------
-' EXTERNAL LIBRARIES
-'---------------------------------------------------------------------------------------------------------
-Declare CustomType Library
-    Function GetTicks&&
-End Declare
-'---------------------------------------------------------------------------------------------------------
-
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 ' GLOBAL VARIABLES
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 'Array to define the section information for each level.
 'Each section contains 125 slots. The value of each slot refers to the index of the object contained in that slot. -1 means no object is in this slot.
 Dim Shared SectionInfo(0 To 999, 0 To 125) As Unsigned Byte 'There are 1000 sections to a level
@@ -242,7 +241,9 @@ Dim Shared dsInvulnerability As Long 'sound for when the player is invulnerable
 Dim Shared dsInvPowerDown As Long 'sound for when the invulnerability wears off
 Dim Shared dsExtraLife As Long 'sound for when the player gets an extra life
 
-Dim Shared MIDIHandle As Long ' MIDI music handle
+$If WINDOWS = UNDEFINED Then
+        Dim Shared MIDIHandle As Long ' MIDI music handle
+$End If
 
 'Variables to handle graphics
 Dim Shared boolBackgroundExists As Byte 'Boolean to determine if a background object exists
@@ -297,17 +298,17 @@ Dim Shared strLevelText As String 'Stores the associated startup text for the le
 Dim Shared blnJoystickEnabled As Byte 'Toggles joystick on or off
 Dim Shared blnMIDIEnabled As Byte 'Toggles Midi music on or off
 Dim Shared boolMaxFrameRate As Byte 'Removes all frame rate limits
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 ' PROGRAM ENTRY POINT - This is the entry point for the game. From here everything branches out to all the
 ' subs that handle collisions, enemies, player, weapon fire, sounds, level updating, etc.
-'---------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 InitializeStartup 'Do the startup routines
 LoadHighScores 'Call the sub to load the high scores
 lngNextExtraLifeScore = EXTRALIFETARGET 'Initialize the extra life score to 100,000
 Sleep 1 ' Wait for a second
-FadeScreen FALSE ' Fade out the loading screen
+FadeScreen Dest, FALSE, UPDATES_PER_SECOND * 2, 100 ' Fade out the loading screen
 ClearInput ' Clear any cached input
 
 Do 'The main loop of the game.
@@ -344,7 +345,7 @@ Do 'The main loop of the game.
         CheckHighScore 'call the high score subroutine
     End If
 
-    If boolFrameRate Then DrawString "FPS:" + Str$(CalculateFPS), 30, 30, White 'display the frame rate
+    If boolFrameRate Then DrawString "FPS:" + Str$(GetFPS), 30, 30, White 'display the frame rate
 
     If boolMaxFrameRate Then
         DrawString "Uncapped FPS enabled", 30, 45, White 'Let the player know there is no frame rate limitation
@@ -388,7 +389,7 @@ Sub ResetGame
         PowerUp(intCount).Exists = FALSE 'if there are any power ups currently on screen, get rid of them
     Next
 
-    FadeScreen FALSE 'Fade the screen to black
+    FadeScreen Dest, FALSE, UPDATES_PER_SECOND * 2, 100 'Fade the screen to black
 
     intShields = SHIELD_MAX 'shields are at 100%
 
@@ -922,7 +923,7 @@ Sub InitializeDD
 
     FreeImage ddsSplash 'release the splash screen, since we don't need it anymore
 
-    FadeScreen TRUE 'flip the front buffer so the splash screen bitmap on the backbuffer is displayed
+    FadeScreen Dest, TRUE, UPDATES_PER_SECOND * 2, 100 'flip the front buffer so the splash screen bitmap on the backbuffer is displayed
     PlayMIDIFile "./dat/sfx/mus/title.mid" 'Start playing the title song
 
     ddsTitle = LoadImage("./dat/gfx/title.gif", 257) ' Load the title screen bitmap in 8bpp mode for palette tricks
@@ -931,19 +932,19 @@ Sub InitializeDD
     ' How do I know this? Well, I wrote it! :)
     ClearColor 0, ddsTitle
 
-    ddsShip = LoadImageTransparent("./dat/gfx/ship.gif") 'Load the ship bitmap and make it into a direct draw surface
+    ddsShip = LoadImageTransparent("./dat/gfx/ship.gif", TRANSPARENT_COLOR, FALSE, NULLSTRING) 'Load the ship bitmap and make it into a direct draw surface
     Assert ddsShip < -1
 
-    ddsPowerUp = LoadImageTransparent("./dat/gfx/powerups.gif") 'Load the shield indicator bitmap and put in a direct draw surface
+    ddsPowerUp = LoadImageTransparent("./dat/gfx/powerups.gif", TRANSPARENT_COLOR, FALSE, NULLSTRING) 'Load the shield indicator bitmap and put in a direct draw surface
     Assert ddsPowerUp < -1
 
-    ddsExplosion(0) = LoadImageTransparent("./dat/gfx/explosion.gif") 'Load the first explosion bitmap
+    ddsExplosion(0) = LoadImageTransparent("./dat/gfx/explosion.gif", TRANSPARENT_COLOR, FALSE, NULLSTRING) 'Load the first explosion bitmap
     Assert ddsExplosion(0) < -1
 
-    ddsExplosion(1) = LoadImageTransparent("./dat/gfx/explosion2.gif") 'Load the second explosion bitmap
+    ddsExplosion(1) = LoadImageTransparent("./dat/gfx/explosion2.gif", TRANSPARENT_COLOR, FALSE, NULLSTRING) 'Load the second explosion bitmap
     Assert ddsExplosion(1) < -1
 
-    ddsInvulnerable = LoadImageTransparent("./dat/gfx/invulnerable.gif") 'Load the invulnerable bitmap
+    ddsInvulnerable = LoadImageTransparent("./dat/gfx/invulnerable.gif", TRANSPARENT_COLOR, FALSE, NULLSTRING) 'Load the invulnerable bitmap
     Assert ddsInvulnerable < -1
 
     Dim intCount As Long 'count variable
@@ -956,7 +957,7 @@ Sub InitializeDD
         ExplosionDesc(intCount).H = 120
     Next
 
-    ddsHit = LoadImageTransparent("./dat/gfx/hit.gif")
+    ddsHit = LoadImageTransparent("./dat/gfx/hit.gif", TRANSPARENT_COLOR, FALSE, NULLSTRING)
     Assert ddsHit < -1
 
     For intCount = 0 To UBound(HitDesc)
@@ -965,7 +966,7 @@ Sub InitializeDD
         HitDesc(intCount).W = 8
     Next
 
-    ddsLaser = LoadImageTransparent("./dat/gfx/laser.gif")
+    ddsLaser = LoadImageTransparent("./dat/gfx/laser.gif", TRANSPARENT_COLOR, FALSE, NULLSTRING)
     Assert ddsLaser < -1
 
     For intCount = 0 To UBound(LaserDesc)
@@ -974,7 +975,7 @@ Sub InitializeDD
         LaserDesc(intCount).H = LASER1HEIGHT
     Next
 
-    ddsLaser2R = LoadImageTransparent("./dat/gfx/laser2.gif")
+    ddsLaser2R = LoadImageTransparent("./dat/gfx/laser2.gif", TRANSPARENT_COLOR, FALSE, NULLSTRING)
     Assert ddsLaser2R < -1
 
     For intCount = 0 To UBound(Laser2RDesc)
@@ -983,7 +984,7 @@ Sub InitializeDD
         Laser2RDesc(intCount).H = LASER2HEIGHT
     Next
 
-    ddsLaser2L = LoadImageTransparent("./dat/gfx/laser2.gif")
+    ddsLaser2L = LoadImageTransparent("./dat/gfx/laser2.gif", TRANSPARENT_COLOR, FALSE, NULLSTRING)
     Assert ddsLaser2L < -1
 
     For intCount = 0 To UBound(Laser2LDesc)
@@ -992,7 +993,7 @@ Sub InitializeDD
         Laser2LDesc(intCount).H = LASER2HEIGHT
     Next
 
-    ddsLaser3 = LoadImageTransparent("./dat/gfx/laser3.gif")
+    ddsLaser3 = LoadImageTransparent("./dat/gfx/laser3.gif", TRANSPARENT_COLOR, FALSE, NULLSTRING)
     Assert ddsLaser3 < -1
 
     For intCount = 0 To UBound(Laser3Desc)
@@ -1001,13 +1002,13 @@ Sub InitializeDD
         Laser3Desc(intCount).H = LASER3HEIGHT
     Next
 
-    ddsEnemyFire = LoadImageTransparent("./dat/gfx/enemyfire1.gif")
+    ddsEnemyFire = LoadImageTransparent("./dat/gfx/enemyfire1.gif", TRANSPARENT_COLOR, FALSE, NULLSTRING)
     Assert ddsEnemyFire < -1
 
-    ddsGuidedMissile = LoadImageTransparent("./dat/gfx/guidedmissile.gif")
+    ddsGuidedMissile = LoadImageTransparent("./dat/gfx/guidedmissile.gif", TRANSPARENT_COLOR, FALSE, NULLSTRING)
     Assert ddsGuidedMissile < -1
 
-    ddsDisplayBomb = LoadImageTransparent("./dat/gfx/displaybomb.gif")
+    ddsDisplayBomb = LoadImageTransparent("./dat/gfx/displaybomb.gif", TRANSPARENT_COLOR, FALSE, NULLSTRING)
     Assert ddsDisplayBomb < -1
 
     ddsObstacle(40) = LoadImage("./dat/gfx/deadplate.gif")
@@ -1059,33 +1060,6 @@ Sub InitializeDS
 
     dsExtraLife = SndOpen("./dat/sfx/snd/extralife.wav")
     Assert dsExtraLife > 0
-End Sub
-
-
-' Fades the screen to / from black
-Sub FadeScreen (isIn As Byte) ' Optional FadeIn As Boolean
-    ' Copy the whole screen to a temporary image buffer
-    Dim As Long tmp, i, w, h
-
-    tmp = CopyImage(0)
-    w = Width(tmp) - 1
-    h = Height(tmp) - 1
-
-    For i = 0 To 255
-        ' First bllit the image to the framebuffer
-        PutImage (0, 0), tmp
-        ' Now draw a black box over the image with changing alpha
-        If isIn Then
-            Line (0, 0)-(w, h), RGBA32(0, 0, 0, 255 - i), BF
-        Else
-            Line (0, 0)-(w, h), RGBA32(0, 0, 0, i), BF
-        End If
-
-        Display ' Flip the framebuffer
-        Delay 0.002 ' Delay a bit
-    Next
-
-    FreeImage tmp
 End Sub
 
 
@@ -1469,7 +1443,7 @@ Sub StartIntro
         lngCount = lngCount + 1 'increment the count
     Loop
 
-    FadeScreen TRUE 'fade the screen in
+    FadeScreen Dest, TRUE, UPDATES_PER_SECOND * 2, 100 'fade the screen in
 
     ClearInput
 
@@ -1479,7 +1453,7 @@ Sub StartIntro
 
     ClearInput
 
-    FadeScreen FALSE 'fade the screen out
+    FadeScreen Dest, FALSE, UPDATES_PER_SECOND * 2, 100 'fade the screen out
 End Sub
 
 
@@ -1548,7 +1522,7 @@ Sub LoadLevel (level As Long)
         For intCount2 = 0 To 125 'there are 126 slots in each section, loop through all of those
             If SectionInfo(intCount, intCount2) < 255 Then 'if the slot value is less than 255, an object exists there
                 If ddsEnemyContainer(SectionInfo(intCount, intCount2)) > -2 Then ' if this object hasn't been loaded then (QB64 valid image handles are < -1)
-                    ddsEnemyContainer(SectionInfo(intCount, intCount2)) = LoadImageTransparent("./dat/gfx/" + EnemyContainerDesc(SectionInfo(intCount, intCount2)).FileName) 'create this object
+                    ddsEnemyContainer(SectionInfo(intCount, intCount2)) = LoadImageTransparent("./dat/gfx/" + EnemyContainerDesc(SectionInfo(intCount, intCount2)).FileName, TRANSPARENT_COLOR, FALSE, NULLSTRING) 'create this object
                     Assert ddsEnemyContainer(SectionInfo(intCount, intCount2)) < -1
                 End If
             End If
@@ -1559,7 +1533,7 @@ Sub LoadLevel (level As Long)
         For intCount2 = 0 To 125
             If ObstacleInfo(intCount, intCount2) < 255 Then
                 If ddsObstacle(ObstacleInfo(intCount, intCount2)) > -2 Then
-                    ddsObstacle(ObstacleInfo(intCount, intCount2)) = LoadImageTransparent("./dat/gfx/" + ObstacleContainerInfo(ObstacleInfo(intCount, intCount2)).FileName)
+                    ddsObstacle(ObstacleInfo(intCount, intCount2)) = LoadImageTransparent("./dat/gfx/" + ObstacleContainerInfo(ObstacleInfo(intCount, intCount2)).FileName, TRANSPARENT_COLOR, FALSE, NULLSTRING)
                     Assert ddsObstacle(ObstacleInfo(intCount, intCount2)) < -1
                 End If
             End If
@@ -1592,7 +1566,7 @@ Sub LoadLevel (level As Long)
         End If
     End If
 
-    FadeScreen TRUE 'fade the screen in
+    FadeScreen Dest, TRUE, UPDATES_PER_SECOND * 2, 100 'fade the screen in
 
     intCount = 0 'set the count variable to 0
     Do
@@ -1625,7 +1599,7 @@ Sub LoadLevel (level As Long)
 
     lngNumEnemiesKilled = 0 'reset the number of enemies killed
     lngTotalNumEnemies = 0 'reset the total number of enemies on the level
-    FadeScreen FALSE 'fade the screen to black
+    FadeScreen Dest, FALSE, UPDATES_PER_SECOND * 2, 100 'fade the screen to black
 
     intObjectIndex = byteLevel - 1 'set the background index to the current level number
     If intObjectIndex > UBound(BackgroundObject) Then 'if we go beyond the boundaries of how many objects we have allocated
@@ -1730,7 +1704,7 @@ Sub UpdateLevels
                 Limit UPDATES_PER_SECOND
             Loop
 
-            FadeScreen FALSE 'fade the screen to black
+            FadeScreen Dest, FALSE, UPDATES_PER_SECOND * 2, 100 'fade the screen to black
 
             For intCount = 0 To UBound(ExplosionDesc) 'loop through all explosions
                 ExplosionDesc(intCount).Exists = FALSE 'they all no longer exist
@@ -1747,9 +1721,9 @@ Sub UpdateLevels
             DrawStringCenter "help but ponder... were all of the aliens really destroyed?", 240, DarkGoldenRod
             DrawStringCenter "THE END", 270, DarkGoldenRod
 
-            FadeScreen TRUE 'fade the screen in
+            FadeScreen Dest, TRUE, UPDATES_PER_SECOND * 2, 100 'fade the screen in
             Sleep 20 ' Display the winning message for 20 seconds
-            FadeScreen FALSE 'fade the screen to black again
+            FadeScreen Dest, FALSE, UPDATES_PER_SECOND * 2, 100 'fade the screen to black again
             intShields = SHIELD_MAX 'shields are at 100%
             Ship.X = 300 'reset the players X
             Ship.Y = 300 'and Y coordinates
@@ -3212,7 +3186,7 @@ Sub UpdateShields
 
                 Display 'flip the front and back surfaces
             Loop 'continues looping for three seconds
-            FadeScreen FALSE 'Fade the screen to black
+            FadeScreen Dest, FALSE, UPDATES_PER_SECOND * 2, 100 'Fade the screen to black
             intShields = SHIELD_MAX 'shields are at 100%
             Ship.X = 300 'reset the players X
             Ship.Y = 300 'and Y coordinates
@@ -3398,10 +3372,10 @@ Sub DoCredits
 
     DrawString "Samuel Gomes - QB64-PE source port", 32, 290, Yellow ' Shameless plug XD
 
-    FadeScreen TRUE 'Fade the screen in
+    FadeScreen Dest, TRUE, UPDATES_PER_SECOND * 2, 100 'Fade the screen in
     Sleep 2 ' Wait for 2 seconds
 
-    FadeScreen FALSE 'Fade the screen out
+    FadeScreen Dest, FALSE, UPDATES_PER_SECOND * 2, 100 'Fade the screen out
     Sleep 1 ' Wait for a second
 End Sub
 
@@ -3467,7 +3441,7 @@ Sub GetInput
             End If
             If Ship.AlarmActive Then SndStop dsAlarm 'if the low shield alarm is playing, stop that
             ' pause music
-            If MIDIHandle > 0 Then SndPause MIDIHandle
+            PauseMIDI TRUE
 
             DrawStringCenter "(Paused - Press ENTER to resume)", 200, OrangeRed 'display the pause text
             Display 'flip the surfaces to show the back buffer
@@ -3478,7 +3452,8 @@ Sub GetInput
             Loop Until KeyDown(KEY_ENTER)
 
             ' resume music
-            If MIDIHandle > 0 Then SndLoop MIDIHandle
+            PauseMIDI FALSE
+
             If Ship.Invulnerable Then 'if the ship was invulnerable
                 SndLoop dsInvulnerability 'start the invulenrability wave again
                 Ship.InvulnerableTime = TempTime + GetTicks 'the amount of time the player had left is restored
@@ -3505,7 +3480,7 @@ Sub GetInput
             boolStarted = TRUE 'the game has started
             'TODO: If Not ef(2) Is Nothing And IsFF Then ef(2).Download
             'download the force feedback effect for firing lasers
-            FadeScreen FALSE 'fade the current screen
+            FadeScreen Dest, FALSE, UPDATES_PER_SECOND * 2, 100 'fade the current screen
             StartIntro 'show the intro text
             byteLives = LIVES_DEFAULT 'Set lives
             intShields = SHIELD_MAX 'Set shields
@@ -3534,8 +3509,8 @@ Sub GetInput
         ElseIf (KeyCode = 109 Or KeyCode = 77) And Not boolStarted Then
             'if the M key is pressed, and the game has not started
             If blnMIDIEnabled Then 'if midi is enabled
-                blnMIDIEnabled = FALSE 'toggle it off
                 PlayMIDIFile NULLSTRING 'stop playing any midi
+                blnMIDIEnabled = FALSE 'toggle it off
             Else 'otherwise
                 blnMIDIEnabled = TRUE 'turn the midi on
                 PlayMIDIFile "./dat/sfx/mus/title.mid" 'play the title midi
@@ -3551,35 +3526,47 @@ Sub GetInput
 End Sub
 
 
-' This loads an image and then make the pixel with the 'color key' transparent
-Function LoadImageTransparent& (fileName As String)
-    Dim handle As Long
-
-    handle = LoadImage(fileName)
-    If handle < -1 Then ClearColor TRANSPARENT_COLOR, handle
-
-    LoadImageTransparent = handle
-End Function
-
-
 ' Loads and plays a MIDI file (loops it too)
 Sub PlayMIDIFile (fileName As String)
-    ' Unload if there is anything previously loaded
-    If MIDIHandle > 0 Then
-        SndStop MIDIHandle
-        SndClose MIDIHandle
-        MIDIHandle = 0
-    End If
+    If blnMIDIEnabled Then
+        $If WINDOWS Then
+            If fileName <> NULLSTRING And FileExists(fileName) Then
+                MIDI_PlayFromFile fileName
+            Else
+                MIDI_Stop
+            End If
+        $Else
+                ' Unload if there is anything previously loaded
+                If MIDIHandle > 0 Then
+                SndStop MIDIHandle
+                SndClose MIDIHandle
+                MIDIHandle = 0
+                End If
 
-    ' Check if the file exists
-    If fileName <> NULLSTRING And FileExists(fileName) Then
-        MIDIHandle = SndOpen(fileName, "stream")
-        Assert MIDIHandle > 0
+                ' Check if the file exists
+                If fileName <> NULLSTRING And FileExists(fileName) Then
+                MIDIHandle = SndOpen(fileName, "stream")
+                Assert MIDIHandle > 0
 
-        ' Loop the MIDI file
-        If MIDIHandle > 0 Then SndLoop MIDIHandle
+                ' Loop the MIDI file
+                If MIDIHandle > 0 Then SndLoop MIDIHandle
+                End If
+        $End If
     End If
 End Sub
+
+
+' Pauses / unpauses MIDI playback
+Sub PauseMIDI (pause As Byte)
+    If blnMIDIEnabled Then
+        $If WINDOWS Then
+            MIDI_Pause pause
+        $Else
+                If pause Then SndPause MIDIHandle Else SndLoop MIDIHandle
+        $End If
+    End If
+End Sub
+
 
 ' Chear mouse and keyboard events
 ' TODO: Game controller?
@@ -3588,28 +3575,14 @@ Sub ClearInput
     Wend
     KeyClear
 End Sub
+'-----------------------------------------------------------------------------------------------------------------------
 
-' Generates a random number between lo & hi
-Function RandomBetween& (lo As Long, hi As Long)
-    RandomBetween = lo + Rnd * (hi - lo)
-End Function
-
-' Calculates and returns the FPS when repeatedly called inside a loop
-Function CalculateFPS~&
-    Static As Unsigned Long counter, finalFPS
-    Static lastTime As Integer64
-    Dim currentTime As Integer64
-
-    counter = counter + 1
-
-    currentTime = GetTicks
-    If currentTime > lastTime + 1000 Then
-        lastTime = currentTime
-        finalFPS = counter
-        counter = 0
-    End If
-
-    CalculateFPS = finalFPS
-End Function
-'---------------------------------------------------------------------------------------------------------
-
+'-----------------------------------------------------------------------------------------------------------------------
+' HEADER FILES
+'-----------------------------------------------------------------------------------------------------------------------
+'$Include:'include/GfxEx.bas'
+$If WINDOWS Then
+    '$Include:'include/WinMIDIPlayer.bas'
+$End If
+'-----------------------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
