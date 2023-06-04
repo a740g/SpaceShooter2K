@@ -22,8 +22,9 @@
 '-----------------------------------------------------------------------------------------------------------------------
 ' HEADER FILES
 '-----------------------------------------------------------------------------------------------------------------------
-'$Include:'include/FileOps.bi'
+'$Include:'include/Common.bi'
 $If WINDOWS Then
+    '$Include:'include/FileOps.bi'
     '$Include:'include/WinMIDIPlayer.bi'
 $End If
 '-----------------------------------------------------------------------------------------------------------------------
@@ -35,7 +36,7 @@ $NoPrefix
 $Resize:Smooth
 $Color:32
 $Asserts
-$If WINDOWS = UNDEFINED Then
+$If LINUX OR MACOSX Then
         $Unstable:Midi
         $MidiSoundFont:Default
 $End If
@@ -241,7 +242,7 @@ Dim Shared dsInvulnerability As Long 'sound for when the player is invulnerable
 Dim Shared dsInvPowerDown As Long 'sound for when the invulnerability wears off
 Dim Shared dsExtraLife As Long 'sound for when the player gets an extra life
 
-$If WINDOWS = UNDEFINED Then
+$If LINUX OR MACOSX Then
         Dim Shared MIDIHandle As Long ' MIDI music handle
 $End If
 
