@@ -26,7 +26,6 @@ The original [Visual Basic 6](https://winworldpc.com/product/microsoft-visual-ba
 - Open Terminal and change to the directory using an appropriate OS command
 - Run `git submodule update --init --recursive` to initialize, fetch and checkout git submodules
 - Open *SpaceShooter2k.bas* in the QB64-PE IDE and press `F5` to compile and run
-- To use the library in your project add the [Toolbox64](https://github.com/a740g/Toolbox64) repositiory as a [Git submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
 
 ## NOTES
 
