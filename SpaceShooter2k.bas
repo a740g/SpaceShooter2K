@@ -1,6 +1,6 @@
 '-----------------------------------------------------------------------------------------------------------------------
 ' SPACE SHOOTER 2000!
-' Copyright (c) 2023 Samuel Gomes
+' Copyright (c) 2024 Samuel Gomes
 ' Copyright (c) 2000 Adam "Gollum" Lonnberg
 '-----------------------------------------------------------------------------------------------------------------------
 
@@ -23,7 +23,7 @@
 '-----------------------------------------------------------------------------------------------------------------------
 '$INCLUDE:'include/TimeOps.bi'
 '$INCLUDE:'include/MathOps.bi'
-'$INCLUDE:'include/ColorOps.bi'
+'$INCLUDE:'include/GraphicOps.bi'
 $IF WINDOWS THEN
     '$INCLUDE:'include/FileOps.bi'
     '$INCLUDE:'include/WinMIDIPlayer.bi'
@@ -37,21 +37,21 @@ $NOPREFIX
 $RESIZE:SMOOTH
 $ASSERTS
 $IF LINUX OR MACOSX THEN
-        $Unstable:Midi
-        $MidiSoundFont:Default
+        $UNSTABLE:MIDI
+        $MIDISOUNDFONT:DEFAULT
 $END IF
 $EXEICON:'./SpaceShooter2k.ico'
 $VERSIONINFO:ProductName='Space Shooter 2000'
 $VERSIONINFO:CompanyName='Samuel Gomes'
-$VERSIONINFO:LegalCopyright='Conversion / port copyright (c) 2022 Samuel Gomes'
+$VERSIONINFO:LegalCopyright='Conversion / port copyright (c) 2024 Samuel Gomes'
 $VERSIONINFO:LegalTrademarks='All trademarks are property of their respective owners'
 $VERSIONINFO:Web='https://github.com/a740g'
 $VERSIONINFO:Comments='https://github.com/a740g'
 $VERSIONINFO:InternalName='SpaceShooter2k'
 $VERSIONINFO:OriginalFilename='SpaceShooter2k.exe'
 $VERSIONINFO:FileDescription='Space Shooter 2000 executable'
-$VERSIONINFO:FILEVERSION#=2,1,0,0
-$VERSIONINFO:PRODUCTVERSION#=2,1,0,0
+$VERSIONINFO:FILEVERSION#=2,1,1,0
+$VERSIONINFO:PRODUCTVERSION#=2,1,1,0
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
@@ -64,6 +64,7 @@ CONST SCREEN_WIDTH = 640 ' width for the display mode
 CONST SCREEN_HEIGHT = 480 ' height for the display mode
 CONST TRANSPARENT_COLOR = RGB32(208, 2, 178) ' transparent color used in all GIF images assets
 CONST UPDATES_PER_SECOND = 52 ' this is the desired game FPS
+CONST FADE_FPS = UPDATES_PER_SECOND * 2 ' how fast do we want our sceen fades
 
 ' Powerup stuff
 CONST SHIELD = &H0 'Constant for the shield powerup
@@ -243,7 +244,7 @@ DIM SHARED dsInvPowerDown AS LONG 'sound for when the invulnerability wears off
 DIM SHARED dsExtraLife AS LONG 'sound for when the player gets an extra life
 
 $IF LINUX OR MACOSX THEN
-        Dim Shared MIDIHandle As Long ' MIDI music handle
+        DIM SHARED MIDIHandle AS LONG ' MIDI music handle
 $END IF
 
 'Variables to handle graphics
@@ -309,7 +310,7 @@ InitializeStartup 'Do the startup routines
 LoadHighScores 'Call the sub to load the high scores
 lngNextExtraLifeScore = EXTRALIFETARGET 'Initialize the extra life score to 100,000
 SLEEP 1 ' Wait for a second
-FadeScreen DEST, FALSE, UPDATES_PER_SECOND * 2, 100 ' Fade out the loading screen
+Graphics_FadeScreen FALSE, FADE_FPS, 100 ' Fade out the loading screen
 ClearInput ' Clear any cached input
 
 DO 'The main loop of the game.
@@ -346,7 +347,7 @@ DO 'The main loop of the game.
         CheckHighScore 'call the high score subroutine
     END IF
 
-    IF boolFrameRate THEN DrawString "FPS:" + STR$(GetFPS), 30, 30, BGRA_WHITE 'display the frame rate
+    IF boolFrameRate THEN DrawString "FPS:" + STR$(Time_GetHertz), 30, 30, BGRA_WHITE 'display the frame rate
 
     IF boolMaxFrameRate THEN
         DrawString "Uncapped FPS enabled", 30, 45, BGRA_WHITE 'Let the player know there is no frame rate limitation
@@ -390,7 +391,7 @@ SUB ResetGame
         PowerUp(intCount).Exists = FALSE 'if there are any power ups currently on screen, get rid of them
     NEXT
 
-    FadeScreen DEST, FALSE, UPDATES_PER_SECOND * 2, 100 'Fade the screen to black
+    Graphics_FadeScreen FALSE, FADE_FPS, 100 'Fade the screen to black
 
     intShields = SHIELD_MAX 'shields are at 100%
 
@@ -859,11 +860,11 @@ SUB CheckScore
         SNDSETPOS dsExtraLife, 0 'Set the extra life wave position to the beginning
         SNDPLAY dsExtraLife 'Play the extra life wave file
         blnExtraLifeDisplay = TRUE 'Toggle the extra life display flag to on
-        lngTargetTime = GetTicks + 3000 'Set the end time for displaying the extra life message
+        lngTargetTime = Time_GetTicks + 3000 'Set the end time for displaying the extra life message
         byteLives = byteLives + 1 'increase the players life by 1
     END IF
 
-    IF lngTargetTime > GetTicks AND blnExtraLifeDisplay THEN 'As long as the target time is larger than the current time, and the extra life display flag is set
+    IF lngTargetTime > Time_GetTicks AND blnExtraLifeDisplay THEN 'As long as the target time is larger than the current time, and the extra life display flag is set
         DrawStringCenter "EXTRA LIFE!", 250, BGRA_TOMATO 'Display the extra life message
     ELSE
         blnExtraLifeDisplay = FALSE 'Otherwise, if we have gone past the display duration, turn the display flag off
@@ -916,36 +917,36 @@ END SUB
 SUB InitializeDD
     DIM ddsSplash AS LONG ' dim a direct draw surface
 
-    ddsSplash = LOADIMAGE("./dat/gfx/splash.gif") 'create the splash screen surface
+    ddsSplash = Graphics_LoadImage("./dat/gfx/splash.gif", FALSE, FALSE, EMPTY_STRING, -1) 'create the splash screen surface
     ASSERT ddsSplash < -1
 
-    PUTIMAGE (0, 0), ddsSplash ' blit the splash screen to the back buffer
+    PUTIMAGE , ddsSplash ' blit the splash screen to the back buffer
     DrawString OS$, 0, HEIGHT - UFONTHEIGHT, BGRA_WHITE ' overlay the OS string on the bottom left side
 
     FREEIMAGE ddsSplash ' release the splash screen, since we don't need it anymore
 
-    FadeScreen DEST, TRUE, UPDATES_PER_SECOND * 2, 100 ' flip the front buffer so the splash screen bitmap on the backbuffer is displayed
+    Graphics_FadeScreen TRUE, FADE_FPS, 100 ' flip the front buffer so the splash screen bitmap on the backbuffer is displayed
     PlayMIDIFile "./dat/sfx/mus/title.mid" ' Start playing the title song
 
-    ddsTitle = LOADIMAGE("./dat/gfx/title.gif", 256, "adaptive") ' Load the title screen bitmap in 8bpp mode for palette tricks
+    ddsTitle = Graphics_LoadImage("./dat/gfx/title.gif", TRUE, FALSE, "ADAPTIVE", -1) ' Load the title screen bitmap in 8bpp mode for palette tricks
     ASSERT ddsTitle < -1
     ' Due to the way the internal QB64-PE 256 color conversion works, the first pixel color is stored at index 0
     ' How do I know this? Well, I wrote it! :)
     CLEARCOLOR 0, ddsTitle
 
-    ddsShip = LoadImageTransparent("./dat/gfx/ship.gif", TRANSPARENT_COLOR, FALSE, EMPTY_STRING) 'Load the ship bitmap and make it into a direct draw surface
+    ddsShip = Graphics_LoadImage("./dat/gfx/ship.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR) 'Load the ship bitmap and make it into a direct draw surface
     ASSERT ddsShip < -1
 
-    ddsPowerUp = LoadImageTransparent("./dat/gfx/powerups.gif", TRANSPARENT_COLOR, FALSE, EMPTY_STRING) 'Load the shield indicator bitmap and put in a direct draw surface
+    ddsPowerUp = Graphics_LoadImage("./dat/gfx/powerups.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR) 'Load the shield indicator bitmap and put in a direct draw surface
     ASSERT ddsPowerUp < -1
 
-    ddsExplosion(0) = LoadImageTransparent("./dat/gfx/explosion.gif", TRANSPARENT_COLOR, FALSE, EMPTY_STRING) 'Load the first explosion bitmap
+    ddsExplosion(0) = Graphics_LoadImage("./dat/gfx/explosion.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR) 'Load the first explosion bitmap
     ASSERT ddsExplosion(0) < -1
 
-    ddsExplosion(1) = LoadImageTransparent("./dat/gfx/explosion2.gif", TRANSPARENT_COLOR, FALSE, EMPTY_STRING) 'Load the second explosion bitmap
+    ddsExplosion(1) = Graphics_LoadImage("./dat/gfx/explosion2.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR) 'Load the second explosion bitmap
     ASSERT ddsExplosion(1) < -1
 
-    ddsInvulnerable = LoadImageTransparent("./dat/gfx/invulnerable.gif", TRANSPARENT_COLOR, FALSE, EMPTY_STRING) 'Load the invulnerable bitmap
+    ddsInvulnerable = Graphics_LoadImage("./dat/gfx/invulnerable.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR) 'Load the invulnerable bitmap
     ASSERT ddsInvulnerable < -1
 
     DIM intCount AS LONG 'count variable
@@ -958,7 +959,7 @@ SUB InitializeDD
         ExplosionDesc(intCount).H = 120
     NEXT
 
-    ddsHit = LoadImageTransparent("./dat/gfx/hit.gif", TRANSPARENT_COLOR, FALSE, EMPTY_STRING)
+    ddsHit = Graphics_LoadImage("./dat/gfx/hit.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR)
     ASSERT ddsHit < -1
 
     FOR intCount = 0 TO UBOUND(HitDesc)
@@ -967,7 +968,7 @@ SUB InitializeDD
         HitDesc(intCount).W = 8
     NEXT
 
-    ddsLaser = LoadImageTransparent("./dat/gfx/laser.gif", TRANSPARENT_COLOR, FALSE, EMPTY_STRING)
+    ddsLaser = Graphics_LoadImage("./dat/gfx/laser.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR)
     ASSERT ddsLaser < -1
 
     FOR intCount = 0 TO UBOUND(LaserDesc)
@@ -976,7 +977,7 @@ SUB InitializeDD
         LaserDesc(intCount).H = LASER1HEIGHT
     NEXT
 
-    ddsLaser2R = LoadImageTransparent("./dat/gfx/laser2.gif", TRANSPARENT_COLOR, FALSE, EMPTY_STRING)
+    ddsLaser2R = Graphics_LoadImage("./dat/gfx/laser2.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR)
     ASSERT ddsLaser2R < -1
 
     FOR intCount = 0 TO UBOUND(Laser2RDesc)
@@ -985,7 +986,7 @@ SUB InitializeDD
         Laser2RDesc(intCount).H = LASER2HEIGHT
     NEXT
 
-    ddsLaser2L = LoadImageTransparent("./dat/gfx/laser2.gif", TRANSPARENT_COLOR, FALSE, EMPTY_STRING)
+    ddsLaser2L = Graphics_LoadImage("./dat/gfx/laser2.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR)
     ASSERT ddsLaser2L < -1
 
     FOR intCount = 0 TO UBOUND(Laser2LDesc)
@@ -994,7 +995,7 @@ SUB InitializeDD
         Laser2LDesc(intCount).H = LASER2HEIGHT
     NEXT
 
-    ddsLaser3 = LoadImageTransparent("./dat/gfx/laser3.gif", TRANSPARENT_COLOR, FALSE, EMPTY_STRING)
+    ddsLaser3 = Graphics_LoadImage("./dat/gfx/laser3.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR)
     ASSERT ddsLaser3 < -1
 
     FOR intCount = 0 TO UBOUND(Laser3Desc)
@@ -1003,16 +1004,16 @@ SUB InitializeDD
         Laser3Desc(intCount).H = LASER3HEIGHT
     NEXT
 
-    ddsEnemyFire = LoadImageTransparent("./dat/gfx/enemyfire1.gif", TRANSPARENT_COLOR, FALSE, EMPTY_STRING)
+    ddsEnemyFire = Graphics_LoadImage("./dat/gfx/enemyfire1.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR)
     ASSERT ddsEnemyFire < -1
 
-    ddsGuidedMissile = LoadImageTransparent("./dat/gfx/guidedmissile.gif", TRANSPARENT_COLOR, FALSE, EMPTY_STRING)
+    ddsGuidedMissile = Graphics_LoadImage("./dat/gfx/guidedmissile.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR)
     ASSERT ddsGuidedMissile < -1
 
-    ddsDisplayBomb = LoadImageTransparent("./dat/gfx/displaybomb.gif", TRANSPARENT_COLOR, FALSE, EMPTY_STRING)
+    ddsDisplayBomb = Graphics_LoadImage("./dat/gfx/displaybomb.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR)
     ASSERT ddsDisplayBomb < -1
 
-    ddsObstacle(40) = LOADIMAGE("./dat/gfx/deadplate.gif")
+    ddsObstacle(40) = Graphics_LoadImage("./dat/gfx/deadplate.gif", FALSE, FALSE, EMPTY_STRING, -1)
     ASSERT ddsObstacle(40) < -1
 END SUB
 
@@ -1069,7 +1070,7 @@ END SUB
 SUB DrawStringCenter (s AS STRING, y AS LONG, c AS UNSIGNED LONG)
     $CHECKING:OFF
     COLOR c
-    UPRINTSTRING ((SCREEN_WIDTH \ 2) - (UPRINTWIDTH(s) \ 2), y), s
+    PRINTSTRING ((SCREEN_WIDTH \ 2) - (UPRINTWIDTH(s) \ 2), y), s
     $CHECKING:ON
 END SUB
 
@@ -1078,7 +1079,7 @@ END SUB
 SUB DrawString (s AS STRING, x AS LONG, y AS LONG, c AS UNSIGNED LONG)
     $CHECKING:OFF
     COLOR c 'Set the color of the text to the color passed to the sub
-    UPRINTSTRING (x, y), s 'Draw the text on to the screen, in the coordinates specified
+    PRINTSTRING (x, y), s 'Draw the text on to the screen, in the coordinates specified
     $CHECKING:ON
 END SUB
 
@@ -1208,7 +1209,7 @@ SUB CheckHighScore
     END IF
 
     IF boolGettingInput AND NOT boolEnterPressed THEN 'as long as we are getting input, and the player hasn't pressed enter
-        IF LEN(strName) < HIGH_SCORE_TEXT_LEN AND strBuffer <> EMPTY_STRING THEN 'if we haven't reached the limit of characters for the name, and the buffer isn't empty then
+        IF LEN(strName) < HIGH_SCORE_TEXT_LEN AND LEN(strBuffer) > NULL THEN 'if we haven't reached the limit of characters for the name, and the buffer isn't empty then
             strName = strName + strBuffer 'if the buffer contains a letter or a space, add it to the buffer
         END IF
         DrawStringCenter "NEW HIGH SCORE:" + STR$(HighScore(NUM_HIGH_SCORES - 1).score), 200, BGRA_WHITE 'Display the new high score message
@@ -1255,7 +1256,7 @@ SUB UpdatePowerUps (CreatePowerup AS BYTE) ' Optional CreatePowerup As Boolean
             intCount = intCount + 1 'increment the count
         LOOP
         IF intCount < UBOUND(PowerUp) THEN 'if there was an empty spot found
-            intRandomNumber = GetRandomBetween(0, 899) 'Create a random number to see which power up
+            intRandomNumber = Math_GetRandomBetween(0, 899) 'Create a random number to see which power up
             IF intRandomNumber <= 400 THEN 'see what value the random number is
                 PowerUp(intCount).Index = SHIELD 'make it a shield powerup
             ELSEIF intRandomNumber > 400 AND intRandomNumber < 600 THEN
@@ -1265,7 +1266,7 @@ SUB UpdatePowerUps (CreatePowerup AS BYTE) ' Optional CreatePowerup As Boolean
             ELSEIF intRandomNumber >= 800 AND intRandomNumber < 900 THEN
                 PowerUp(intCount).Index = INVULNERABILITY 'Make it an invulnerability powerup
             END IF
-            PowerUp(intCount).X = GetRandomBetween(0, SCREEN_WIDTH - POWERUPWIDTH - 1) 'Create the power-up, and set a random X position
+            PowerUp(intCount).X = Math_GetRandomBetween(0, SCREEN_WIDTH - POWERUPWIDTH - 1) 'Create the power-up, and set a random X position
             PowerUp(intCount).Y = 0 'Make the power-up start at the top of the screen
             PowerUp(intCount).Exists = TRUE 'The power up now exists
         END IF
@@ -1380,18 +1381,18 @@ SUB ShowMapLocation (OutlineLocation AS BYTE) ' Optional OutlineLocation As Bool
         IF intCount = (byteLevel - 1) THEN CurrentLevelRect = DestRect 'if the level is equal to the count we are on, store this rectangle for use
         YLocation(intCount) = DestRect.bottom - ((DestRect.bottom - DestRect.top) \ 2) 'calculate the line that will be drawn between the rectangles' Y position
         PUTIMAGE (DestRect.left, DestRect.top)-(DestRect.right, DestRect.bottom), ddsBackgroundObject(intCount) 'blit the background to the screen
-        LINE (DestRect.left, DestRect.top)-(DestRect.right, DestRect.bottom), BGRA_DIMGRAY, B 'draw a box around the bitmap
+        Graphics_DrawRectangle DestRect.left, DestRect.top, DestRect.right, DestRect.bottom, BGRA_DIMGRAY 'draw a box around the bitmap
         YOffset = YOffset - 45 'decrement the Y offset
     NEXT
 
     IF byteLevel > 1 THEN 'if the level is larger than level 1
         FOR intCount = 1 TO (byteLevel - 1) 'loop until we reach the current level
-            LINE (XLocation(intCount - 1), YLocation(intCount - 1))-(XLocation(intCount), YLocation(intCount)) 'draw a line connecting the last level's index with this level's index
+            Graphics_DrawLine XLocation(intCount - 1), YLocation(intCount - 1), XLocation(intCount), YLocation(intCount), BGRA_WHITE 'draw a line connecting the last level's index with this level's index
         NEXT
     END IF
 
     IF OutlineLocation THEN 'if the sub is called with the OutlineLocation flag set then
-        LINE (CurrentLevelRect.left, CurrentLevelRect.top)-(CurrentLevelRect.right, CurrentLevelRect.bottom), BGRA_ORANGERED, B 'draw the orange rectangle around the current level bitmap
+        Graphics_DrawRectangle CurrentLevelRect.left, CurrentLevelRect.top, CurrentLevelRect.right, CurrentLevelRect.bottom, BGRA_ORANGERED 'draw the orange rectangle around the current level bitmap
     END IF
 END SUB
 
@@ -1434,10 +1435,10 @@ SUB StartIntro
     CLS 'fill the backbuffer with black
     YPosition = 50 'initialize the Y coordinate of the text to 50
 
-    ddsSplash = LOADIMAGE("./dat/gfx/nebulae4.gif") 'create a surface
+    ddsSplash = Graphics_LoadImage("./dat/gfx/nebulae4.gif", FALSE, FALSE, EMPTY_STRING, -1) 'create a surface
     ASSERT ddsSplash < -1
 
-    PUTIMAGE (0, 0)-(SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1), ddsSplash 'blit the surface to the screen
+    PUTIMAGE , ddsSplash 'blit the surface to the screen
 
     FREEIMAGE ddsSplash 'release all resources for the background bitmap
 
@@ -1448,7 +1449,7 @@ SUB StartIntro
         lngCount = lngCount + 1 'increment the count
     LOOP
 
-    FadeScreen DEST, TRUE, UPDATES_PER_SECOND * 2, 100 'fade the screen in
+    Graphics_FadeScreen TRUE, FADE_FPS, 100 'fade the screen in
 
     ClearInput
 
@@ -1458,7 +1459,7 @@ SUB StartIntro
 
     ClearInput
 
-    FadeScreen DEST, FALSE, UPDATES_PER_SECOND * 2, 100 'fade the screen out
+    Graphics_FadeScreen FALSE, FADE_FPS, 100 'fade the screen out
 END SUB
 
 
@@ -1484,7 +1485,7 @@ SUB LoadLevel (level AS LONG)
     END IF
 
     FOR intCount = 0 TO UBOUND(ddsBackgroundObject) 'loop through all the background objects
-        ddsBackgroundObject(intCount) = LOADIMAGE("./dat/gfx/" + BackgroundObject(intCount).FileName) 'Load one of the background bitmaps
+        ddsBackgroundObject(intCount) = Graphics_LoadImage("./dat/gfx/" + BackgroundObject(intCount).FileName, FALSE, FALSE, EMPTY_STRING, -1) 'Load one of the background bitmaps
         ASSERT ddsBackgroundObject(intCount) < -1
     NEXT
 
@@ -1527,7 +1528,7 @@ SUB LoadLevel (level AS LONG)
         FOR intCount2 = 0 TO 125 'there are 126 slots in each section, loop through all of those
             IF SectionInfo(intCount, intCount2) < 255 THEN 'if the slot value is less than 255, an object exists there
                 IF ddsEnemyContainer(SectionInfo(intCount, intCount2)) > -2 THEN ' if this object hasn't been loaded then (QB64 valid image handles are < -1)
-                    ddsEnemyContainer(SectionInfo(intCount, intCount2)) = LoadImageTransparent("./dat/gfx/" + EnemyContainerDesc(SectionInfo(intCount, intCount2)).FileName, TRANSPARENT_COLOR, FALSE, EMPTY_STRING) 'create this object
+                    ddsEnemyContainer(SectionInfo(intCount, intCount2)) = Graphics_LoadImage("./dat/gfx/" + EnemyContainerDesc(SectionInfo(intCount, intCount2)).FileName, FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR) 'create this object
                     ASSERT ddsEnemyContainer(SectionInfo(intCount, intCount2)) < -1
                 END IF
             END IF
@@ -1538,7 +1539,7 @@ SUB LoadLevel (level AS LONG)
         FOR intCount2 = 0 TO 125
             IF ObstacleInfo(intCount, intCount2) < 255 THEN
                 IF ddsObstacle(ObstacleInfo(intCount, intCount2)) > -2 THEN
-                    ddsObstacle(ObstacleInfo(intCount, intCount2)) = LoadImageTransparent("./dat/gfx/" + ObstacleContainerInfo(ObstacleInfo(intCount, intCount2)).FileName, TRANSPARENT_COLOR, FALSE, EMPTY_STRING)
+                    ddsObstacle(ObstacleInfo(intCount, intCount2)) = Graphics_LoadImage("./dat/gfx/" + ObstacleContainerInfo(ObstacleInfo(intCount, intCount2)).FileName, FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR)
                     ASSERT ddsObstacle(ObstacleInfo(intCount, intCount2)) < -1
                 END IF
             END IF
@@ -1546,7 +1547,7 @@ SUB LoadLevel (level AS LONG)
     NEXT
 
     FOR intCount = 1 TO 500 'loop this 500 times
-        PSET (GetRandomBetween(0, SCREEN_WIDTH - 1), GetRandomBetween(0, SCREEN_HEIGHT - 1)), RGB32(GetRandomBetween(192, 255), GetRandomBetween(192, 255), GetRandomBetween(192, 255))
+        Graphics_DrawPixel Math_GetRandomBetween(0, SCREEN_WIDTH - 1), Math_GetRandomBetween(0, SCREEN_HEIGHT - 1), RGB32(Math_GetRandomBetween(192, 255), Math_GetRandomBetween(192, 255), Math_GetRandomBetween(192, 255))
     NEXT
 
     intCount = 1 'set the count variable to 1
@@ -1571,7 +1572,7 @@ SUB LoadLevel (level AS LONG)
         END IF
     END IF
 
-    FadeScreen DEST, TRUE, UPDATES_PER_SECOND * 2, 100 'fade the screen in
+    Graphics_FadeScreen TRUE, FADE_FPS, 100 'fade the screen in
 
     intCount = 0 'set the count variable to 0
     DO
@@ -1604,7 +1605,7 @@ SUB LoadLevel (level AS LONG)
 
     lngNumEnemiesKilled = 0 'reset the number of enemies killed
     lngTotalNumEnemies = 0 'reset the total number of enemies on the level
-    FadeScreen DEST, FALSE, UPDATES_PER_SECOND * 2, 100 'fade the screen to black
+    Graphics_FadeScreen FALSE, FADE_FPS, 100 'fade the screen to black
 
     intObjectIndex = byteLevel - 1 'set the background index to the current level number
     IF intObjectIndex > UBOUND(BackgroundObject) THEN 'if we go beyond the boundaries of how many objects we have allocated
@@ -1646,7 +1647,7 @@ SUB LoadLevel (level AS LONG)
         END IF
     NEXT
 
-    ddsBackgroundObject(byteLevel - 1) = LOADIMAGE("./dat/gfx/" + BackgroundObject(byteLevel - 1).FileName) 'Now we load only the necessary background object
+    ddsBackgroundObject(byteLevel - 1) = Graphics_LoadImage("./dat/gfx/" + BackgroundObject(byteLevel - 1).FileName, FALSE, FALSE, EMPTY_STRING, -1) 'Now we load only the necessary background object
     ASSERT ddsBackgroundObject(byteLevel - 1) < -1
 
     'Reset the ships' position and velocity
@@ -1681,9 +1682,9 @@ SUB UpdateLevels
             SNDSTOP dsAlarm 'Turn off any alarm
             SNDSTOP dsInvulnerability 'Stop any invulnerability sound effect
 
-            lngStartTime = GetTicks 'grab the current time
+            lngStartTime = Time_GetTicks 'grab the current time
 
-            DO WHILE lngStartTime + 8000 > GetTicks 'loop this routine for 8 seconds
+            DO WHILE lngStartTime + 8000 > Time_GetTicks 'loop this routine for 8 seconds
                 CLS 'fill the back buffer with black
 
                 IF INT(75 * RND) < 25 THEN 'if we get a number that is between 1-25 then
@@ -1709,7 +1710,7 @@ SUB UpdateLevels
                 LIMIT UPDATES_PER_SECOND
             LOOP
 
-            FadeScreen DEST, FALSE, UPDATES_PER_SECOND * 2, 100 'fade the screen to black
+            Graphics_FadeScreen FALSE, FADE_FPS, 100 'fade the screen to black
 
             FOR intCount = 0 TO UBOUND(ExplosionDesc) 'loop through all explosions
                 ExplosionDesc(intCount).Exists = FALSE 'they all no longer exist
@@ -1726,9 +1727,9 @@ SUB UpdateLevels
             DrawStringCenter "help but ponder... were all of the aliens really destroyed?", 240, BGRA_DARKGOLDENROD
             DrawStringCenter "THE END", 270, BGRA_DARKGOLDENROD
 
-            FadeScreen DEST, TRUE, UPDATES_PER_SECOND * 2, 100 'fade the screen in
+            Graphics_FadeScreen TRUE, FADE_FPS, 100 'fade the screen in
             SLEEP 20 ' Display the winning message for 20 seconds
-            FadeScreen DEST, FALSE, UPDATES_PER_SECOND * 2, 100 'fade the screen to black again
+            Graphics_FadeScreen FALSE, FADE_FPS, 100 'fade the screen to black again
             intShields = SHIELD_MAX 'shields are at 100%
             Ship.X = 300 'reset the players X
             Ship.Y = 300 'and Y coordinates
@@ -2062,7 +2063,7 @@ SUB CheckForCollisions
                 EXIT SUB 'exit the sub
             ELSEIF PowerUp(intCount).Index = INVULNERABILITY THEN 'the power up is an invulnerability power up
                 Ship.Invulnerable = TRUE 'set the ships' invulnerable flag
-                Ship.InvulnerableTime = GetTicks + 15000 'set the duration of the invulnerability
+                Ship.InvulnerableTime = Time_GetTicks + 15000 'set the duration of the invulnerability
                 lngScore = lngScore + 500
                 PowerUp(intCount).Exists = FALSE
                 SNDSETPOS dsPowerUp, 0 'set the playback buffer position to 0
@@ -2612,10 +2613,10 @@ SUB UpdateStars
             IF (INT((3500 - 1) * RND) + 1) <= 25 THEN 'if a number between 3500 and 1 is less than 25 then
                 'begin creating a new star
                 StarDesc(intCount).Exists = TRUE 'the star exists
-                StarDesc(intCount).X = GetRandomBetween(0, SCREEN_WIDTH - 1)
+                StarDesc(intCount).X = Math_GetRandomBetween(0, SCREEN_WIDTH - 1)
                 'set a random X coordinate
                 StarDesc(intCount).Y = 0 'start at the top of the screen
-                StarDesc(intCount).Index = RGB32(GetRandomBetween(192, 255), GetRandomBetween(192, 255), GetRandomBetween(192, 255)) 'set a random number for a color
+                StarDesc(intCount).Index = RGB32(Math_GetRandomBetween(192, 255), Math_GetRandomBetween(192, 255), Math_GetRandomBetween(192, 255)) 'set a random number for a color
                 StarDesc(intCount).Speed = ((2 - 0.4) * RND) + 0.4 'set a random number for the speed of the star
             END IF
         ELSE
@@ -2626,7 +2627,7 @@ SUB UpdateStars
                 StarDesc(intCount).Y = 0 'set the stars Y position to 0
                 StarDesc(intCount).Exists = FALSE 'the star no longer exists
             ELSEIF StarDesc(intCount).Y >= 0 THEN ' Only render if it is oncreen
-                PSET (StarDesc(intCount).X, StarDesc(intCount).Y), StarDesc(intCount).Index 'blit the star to the screen
+                Graphics_DrawPixel StarDesc(intCount).X, StarDesc(intCount).Y, StarDesc(intCount).Index 'blit the star to the screen
             END IF
         END IF
     NEXT
@@ -3054,7 +3055,7 @@ SUB UpdateInvulnerability
     DIM XOffset AS LONG 'Offset of the rectangle
     DIM YOffset AS LONG 'Offset of the rectangle
 
-    IF GetTicks > Ship.InvulnerableTime THEN 'If the amount of invulenrability exceeds the time alloted to the player
+    IF Time_GetTicks > Ship.InvulnerableTime THEN 'If the amount of invulenrability exceeds the time alloted to the player
         Ship.Invulnerable = FALSE 'The ship is no longer invulnerable
         intInvFrameCount = 0 'The animation is reset to the starting frame
 
@@ -3064,7 +3065,7 @@ SUB UpdateInvulnerability
         blnInvWarning = FALSE 'No longer warning the player
         intWarningCount = 0 'Reset the warning count
     ELSE 'Otherwise, the ship is invulnerable
-        blnInvWarning = (Ship.InvulnerableTime - GetTicks) < 3000 'If there are only three seconds left, then toggle the warning flag to on
+        blnInvWarning = (Ship.InvulnerableTime - Time_GetTicks) < 3000 'If there are only three seconds left, then toggle the warning flag to on
 
         IF blnInvWarning THEN 'If the player is being warned
             intWarningCount = intWarningCount + 1 'Increment the warning count
@@ -3109,8 +3110,8 @@ SUB UpdateShields
     DIM SrcRect AS typeRect
 
     IF intShields > 0 THEN 'if there is more than 0% shields left
-        LINE (449, 6)-(551, 28), BGRA_WHITE, B 'draw a box for the shield indicator and set the border to white
-        LINE (450, 7)-(450 + intShields, 27), RGB32(255 - (255 * intShields / SHIELD_MAX), 0, 255 * intShields / SHIELD_MAX), BF 'intShields is the right hand side of the rectangle, which will grow smaller as the player takes more damage
+        Graphics_DrawRectangle 449, 6, 551, 28, BGRA_WHITE 'draw a box for the shield indicator and set the border to white
+        Graphics_DrawFilledRectangle 450, 7, 450 + intShields, 27, RGB32(255 - (255 * intShields / SHIELD_MAX), 0, 255 * intShields / SHIELD_MAX) 'intShields is the right hand side of the rectangle, which will grow smaller as the player takes more damage
 
         'blt the indicator rectangle to the screen
         DrawString "Shields:", 380, 10, BGRA_MISTYROSE 'display some text
@@ -3134,7 +3135,7 @@ SUB UpdateShields
         SrcRect.right = SrcRect.left + SHIPWIDTH
 
         CreateExplosion SrcRect, 0, TRUE 'create an explosion where the player was
-        lngTime = GetTicks 'get the current tick count
+        lngTime = Time_GetTicks 'get the current tick count
         FOR intCount = 0 TO UBOUND(EnemyDesc) 'loop through all the enemies and
             EnemyDesc(intCount).Exists = FALSE 'the enemies no longer exist
             EnemyDesc(intCount).HasFired = FALSE 'the enemies' weapons no longer exist
@@ -3161,7 +3162,7 @@ SUB UpdateShields
         SectionCount = SectionCount + 30 'Set the player back a bit
         IF SectionCount > 999 THEN SectionCount = 999 'Make sure we don't go over the limit
         IF byteLives > 0 THEN 'If the player still has lives left then
-            DO UNTIL GetTicks > lngTime + 2000 'Loop this for two seconds
+            DO UNTIL Time_GetTicks > lngTime + 2000 'Loop this for two seconds
                 CLS 'fill the back buffer with black
 
                 UpdateBackground 'you seen this before
@@ -3178,7 +3179,7 @@ SUB UpdateShields
             SNDPLAY dsEnergize 'play the energize sound effect
             'TODO: If IsFF Then ef(2).Download              'start the trigger force feedback again
         ELSE 'If the player has no lives left
-            DO UNTIL GetTicks > lngTime + 3000 'Loop for three seconds
+            DO UNTIL Time_GetTicks > lngTime + 3000 'Loop for three seconds
                 CLS 'fill the back buffer with black
 
                 UpdateStars 'these lines are the same as above
@@ -3191,7 +3192,7 @@ SUB UpdateShields
 
                 DISPLAY 'flip the front and back surfaces
             LOOP 'continues looping for three seconds
-            FadeScreen DEST, FALSE, UPDATES_PER_SECOND * 2, 100 'Fade the screen to black
+            Graphics_FadeScreen FALSE, FADE_FPS, 100 'Fade the screen to black
             intShields = SHIELD_MAX 'shields are at 100%
             Ship.X = 300 'reset the players X
             Ship.Y = 300 'and Y coordinates
@@ -3277,7 +3278,7 @@ SUB FireMissile
         DrawString "Level:" + STR$(byteLevel), 560, 10, BGRA_PALEGREEN 'Display the current level
 
 
-        LINE (0, 0)-(w, h), RGBA(255, 255, 255, intCount), BF 'Set the palette to our new palette entry values
+        Graphics_DrawFilledRectangle 0, 0, w, h, RGBA(255, 255, 255, intCount) 'Set the palette to our new palette entry values
 
         IF boolMaxFrameRate THEN
             DrawString "Uncapped FPS enabled", 30, 45, BGRA_WHITE 'Let the player know there is no frame rate limitation
@@ -3345,7 +3346,7 @@ SUB FireMissile
         DrawString "Lives:" + STR$(byteLives), 175, 10, BGRA_PALEGREEN 'Display lives left
         DrawString "Level:" + STR$(byteLevel), 560, 10, BGRA_PALEGREEN 'Display the current level
 
-        LINE (0, 0)-(w, h), RGBA(255, 0, 0, intCount), BF
+        Graphics_DrawFilledRectangle 0, 0, w, h, RGBA(255, 0, 0, intCount)
 
         IF boolMaxFrameRate THEN
             DrawString "Uncapped FPS enabled", 30, 45, BGRA_WHITE 'Let the player know there is no frame rate limitation
@@ -3368,19 +3369,19 @@ SUB DoCredits
 
     CLS 'fill the back buffer with black
 
-    ddsEndCredits = LOADIMAGE("./dat/gfx/endcredits.gif") 'create the end credits direct draw surface
+    ddsEndCredits = Graphics_LoadImage("./dat/gfx/endcredits.gif", FALSE, FALSE, EMPTY_STRING, -1) 'create the end credits direct draw surface
     ASSERT ddsEndCredits < -1
 
     PUTIMAGE (0, 100), ddsEndCredits 'blt the end credits to the back buffer
 
     FREEIMAGE ddsEndCredits 'release our direct draw surface
 
-    DrawString "Samuel Gomes - QB64-PE source port", 32, 290, BGRA_YELLOW ' Shameless plug XD
+    DrawString "Samuel Gomes - QB64-PE source port", 32, 290, BGRA_YELLOW ' shameless plug XD
 
-    FadeScreen DEST, TRUE, UPDATES_PER_SECOND * 2, 100 'Fade the screen in
+    Graphics_FadeScreen TRUE, FADE_FPS, 100 'Fade the screen in
     SLEEP 2 ' Wait for 2 seconds
 
-    FadeScreen DEST, FALSE, UPDATES_PER_SECOND * 2, 100 'Fade the screen out
+    Graphics_FadeScreen FALSE, FADE_FPS, 100 'Fade the screen out
     SLEEP 1 ' Wait for a second
 END SUB
 
@@ -3442,7 +3443,7 @@ SUB GetInput
         IF KEYDOWN(KEY_BACKSPACE) THEN 'if the backspace key is pressed
             IF Ship.Invulnerable THEN 'if the ship is invulnerable
                 SNDSTOP dsInvulnerability 'stop playing the invulnerability sound
-                TempTime = Ship.InvulnerableTime - GetTicks 'capture the current time so the player doesn't lose the amount of time he has left to be invulnerable
+                TempTime = Ship.InvulnerableTime - Time_GetTicks 'capture the current time so the player doesn't lose the amount of time he has left to be invulnerable
             END IF
             IF Ship.AlarmActive THEN SNDSTOP dsAlarm 'if the low shield alarm is playing, stop that
             ' pause music
@@ -3461,31 +3462,29 @@ SUB GetInput
 
             IF Ship.Invulnerable THEN 'if the ship was invulnerable
                 SNDLOOP dsInvulnerability 'start the invulenrability wave again
-                Ship.InvulnerableTime = TempTime + GetTicks 'the amount of time the player had left is restored
+                Ship.InvulnerableTime = TempTime + Time_GetTicks 'the amount of time the player had left is restored
             END IF
             IF Ship.AlarmActive THEN 'if the low shield alarm was playing
                 SNDLOOP dsAlarm 'start it again
             END IF
         END IF
     ELSE 'The game has not started yet
-        DIM KeyCode AS LONG
-
-        KeyCode = KEYHIT
+        DIM keyCode AS LONG: keyCode = KEYHIT
 
         IF boolGettingInput THEN 'If the game is getting high score input then
-            IF (KeyCode > 64 AND KeyCode < 91) OR (KeyCode > 96 AND KeyCode < 123) OR KeyCode = 32 THEN 'if the keys are alpha keys then
-                strBuffer = CHR$(KeyCode) 'add this key to the buffer
-            ELSEIF KeyCode = 13 AND TRIM$(strName) <> EMPTY_STRING THEN 'if enter has been pressed
+            IF (keyCode >= 0 AND keyCode <= 127 AND IsAlphaNumeric(keyCode)) OR keyCode = KEY_SPACE THEN 'if the keys are alpha keys then
+                strBuffer = CHR$(keyCode) 'add this key to the buffer
+            ELSEIF keyCode = KEY_ENTER AND LEN(TRIM$(strName)) > NULL THEN 'if enter has been pressed
                 boolEnterPressed = TRUE 'toggle the enter pressed flag to on
-            ELSEIF KeyCode = 8 THEN 'if backspace was pressed
+            ELSEIF keyCode = KEY_BACKSPACE THEN 'if backspace was pressed
                 IF LEN(strName) > 0 THEN strName = LEFT$(strName, LEN(strName) - 1) 'make the buffer is not empty, and delete any existing character
             END IF
-        ELSEIF KeyCode = KEY_ENTER THEN
+        ELSEIF keyCode = KEY_ENTER THEN
             'if the enter key is pressed then
             boolStarted = TRUE 'the game has started
             'TODO: If Not ef(2) Is Nothing And IsFF Then ef(2).Download
             'download the force feedback effect for firing lasers
-            FadeScreen DEST, FALSE, UPDATES_PER_SECOND * 2, 100 'fade the current screen
+            Graphics_FadeScreen FALSE, FADE_FPS, 100 'fade the current screen
             StartIntro 'show the intro text
             byteLives = LIVES_DEFAULT 'Set lives
             intShields = SHIELD_MAX 'Set shields
@@ -3495,23 +3494,23 @@ SUB GetInput
             PlayMIDIFile "./dat/sfx/mus/level1.mid" 'start the level 1 midi
             ' Stars were reset here before. This is not needed
             ' Stars can be recycled and beginning a new level does not feel jarring
-        ELSEIF KeyCode = KEY_ESCAPE THEN 'if the escape key is pressed,
+        ELSEIF keyCode = KEY_ESCAPE THEN 'if the escape key is pressed,
             DoCredits 'Show the credits
             EndGame 'Call sub to reset all variables
             SYSTEM 'Exit the application
-        ELSEIF KeyCode = 102 OR KeyCode = 70 THEN 'if the F key is pressed
+        ELSEIF keyCode = KEY_LOWER_F OR keyCode = KEY_UPPER_F THEN 'if the F key is pressed
             IF boolFrameRate THEN 'if the frame rate display is toggled
                 boolFrameRate = FALSE 'turn it off
             ELSE 'otherwise
                 boolFrameRate = TRUE 'turn it on
             END IF
-        ELSEIF KeyCode = 106 OR KeyCode = 74 THEN 'if the J key is pressed
+        ELSEIF keyCode = KEY_LOWER_J OR keyCode = KEY_UPPER_J THEN 'if the J key is pressed
             IF blnJoystickEnabled THEN 'if the joystick is enabled
                 blnJoystickEnabled = FALSE 'turn it off
             ELSE 'otherwise
                 blnJoystickEnabled = TRUE 'turn it on
             END IF
-        ELSEIF (KeyCode = 109 OR KeyCode = 77) AND NOT boolStarted THEN
+        ELSEIF (keyCode = KEY_LOWER_M OR keyCode = KEY_UPPER_M) AND NOT boolStarted THEN
             'if the M key is pressed, and the game has not started
             IF blnMIDIEnabled THEN 'if midi is enabled
                 PlayMIDIFile EMPTY_STRING 'stop playing any midi
@@ -3520,7 +3519,7 @@ SUB GetInput
                 blnMIDIEnabled = TRUE 'turn the midi on
                 PlayMIDIFile "./dat/sfx/mus/title.mid" 'play the title midi
             END IF
-        ELSEIF KeyCode = 120 OR KeyCode = 88 THEN 'if the X key has been pressed
+        ELSEIF keyCode = KEY_LOWER_X OR keyCode = KEY_UPPER_X THEN 'if the X key has been pressed
             IF boolMaxFrameRate THEN 'if the maximum frame rate is toggled
                 boolMaxFrameRate = FALSE 'toggle it off
             ELSE 'otherwise
@@ -3535,7 +3534,7 @@ END SUB
 SUB PlayMIDIFile (fileName AS STRING)
     IF blnMIDIEnabled THEN
         $IF WINDOWS THEN
-            IF fileName <> EMPTY_STRING AND FILEEXISTS(fileName) THEN
+            IF FILEEXISTS(fileName) THEN
                 MIDI_PlayFromFile fileName
                 MIDI_Loop TRUE
             ELSE
@@ -3543,20 +3542,20 @@ SUB PlayMIDIFile (fileName AS STRING)
             END IF
         $ELSE
                 ' Unload if there is anything previously loaded
-                If MIDIHandle > 0 Then
-                SndStop MIDIHandle
-                SndClose MIDIHandle
+                IF MIDIHandle > 0 THEN
+                SNDSTOP MIDIHandle
+                SNDCLOSE MIDIHandle
                 MIDIHandle = 0
-                End If
+                END IF
 
                 ' Check if the file exists
-                If fileName <> empty_string And FileExists(fileName) Then
-                MIDIHandle = SndOpen(fileName, "stream")
-                Assert MIDIHandle > 0
+                IF FILEEXISTS(fileName) THEN
+                MIDIHandle = SNDOPEN(fileName, "stream")
+                ASSERT MIDIHandle > 0
 
                 ' Loop the MIDI file
-                If MIDIHandle > 0 Then SndLoop MIDIHandle
-                End If
+                IF MIDIHandle > 0 THEN SNDLOOP MIDIHandle
+                END IF
         $END IF
     END IF
 END SUB
@@ -3568,7 +3567,7 @@ SUB PauseMIDI (pause AS BYTE)
         $IF WINDOWS THEN
             MIDI_Pause pause
         $ELSE
-                If pause Then SndPause MIDIHandle Else SndLoop MIDIHandle
+                IF pause THEN SNDPAUSE MIDIHandle ELSE SNDLOOP MIDIHandle
         $END IF
     END IF
 END SUB
@@ -3586,9 +3585,7 @@ END SUB
 '-----------------------------------------------------------------------------------------------------------------------
 ' HEADER FILES
 '-----------------------------------------------------------------------------------------------------------------------
-'$INCLUDE:'include/TimeOps.bas'
 '$INCLUDE:'include/GraphicOps.bas'
-'$INCLUDE:'include/ColorOps.bas'
 $IF WINDOWS THEN
     '$INCLUDE:'include/FileOps.bas'
     '$INCLUDE:'include/WinMIDIPlayer.bas'
