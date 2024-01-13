@@ -917,7 +917,7 @@ END SUB
 SUB InitializeDD
     DIM ddsSplash AS LONG ' dim a direct draw surface
 
-    ddsSplash = Graphics_LoadImage("./dat/gfx/splash.gif", FALSE, FALSE, EMPTY_STRING, -1) 'create the splash screen surface
+    ddsSplash = Graphics_LoadImage("./dat/gfx/splash.gif", FALSE, FALSE, STRING_EMPTY, -1) 'create the splash screen surface
     ASSERT ddsSplash < -1
 
     PUTIMAGE , ddsSplash ' blit the splash screen to the back buffer
@@ -934,19 +934,19 @@ SUB InitializeDD
     ' How do I know this? Well, I wrote it! :)
     CLEARCOLOR 0, ddsTitle
 
-    ddsShip = Graphics_LoadImage("./dat/gfx/ship.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR) 'Load the ship bitmap and make it into a direct draw surface
+    ddsShip = Graphics_LoadImage("./dat/gfx/ship.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR) 'Load the ship bitmap and make it into a direct draw surface
     ASSERT ddsShip < -1
 
-    ddsPowerUp = Graphics_LoadImage("./dat/gfx/powerups.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR) 'Load the shield indicator bitmap and put in a direct draw surface
+    ddsPowerUp = Graphics_LoadImage("./dat/gfx/powerups.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR) 'Load the shield indicator bitmap and put in a direct draw surface
     ASSERT ddsPowerUp < -1
 
-    ddsExplosion(0) = Graphics_LoadImage("./dat/gfx/explosion.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR) 'Load the first explosion bitmap
+    ddsExplosion(0) = Graphics_LoadImage("./dat/gfx/explosion.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR) 'Load the first explosion bitmap
     ASSERT ddsExplosion(0) < -1
 
-    ddsExplosion(1) = Graphics_LoadImage("./dat/gfx/explosion2.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR) 'Load the second explosion bitmap
+    ddsExplosion(1) = Graphics_LoadImage("./dat/gfx/explosion2.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR) 'Load the second explosion bitmap
     ASSERT ddsExplosion(1) < -1
 
-    ddsInvulnerable = Graphics_LoadImage("./dat/gfx/invulnerable.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR) 'Load the invulnerable bitmap
+    ddsInvulnerable = Graphics_LoadImage("./dat/gfx/invulnerable.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR) 'Load the invulnerable bitmap
     ASSERT ddsInvulnerable < -1
 
     DIM intCount AS LONG 'count variable
@@ -959,7 +959,7 @@ SUB InitializeDD
         ExplosionDesc(intCount).H = 120
     NEXT
 
-    ddsHit = Graphics_LoadImage("./dat/gfx/hit.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR)
+    ddsHit = Graphics_LoadImage("./dat/gfx/hit.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR)
     ASSERT ddsHit < -1
 
     FOR intCount = 0 TO UBOUND(HitDesc)
@@ -968,7 +968,7 @@ SUB InitializeDD
         HitDesc(intCount).W = 8
     NEXT
 
-    ddsLaser = Graphics_LoadImage("./dat/gfx/laser.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR)
+    ddsLaser = Graphics_LoadImage("./dat/gfx/laser.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR)
     ASSERT ddsLaser < -1
 
     FOR intCount = 0 TO UBOUND(LaserDesc)
@@ -977,7 +977,7 @@ SUB InitializeDD
         LaserDesc(intCount).H = LASER1HEIGHT
     NEXT
 
-    ddsLaser2R = Graphics_LoadImage("./dat/gfx/laser2.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR)
+    ddsLaser2R = Graphics_LoadImage("./dat/gfx/laser2.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR)
     ASSERT ddsLaser2R < -1
 
     FOR intCount = 0 TO UBOUND(Laser2RDesc)
@@ -986,7 +986,7 @@ SUB InitializeDD
         Laser2RDesc(intCount).H = LASER2HEIGHT
     NEXT
 
-    ddsLaser2L = Graphics_LoadImage("./dat/gfx/laser2.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR)
+    ddsLaser2L = Graphics_LoadImage("./dat/gfx/laser2.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR)
     ASSERT ddsLaser2L < -1
 
     FOR intCount = 0 TO UBOUND(Laser2LDesc)
@@ -995,7 +995,7 @@ SUB InitializeDD
         Laser2LDesc(intCount).H = LASER2HEIGHT
     NEXT
 
-    ddsLaser3 = Graphics_LoadImage("./dat/gfx/laser3.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR)
+    ddsLaser3 = Graphics_LoadImage("./dat/gfx/laser3.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR)
     ASSERT ddsLaser3 < -1
 
     FOR intCount = 0 TO UBOUND(Laser3Desc)
@@ -1004,16 +1004,16 @@ SUB InitializeDD
         Laser3Desc(intCount).H = LASER3HEIGHT
     NEXT
 
-    ddsEnemyFire = Graphics_LoadImage("./dat/gfx/enemyfire1.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR)
+    ddsEnemyFire = Graphics_LoadImage("./dat/gfx/enemyfire1.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR)
     ASSERT ddsEnemyFire < -1
 
-    ddsGuidedMissile = Graphics_LoadImage("./dat/gfx/guidedmissile.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR)
+    ddsGuidedMissile = Graphics_LoadImage("./dat/gfx/guidedmissile.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR)
     ASSERT ddsGuidedMissile < -1
 
-    ddsDisplayBomb = Graphics_LoadImage("./dat/gfx/displaybomb.gif", FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR)
+    ddsDisplayBomb = Graphics_LoadImage("./dat/gfx/displaybomb.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR)
     ASSERT ddsDisplayBomb < -1
 
-    ddsObstacle(40) = Graphics_LoadImage("./dat/gfx/deadplate.gif", FALSE, FALSE, EMPTY_STRING, -1)
+    ddsObstacle(40) = Graphics_LoadImage("./dat/gfx/deadplate.gif", FALSE, FALSE, STRING_EMPTY, -1)
     ASSERT ddsObstacle(40) < -1
 END SUB
 
@@ -1177,7 +1177,7 @@ SUB EndGame
 
     'Is there a Segment playing?
     'Stop playing any midi's currently playing
-    PlayMIDIFile EMPTY_STRING
+    PlayMIDIFile STRING_EMPTY
 END SUB
 
 
@@ -1204,7 +1204,7 @@ SUB CheckHighScore
         LOOP
         HighScore(NUM_HIGH_SCORES - 1).score = lngScore 'if the player does have a high score, assign it to the last place
         boolGettingInput = TRUE 'we are now getting keyboard input
-        strName = EMPTY_STRING 'clear the string
+        strName = STRING_EMPTY 'clear the string
         PlayMIDIFile "./dat/sfx/mus/inbtween.mid" 'play the inbetween levels & title screen midi
     END IF
 
@@ -1234,7 +1234,7 @@ SUB CheckHighScore
         PlayMIDIFile "./dat/sfx/mus/title.mid" 'Start the title midi again
     END IF
 
-    strBuffer = EMPTY_STRING 'clear the buffer
+    strBuffer = STRING_EMPTY 'clear the buffer
     boolEnterPressed = FALSE 'clear the enter toggle
 END SUB
 
@@ -1411,7 +1411,7 @@ SUB StartIntro
     strDialog(3) = "has met with silence on their part, and their assault has not stopped."
     strDialog(4) = "Now is the time for all inhabitants of the Earth to put their trust in you."
     strDialog(5) = "You must not let us down."
-    strDialog(6) = EMPTY_STRING
+    strDialog(6) = STRING_EMPTY
     strDialog(7) = "You will receive the opportunity of grabbing a power-up for every twenty-five"
     strDialog(8) = "alien ships you destroy. We don't have the time to fit your ship with them now,"
     strDialog(9) = "as our outer perimeter space probes have detected a large armada of alien"
@@ -1422,20 +1422,20 @@ SUB StartIntro
     strDialog(14) = "the ship to fail. With that in mind, it is imperative that you avoid getting"
     strDialog(15) = "hit, as the enemy forces are large, and every upgrade you get will make this"
     strDialog(16) = "difficult mission more attainable."
-    strDialog(17) = EMPTY_STRING
+    strDialog(17) = STRING_EMPTY
     strDialog(18) = "We will warp you to the first entry point of the alien galaxy, and you will"
     strDialog(19) = "journey on a course that leads you through each part of their system,"
     strDialog(20) = "destroying as much of their weaponry and resources as possible along the way."
     strDialog(21) = "At the end of each stage, we have set up warp-jumps that will transport you to"
     strDialog(22) = "the next critical sector. Go now, soldier, and fight so that we may avert the"
     strDialog(23) = "annihilation of the human race."
-    strDialog(24) = EMPTY_STRING
+    strDialog(24) = STRING_EMPTY
     strDialog(25) = "(Press ENTER to continue)"
 
     CLS 'fill the backbuffer with black
     YPosition = 50 'initialize the Y coordinate of the text to 50
 
-    ddsSplash = Graphics_LoadImage("./dat/gfx/nebulae4.gif", FALSE, FALSE, EMPTY_STRING, -1) 'create a surface
+    ddsSplash = Graphics_LoadImage("./dat/gfx/nebulae4.gif", FALSE, FALSE, STRING_EMPTY, -1) 'create a surface
     ASSERT ddsSplash < -1
 
     PUTIMAGE , ddsSplash 'blit the surface to the screen
@@ -1485,7 +1485,7 @@ SUB LoadLevel (level AS LONG)
     END IF
 
     FOR intCount = 0 TO UBOUND(ddsBackgroundObject) 'loop through all the background objects
-        ddsBackgroundObject(intCount) = Graphics_LoadImage("./dat/gfx/" + BackgroundObject(intCount).FileName, FALSE, FALSE, EMPTY_STRING, -1) 'Load one of the background bitmaps
+        ddsBackgroundObject(intCount) = Graphics_LoadImage("./dat/gfx/" + BackgroundObject(intCount).FileName, FALSE, FALSE, STRING_EMPTY, -1) 'Load one of the background bitmaps
         ASSERT ddsBackgroundObject(intCount) < -1
     NEXT
 
@@ -1528,7 +1528,7 @@ SUB LoadLevel (level AS LONG)
         FOR intCount2 = 0 TO 125 'there are 126 slots in each section, loop through all of those
             IF SectionInfo(intCount, intCount2) < 255 THEN 'if the slot value is less than 255, an object exists there
                 IF ddsEnemyContainer(SectionInfo(intCount, intCount2)) > -2 THEN ' if this object hasn't been loaded then (QB64 valid image handles are < -1)
-                    ddsEnemyContainer(SectionInfo(intCount, intCount2)) = Graphics_LoadImage("./dat/gfx/" + EnemyContainerDesc(SectionInfo(intCount, intCount2)).FileName, FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR) 'create this object
+                    ddsEnemyContainer(SectionInfo(intCount, intCount2)) = Graphics_LoadImage("./dat/gfx/" + EnemyContainerDesc(SectionInfo(intCount, intCount2)).FileName, FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR) 'create this object
                     ASSERT ddsEnemyContainer(SectionInfo(intCount, intCount2)) < -1
                 END IF
             END IF
@@ -1539,7 +1539,7 @@ SUB LoadLevel (level AS LONG)
         FOR intCount2 = 0 TO 125
             IF ObstacleInfo(intCount, intCount2) < 255 THEN
                 IF ddsObstacle(ObstacleInfo(intCount, intCount2)) > -2 THEN
-                    ddsObstacle(ObstacleInfo(intCount, intCount2)) = Graphics_LoadImage("./dat/gfx/" + ObstacleContainerInfo(ObstacleInfo(intCount, intCount2)).FileName, FALSE, FALSE, EMPTY_STRING, TRANSPARENT_COLOR)
+                    ddsObstacle(ObstacleInfo(intCount, intCount2)) = Graphics_LoadImage("./dat/gfx/" + ObstacleContainerInfo(ObstacleInfo(intCount, intCount2)).FileName, FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR)
                     ASSERT ddsObstacle(ObstacleInfo(intCount, intCount2)) < -1
                 END IF
             END IF
@@ -1647,7 +1647,7 @@ SUB LoadLevel (level AS LONG)
         END IF
     NEXT
 
-    ddsBackgroundObject(byteLevel - 1) = Graphics_LoadImage("./dat/gfx/" + BackgroundObject(byteLevel - 1).FileName, FALSE, FALSE, EMPTY_STRING, -1) 'Now we load only the necessary background object
+    ddsBackgroundObject(byteLevel - 1) = Graphics_LoadImage("./dat/gfx/" + BackgroundObject(byteLevel - 1).FileName, FALSE, FALSE, STRING_EMPTY, -1) 'Now we load only the necessary background object
     ASSERT ddsBackgroundObject(byteLevel - 1) < -1
 
     'Reset the ships' position and velocity
@@ -1678,7 +1678,7 @@ SUB UpdateLevels
     IF SectionCount < 0 THEN 'If the end of the level is reached
         byteLevel = byteLevel + 1 'Increment the level the player is on
         IF byteLevel = 9 THEN 'If all levels have been beat
-            PlayMIDIFile EMPTY_STRING 'Stop playing any midi
+            PlayMIDIFile STRING_EMPTY 'Stop playing any midi
             SNDSTOP dsAlarm 'Turn off any alarm
             SNDSTOP dsInvulnerability 'Stop any invulnerability sound effect
 
@@ -3369,7 +3369,7 @@ SUB DoCredits
 
     CLS 'fill the back buffer with black
 
-    ddsEndCredits = Graphics_LoadImage("./dat/gfx/endcredits.gif", FALSE, FALSE, EMPTY_STRING, -1) 'create the end credits direct draw surface
+    ddsEndCredits = Graphics_LoadImage("./dat/gfx/endcredits.gif", FALSE, FALSE, STRING_EMPTY, -1) 'create the end credits direct draw surface
     ASSERT ddsEndCredits < -1
 
     PUTIMAGE (0, 100), ddsEndCredits 'blt the end credits to the back buffer
@@ -3472,7 +3472,7 @@ SUB GetInput
         DIM keyCode AS LONG: keyCode = KEYHIT
 
         IF boolGettingInput THEN 'If the game is getting high score input then
-            IF (keyCode >= 0 AND keyCode <= 127 AND IsAlphaNumeric(keyCode)) OR keyCode = KEY_SPACE THEN 'if the keys are alpha keys then
+            IF (keyCode >= 0 AND keyCode <= 127 AND String_IsAlphaNumeric(keyCode)) OR keyCode = KEY_SPACE THEN 'if the keys are alpha keys then
                 strBuffer = CHR$(keyCode) 'add this key to the buffer
             ELSEIF keyCode = KEY_ENTER AND LEN(TRIM$(strName)) > NULL THEN 'if enter has been pressed
                 boolEnterPressed = TRUE 'toggle the enter pressed flag to on
@@ -3513,7 +3513,7 @@ SUB GetInput
         ELSEIF (keyCode = KEY_LOWER_M OR keyCode = KEY_UPPER_M) AND NOT boolStarted THEN
             'if the M key is pressed, and the game has not started
             IF blnMIDIEnabled THEN 'if midi is enabled
-                PlayMIDIFile EMPTY_STRING 'stop playing any midi
+                PlayMIDIFile STRING_EMPTY 'stop playing any midi
                 blnMIDIEnabled = FALSE 'toggle it off
             ELSE 'otherwise
                 blnMIDIEnabled = TRUE 'turn the midi on
