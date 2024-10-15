@@ -32,8 +32,8 @@ $VERSIONINFO:Comments='https://github.com/a740g'
 $VERSIONINFO:InternalName='SpaceShooter2k'
 $VERSIONINFO:OriginalFilename='SpaceShooter2k.exe'
 $VERSIONINFO:FileDescription='Space Shooter 2000 executable'
-$VERSIONINFO:FILEVERSION#=2,1,2,0
-$VERSIONINFO:PRODUCTVERSION#=2,1,2,0
+$VERSIONINFO:FILEVERSION#=2,1,3,0
+$VERSIONINFO:PRODUCTVERSION#=2,1,3,0
 $EXEICON:'./SpaceShooter2k.ico'
 '-----------------------------------------------------------------------------------------------------------------------
 
@@ -55,11 +55,11 @@ $END IF
 ' Game constants
 CONST APP_NAME = "Space Shooter 2000"
 
-CONST SCREEN_WIDTH = 640 ' width for the display mode
-CONST SCREEN_HEIGHT = 480 ' height for the display mode
-CONST TRANSPARENT_COLOR = _RGB32(208, 2, 178) ' transparent color used in all GIF images assets
-CONST UPDATES_PER_SECOND = 52 ' this is the desired game FPS
-CONST FADE_FPS = UPDATES_PER_SECOND * 2 ' how fast do we want our sceen fades
+CONST SCREEN_WIDTH& = 640& ' width for the display mode
+CONST SCREEN_HEIGHT& = 480& ' height for the display mode
+CONST TRANSPARENT_COLOR~& = _RGB32(208, 2, 178) ' transparent color used in all GIF images assets
+CONST UPDATES_PER_SECOND& = 52& ' this is the desired game FPS
+CONST FADE_FPS& = UPDATES_PER_SECOND * 2& ' how fast do we want our sceen fades
 
 ' Powerup stuff
 CONST SHIELD = &H0 'Constant for the shield powerup
@@ -170,7 +170,7 @@ END TYPE
 TYPE typeShipDesc 'UDT to define the players' ship bitmap
     PowerUpState AS _UNSIGNED _BYTE 'Determines how many levels of power-ups the player has
     Invulnerable AS _BYTE 'Determines whether or not the player is invulnerable
-    InvulnerableTime AS _UNSIGNED _INTEGER64 'Used to keep track of the amount of time the player has left when invulnerable
+    InvulnerableTime AS _INTEGER64 'Used to keep track of the amount of time the player has left when invulnerable
     X AS SINGLE 'X of the ship
     Y AS SINGLE 'Y of the ship
     XOffset AS LONG 'X Offset of the animation frame
@@ -850,7 +850,7 @@ END SUB
 'If it has, then display that the player has gained an extra life, and give the player an extra life
 SUB CheckScore
     STATIC blnExtraLifeDisplay AS _BYTE 'Flag that is set if an extra life message needs to be displayed
-    STATIC lngTargetTime AS _UNSIGNED _INTEGER64 'Variable used to hold the targeted time
+    STATIC lngTargetTime AS _INTEGER64 'Variable used to hold the targeted time
 
     IF lngScore > lngNextExtraLifeScore THEN 'If the current score is larger than the score needed to get an extra life
         lngNextExtraLifeScore = lngNextExtraLifeScore + EXTRALIFETARGET 'Increase the extra life target score
@@ -1666,7 +1666,7 @@ SUB UpdateLevels
     DIM intCount2 AS LONG 'Another count variable
     DIM EnemySectionNotEmpty AS _BYTE 'Flag to set if there are no enemies in the section
     DIM ObstacleSectionNotEmpty AS _BYTE 'Flag to set if there are no obstacles in the section
-    DIM lngStartTime AS _UNSIGNED _INTEGER64 'The beginning time
+    DIM lngStartTime AS _INTEGER64 'The beginning time
     DIM TempInfo AS typeBackGroundDesc 'Temporary description variable
     DIM blnTempInfo AS _BYTE 'Temporary flag
     DIM SrcRect AS typeRect 'Source rectangle
@@ -2018,7 +2018,7 @@ SUB CheckForCollisions
     'TODO: Dim ddTempBltFx As DDBLTFX                                                      'used to hold info about the special effects for flashing the screen when something is hit
     DIM TempDesc AS typeBackGroundDesc
     DIM blnTempDesc AS _BYTE
-    DIM TempTime AS _UNSIGNED _INTEGER64
+    DIM TempTime AS _INTEGER64
 
     'TODO: ddTempBltFx.lFill = 143 ' Index 143 in the palette is bright red used to fill the screen with red when the player is hit.
 
@@ -3054,7 +3054,7 @@ SUB UpdateInvulnerability
     STATIC intWarningCount AS LONG 'Keep track of how many times the player has been warned
     DIM XOffset AS LONG 'Offset of the rectangle
     DIM YOffset AS LONG 'Offset of the rectangle
-    DIM timeLeft AS _UNSIGNED _INTEGER64
+    DIM timeLeft AS _INTEGER64
 
     IF Time_GetTicks > Ship.InvulnerableTime THEN 'If the amount of invulenrability exceeds the time alloted to the player
         Ship.Invulnerable = FALSE 'The ship is no longer invulnerable
@@ -3111,7 +3111,7 @@ END SUB
 'This sub updates the shield display and also checks whether or not there are any shields left, as well as
 'updating the players lives. If there are no lives left, it will reset the game.
 SUB UpdateShields
-    DIM lngTime AS _UNSIGNED _INTEGER64 'variable to store the current tick count
+    DIM lngTime AS _INTEGER64 'variable to store the current tick count
     DIM intCount AS LONG 'standard loop variable
     DIM SrcRect AS typeRect
 
@@ -3396,7 +3396,7 @@ END SUB
 'loop when a missile is fired
 SUB GetInput
     'TODO: Dim JoystickState As DIJOYSTATE                             'joystick state type
-    DIM TempTime AS _UNSIGNED _INTEGER64
+    DIM TempTime AS _INTEGER64
 
     ' TODO: Game controller
     'If Not diJoystick Is Nothing And blnJoystickEnabled Then    'if the joystick object has been set, and the joystick is enabled
