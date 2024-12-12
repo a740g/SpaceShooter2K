@@ -32,8 +32,8 @@ $VERSIONINFO:Comments='https://github.com/a740g'
 $VERSIONINFO:InternalName='SpaceShooter2k'
 $VERSIONINFO:OriginalFilename='SpaceShooter2k.exe'
 $VERSIONINFO:FileDescription='Space Shooter 2000 executable'
-$VERSIONINFO:FILEVERSION#=2,1,3,0
-$VERSIONINFO:PRODUCTVERSION#=2,1,3,0
+$VERSIONINFO:FILEVERSION#=2,1,4,0
+$VERSIONINFO:PRODUCTVERSION#=2,1,4,0
 $EXEICON:'./SpaceShooter2k.ico'
 '-----------------------------------------------------------------------------------------------------------------------
 
@@ -305,7 +305,7 @@ InitializeStartup 'Do the startup routines
 LoadHighScores 'Call the sub to load the high scores
 lngNextExtraLifeScore = EXTRALIFETARGET 'Initialize the extra life score to 100,000
 SLEEP 1 ' Wait for a second
-Graphics_FadeScreen FALSE, FADE_FPS, 100 ' Fade out the loading screen
+Graphics_FadeScreen _FALSE, FADE_FPS, 100 ' Fade out the loading screen
 ClearInput ' Clear any cached input
 
 DO 'The main loop of the game.
@@ -322,8 +322,8 @@ DO 'The main loop of the game.
         END IF
         UpdateObstacles 'Update the back layer of objects
         UpdateEnemys 'Move and draw the enemys
-        UpdatePowerUps FALSE 'Move and draw the power ups
-        UpdateHits FALSE, 0, 0 'Update the small explosions
+        UpdatePowerUps _FALSE 'Move and draw the power ups
+        UpdateHits _FALSE, 0, 0 'Update the small explosions
         UpdateWeapons 'Move and draw the weapons
         UpdateExplosions 'Update any large explosions
         UpdateShip 'Move and draw the ship
@@ -352,7 +352,7 @@ DO 'The main loop of the game.
 
     _DISPLAY 'Flip the front buffer with the back
 
-    IF boolStarted AND _KEYDOWN(KEY_ESCAPE) THEN 'If the game has started, and the player presses escape
+    IF boolStarted AND _KEYDOWN(_KEY_ESC) THEN 'If the game has started, and the player presses escape
         'TODO: If IsFF = True Then ef(2).Unload                            'unload the laser force feedback effect
         ResetGame 'call the sub to reset the game variables
     END IF 'If the escape key is preseed, reset the game and go back to the title screen
@@ -369,24 +369,24 @@ SUB ResetGame
     DIM intCount AS LONG 'variable for looping
 
     FOR intCount = 0 TO UBOUND(EnemyDesc) 'loop through all the enemies and
-        EnemyDesc(intCount).Exists = FALSE 'the enemies no longer exist
-        EnemyDesc(intCount).HasFired = FALSE 'the enemies' wepaons no longer exist
+        EnemyDesc(intCount).Exists = _FALSE 'the enemies no longer exist
+        EnemyDesc(intCount).HasFired = _FALSE 'the enemies' wepaons no longer exist
     NEXT
     FOR intCount = 0 TO UBOUND(GuidedMissile) 'loop through all the players guided missiles
-        GuidedMissile(intCount).Exists = FALSE 'they no longer exist
+        GuidedMissile(intCount).Exists = _FALSE 'they no longer exist
     NEXT
     FOR intCount = 0 TO UBOUND(ObstacleDesc) 'make all the obstacles non-existent
-        ObstacleDesc(intCount).Exists = FALSE
-        ObstacleDesc(intCount).HasFired = FALSE
+        ObstacleDesc(intCount).Exists = _FALSE
+        ObstacleDesc(intCount).HasFired = _FALSE
     NEXT
     FOR intCount = 0 TO UBOUND(ExplosionDesc) 'Make sure that no explosions get left over
-        ExplosionDesc(intCount).Exists = FALSE
+        ExplosionDesc(intCount).Exists = _FALSE
     NEXT
     FOR intCount = 0 TO UBOUND(PowerUp)
-        PowerUp(intCount).Exists = FALSE 'if there are any power ups currently on screen, get rid of them
+        PowerUp(intCount).Exists = _FALSE 'if there are any power ups currently on screen, get rid of them
     NEXT
 
-    Graphics_FadeScreen FALSE, FADE_FPS, 100 'Fade the screen to black
+    Graphics_FadeScreen _FALSE, FADE_FPS, 100 'Fade the screen to black
 
     intShields = SHIELD_MAX 'shields are at 100%
 
@@ -395,17 +395,17 @@ SUB ResetGame
     Ship.PowerUpState = 0 'the player is back to no powerups
     Ship.PowerUpState = 0 'no powerups
     Ship.NumBombs = 0 'the player has no bombs
-    Ship.Invulnerable = FALSE 'the player is no longer invulnerable if he was
-    Ship.AlarmActive = FALSE 'the low shield alarm no longer needs to be flagged
-    Ship.FiringMissile = FALSE 'the ship is not firing a missile
+    Ship.Invulnerable = _FALSE 'the player is no longer invulnerable if he was
+    Ship.AlarmActive = _FALSE 'the low shield alarm no longer needs to be flagged
+    Ship.FiringMissile = _FALSE 'the ship is not firing a missile
 
     _SNDSTOP dsInvulnerability 'make sure the invulnerability sound effect is not playing
     _SNDSTOP dsAlarm 'make sure the alarm sound effect is not playing
-    boolStarted = FALSE 'the game hasn't been started
+    boolStarted = _FALSE 'the game hasn't been started
     SectionCount = 999 'start at the beginning of the level
     byteLevel = 1 'player is at level 1 again
     byteLives = LIVES_DEFAULT 'the player has 3 lives left
-    boolBackgroundExists = FALSE 'there is no background picture
+    boolBackgroundExists = _FALSE 'there is no background picture
     CheckHighScore 'call the sub to see if the player got a high score
 END SUB
 
@@ -424,7 +424,7 @@ SUB InitializeStartup
     _DISPLAY ' We want the framebuffer to be updated when we want
 
     _MOUSEHIDE 'don't show the cursor while DX is active
-    blnMIDIEnabled = TRUE 'turn on the midi by default
+    blnMIDIEnabled = _TRUE 'turn on the midi by default
     byteNewHighScore = 255 'set the new high score to no new high score
     InitializeDS
     InitializeDD 'call the sub that initialized direct draw
@@ -441,7 +441,7 @@ SUB InitializeStartup
     EnemyContainerDesc(0).Score = 150 'Player gets 150 points for destroying it
     EnemyContainerDesc(0).Speed = 3 'It moves 3 pixels every frame
     EnemyContainerDesc(0).ChaseValue = CHASEFAST 'This enemy chases the players' X coordinates, and does it fast
-    EnemyContainerDesc(0).DoesFire = TRUE 'This enemy fires a weapon
+    EnemyContainerDesc(0).DoesFire = _TRUE 'This enemy fires a weapon
     EnemyContainerDesc(0).FireType = NONTARGETEDFIRE 'It doesn't aim towards the player
     EnemyContainerDesc(0).CollisionDamage = 5 'It does 5 points of damage if the player collides with it
 
@@ -456,7 +456,7 @@ SUB InitializeStartup
     EnemyContainerDesc(1).Score = 250
     EnemyContainerDesc(1).Speed = 1.5
     EnemyContainerDesc(1).ChaseValue = CHASESLOW 'This enemy chases the players' X coordinates, but chases slowly
-    EnemyContainerDesc(1).DoesFire = TRUE
+    EnemyContainerDesc(1).DoesFire = _TRUE
     EnemyContainerDesc(1).FireType = NONTARGETEDFIRE
     EnemyContainerDesc(1).CollisionDamage = 10
 
@@ -470,7 +470,7 @@ SUB InitializeStartup
     EnemyContainerDesc(2).Speed = 2
     EnemyContainerDesc(2).ChaseValue = CHASEOFF 'This enemy does not chase the players' X coordinates. This value doesn't need to be setm though, since its' value is 0. It can be set merely as a reminder of the enemies behavior.
     EnemyContainerDesc(2).FireType = TARGETEDFIRE 'This enemy does fire towards the player
-    EnemyContainerDesc(2).DoesFire = TRUE
+    EnemyContainerDesc(2).DoesFire = _TRUE
     EnemyContainerDesc(2).CollisionDamage = 5
 
     EnemyContainerDesc(3).FileName = "enemy4.gif"
@@ -481,7 +481,7 @@ SUB InitializeStartup
     EnemyContainerDesc(3).ExplosionIndex = 1
     EnemyContainerDesc(3).Score = 300
     EnemyContainerDesc(3).Speed = 4
-    EnemyContainerDesc(3).DoesFire = TRUE
+    EnemyContainerDesc(3).DoesFire = _TRUE
     EnemyContainerDesc(3).FireType = TARGETEDFIRE
     EnemyContainerDesc(3).CollisionDamage = 10
 
@@ -549,7 +549,7 @@ SUB InitializeStartup
     EnemyContainerDesc(9).ExplosionIndex = 0
     EnemyContainerDesc(9).FrameDelay = 1
     EnemyContainerDesc(9).CollisionDamage = 10
-    EnemyContainerDesc(9).DoesFire = TRUE
+    EnemyContainerDesc(9).DoesFire = _TRUE
     EnemyContainerDesc(9).FireType = TARGETEDFIRE
 
     EnemyContainerDesc(10).FileName = "enemy6.gif"
@@ -561,7 +561,7 @@ SUB InitializeStartup
     EnemyContainerDesc(10).TimesDies = 1
     EnemyContainerDesc(10).ExplosionIndex = 1
     EnemyContainerDesc(10).CollisionDamage = 5
-    EnemyContainerDesc(10).DoesFire = TRUE
+    EnemyContainerDesc(10).DoesFire = _TRUE
     EnemyContainerDesc(10).FireType = TARGETEDFIRE
 
     EnemyContainerDesc(11).FileName = "enemy7.gif"
@@ -594,27 +594,27 @@ SUB InitializeStartup
     EnemyContainerDesc(13).TimesDies = 6
     EnemyContainerDesc(13).ExplosionIndex = 0
     EnemyContainerDesc(13).CollisionDamage = 10
-    EnemyContainerDesc(13).DoesFire = TRUE
+    EnemyContainerDesc(13).DoesFire = _TRUE
     EnemyContainerDesc(13).FireType = TARGETEDFIRE
 
     ObstacleContainerInfo(0).FileName = "plate1.gif"
     ObstacleContainerInfo(0).H = 80
     ObstacleContainerInfo(0).W = 80
-    ObstacleContainerInfo(0).Invulnerable = TRUE
+    ObstacleContainerInfo(0).Invulnerable = _TRUE
     ObstacleContainerInfo(0).Speed = 1
 
     ObstacleContainerInfo(1).FileName = "movingplate.gif"
     ObstacleContainerInfo(1).H = 40
     ObstacleContainerInfo(1).W = 40
-    ObstacleContainerInfo(1).HasDeadIndex = TRUE
+    ObstacleContainerInfo(1).HasDeadIndex = _TRUE
     ObstacleContainerInfo(1).DeadIndex = 40
-    ObstacleContainerInfo(1).DoesFire = TRUE
+    ObstacleContainerInfo(1).DoesFire = _TRUE
     ObstacleContainerInfo(1).FireType = NONTARGETEDFIRE
     ObstacleContainerInfo(1).TimesDies = 5
     ObstacleContainerInfo(1).ExplosionIndex = 0
     ObstacleContainerInfo(1).Score = 600
     ObstacleContainerInfo(1).Speed = 1
-    ObstacleContainerInfo(1).Solid = TRUE
+    ObstacleContainerInfo(1).Solid = _TRUE
     ObstacleContainerInfo(1).NumFrames = 39
 
     ObstacleContainerInfo(2).FileName = "plate3.gif"
@@ -622,8 +622,8 @@ SUB InitializeStartup
     ObstacleContainerInfo(2).W = 40
     ObstacleContainerInfo(2).CollisionDamage = 100
     ObstacleContainerInfo(2).Speed = 1
-    ObstacleContainerInfo(2).Solid = TRUE
-    ObstacleContainerInfo(2).HasDeadIndex = TRUE
+    ObstacleContainerInfo(2).Solid = _TRUE
+    ObstacleContainerInfo(2).HasDeadIndex = _TRUE
     ObstacleContainerInfo(2).DeadIndex = 40
     ObstacleContainerInfo(2).TimesDies = 3
     ObstacleContainerInfo(2).ExplosionIndex = 1
@@ -632,76 +632,76 @@ SUB InitializeStartup
     ObstacleContainerInfo(3).FileName = "plate4.gif"
     ObstacleContainerInfo(3).H = 40
     ObstacleContainerInfo(3).W = 40
-    ObstacleContainerInfo(3).Invulnerable = TRUE
+    ObstacleContainerInfo(3).Invulnerable = _TRUE
     ObstacleContainerInfo(3).Speed = 1
-    ObstacleContainerInfo(3).Solid = TRUE
+    ObstacleContainerInfo(3).Solid = _TRUE
 
     ObstacleContainerInfo(4).FileName = "plate5.gif"
     ObstacleContainerInfo(4).H = 40
     ObstacleContainerInfo(4).W = 40
-    ObstacleContainerInfo(4).HasDeadIndex = TRUE
+    ObstacleContainerInfo(4).HasDeadIndex = _TRUE
     ObstacleContainerInfo(4).DeadIndex = 40
     ObstacleContainerInfo(4).TimesDies = 3
     ObstacleContainerInfo(4).ExplosionIndex = 0
     ObstacleContainerInfo(4).Speed = 1
-    ObstacleContainerInfo(4).Solid = TRUE
+    ObstacleContainerInfo(4).Solid = _TRUE
     ObstacleContainerInfo(4).Score = 400
 
     ObstacleContainerInfo(5).FileName = "plate6.gif"
     ObstacleContainerInfo(5).H = 40
     ObstacleContainerInfo(5).W = 40
-    ObstacleContainerInfo(5).Invulnerable = TRUE
+    ObstacleContainerInfo(5).Invulnerable = _TRUE
     ObstacleContainerInfo(5).Speed = 1
 
     ObstacleContainerInfo(6).FileName = "plate7.gif"
     ObstacleContainerInfo(6).H = 40
     ObstacleContainerInfo(6).W = 40
-    ObstacleContainerInfo(6).Invulnerable = TRUE
+    ObstacleContainerInfo(6).Invulnerable = _TRUE
     ObstacleContainerInfo(6).Speed = 1
 
     ObstacleContainerInfo(7).FileName = "plate8.gif"
     ObstacleContainerInfo(7).H = 40
     ObstacleContainerInfo(7).W = 40
-    ObstacleContainerInfo(7).Invulnerable = TRUE
+    ObstacleContainerInfo(7).Invulnerable = _TRUE
     ObstacleContainerInfo(7).Speed = 1
 
     ObstacleContainerInfo(8).FileName = "plate9.gif"
     ObstacleContainerInfo(8).H = 40
     ObstacleContainerInfo(8).W = 40
-    ObstacleContainerInfo(8).Invulnerable = TRUE
+    ObstacleContainerInfo(8).Invulnerable = _TRUE
     ObstacleContainerInfo(8).Speed = 1
 
     ObstacleContainerInfo(9).FileName = "plate10.gif"
     ObstacleContainerInfo(9).H = 40
     ObstacleContainerInfo(9).W = 40
-    ObstacleContainerInfo(9).Invulnerable = TRUE
+    ObstacleContainerInfo(9).Invulnerable = _TRUE
     ObstacleContainerInfo(9).Speed = 1
 
     ObstacleContainerInfo(10).FileName = "plate11.gif"
     ObstacleContainerInfo(10).H = 40
     ObstacleContainerInfo(10).W = 40
-    ObstacleContainerInfo(10).Invulnerable = TRUE
+    ObstacleContainerInfo(10).Invulnerable = _TRUE
     ObstacleContainerInfo(10).Speed = 1
 
     ObstacleContainerInfo(11).FileName = "plate12.gif"
     ObstacleContainerInfo(11).H = 40
     ObstacleContainerInfo(11).W = 40
-    ObstacleContainerInfo(11).Invulnerable = TRUE
+    ObstacleContainerInfo(11).Invulnerable = _TRUE
     ObstacleContainerInfo(11).Speed = 1
 
     ObstacleContainerInfo(12).FileName = "plate13.gif"
     ObstacleContainerInfo(12).H = 40
     ObstacleContainerInfo(12).W = 40
-    ObstacleContainerInfo(12).Invulnerable = TRUE
+    ObstacleContainerInfo(12).Invulnerable = _TRUE
     ObstacleContainerInfo(12).Speed = 1
 
     ObstacleContainerInfo(13).FileName = "plate2.gif"
     ObstacleContainerInfo(13).H = 40
     ObstacleContainerInfo(13).W = 40
-    ObstacleContainerInfo(13).HasDeadIndex = TRUE
+    ObstacleContainerInfo(13).HasDeadIndex = _TRUE
     ObstacleContainerInfo(13).DeadIndex = 40
     ObstacleContainerInfo(13).Speed = 1
-    ObstacleContainerInfo(13).Solid = TRUE
+    ObstacleContainerInfo(13).Solid = _TRUE
     ObstacleContainerInfo(13).TimesDies = 3
     ObstacleContainerInfo(13).ExplosionIndex = 1
     ObstacleContainerInfo(13).Score = 450
@@ -709,10 +709,10 @@ SUB InitializeStartup
     ObstacleContainerInfo(14).FileName = "plate14.gif"
     ObstacleContainerInfo(14).H = 40
     ObstacleContainerInfo(14).W = 40
-    ObstacleContainerInfo(14).HasDeadIndex = TRUE
+    ObstacleContainerInfo(14).HasDeadIndex = _TRUE
     ObstacleContainerInfo(14).DeadIndex = 40
     ObstacleContainerInfo(14).Speed = 1
-    ObstacleContainerInfo(14).Solid = TRUE
+    ObstacleContainerInfo(14).Solid = _TRUE
     ObstacleContainerInfo(14).TimesDies = 3
     ObstacleContainerInfo(14).ExplosionIndex = 0
     ObstacleContainerInfo(14).Score = 350
@@ -720,10 +720,10 @@ SUB InitializeStartup
     ObstacleContainerInfo(15).FileName = "plate15.gif"
     ObstacleContainerInfo(15).H = 40
     ObstacleContainerInfo(15).W = 40
-    ObstacleContainerInfo(15).HasDeadIndex = TRUE
+    ObstacleContainerInfo(15).HasDeadIndex = _TRUE
     ObstacleContainerInfo(15).DeadIndex = 40
     ObstacleContainerInfo(15).Speed = 1
-    ObstacleContainerInfo(15).Solid = TRUE
+    ObstacleContainerInfo(15).Solid = _TRUE
     ObstacleContainerInfo(15).TimesDies = 3
     ObstacleContainerInfo(15).ExplosionIndex = 1
     ObstacleContainerInfo(15).Score = 450
@@ -731,11 +731,11 @@ SUB InitializeStartup
     ObstacleContainerInfo(40).FileName = "deadplate.gif"
     ObstacleContainerInfo(40).H = 40
     ObstacleContainerInfo(40).W = 40
-    ObstacleContainerInfo(40).Invulnerable = TRUE
+    ObstacleContainerInfo(40).Invulnerable = _TRUE
     ObstacleContainerInfo(40).Speed = 1
     ObstacleContainerInfo(40).NumFrames = 23
     ObstacleContainerInfo(40).DeadIndex = 40
-    ObstacleContainerInfo(40).Solid = TRUE
+    ObstacleContainerInfo(40).Solid = _TRUE
 
     'Setup the data for all the background bitmaps
 
@@ -856,7 +856,7 @@ SUB CheckScore
         lngNextExtraLifeScore = lngNextExtraLifeScore + EXTRALIFETARGET 'Increase the extra life target score
         _SNDSETPOS dsExtraLife, 0 'Set the extra life wave position to the beginning
         _SNDPLAY dsExtraLife 'Play the extra life wave file
-        blnExtraLifeDisplay = TRUE 'Toggle the extra life display flag to on
+        blnExtraLifeDisplay = _TRUE 'Toggle the extra life display flag to on
         lngTargetTime = Time_GetTicks + 3000 'Set the end time for displaying the extra life message
         byteLives = byteLives + 1 'increase the players life by 1
     END IF
@@ -864,7 +864,7 @@ SUB CheckScore
     IF lngTargetTime > Time_GetTicks AND blnExtraLifeDisplay THEN 'As long as the target time is larger than the current time, and the extra life display flag is set
         DrawStringCenter "EXTRA LIFE!", 250, BGRA_TOMATO 'Display the extra life message
     ELSE
-        blnExtraLifeDisplay = FALSE 'Otherwise, if we have gone past the display duration, turn the display flag off
+        blnExtraLifeDisplay = _FALSE 'Otherwise, if we have gone past the display duration, turn the display flag off
     END IF
 END SUB
 
@@ -914,7 +914,7 @@ END SUB
 SUB InitializeDD
     DIM ddsSplash AS LONG ' dim a direct draw surface
 
-    ddsSplash = Graphics_LoadImage("./dat/gfx/splash.gif", FALSE, FALSE, STRING_EMPTY, -1) 'create the splash screen surface
+    ddsSplash = Graphics_LoadImage("./dat/gfx/splash.gif", _FALSE, _FALSE, _STR_EMPTY, -1) 'create the splash screen surface
     _ASSERT ddsSplash < -1
 
     _PUTIMAGE , ddsSplash ' blit the splash screen to the back buffer
@@ -922,28 +922,28 @@ SUB InitializeDD
 
     _FREEIMAGE ddsSplash ' release the splash screen, since we don't need it anymore
 
-    Graphics_FadeScreen TRUE, FADE_FPS, 100 ' flip the front buffer so the splash screen bitmap on the backbuffer is displayed
+    Graphics_FadeScreen _TRUE, FADE_FPS, 100 ' flip the front buffer so the splash screen bitmap on the backbuffer is displayed
     PlayMIDIFile "./dat/sfx/mus/title.mid" ' Start playing the title song
 
-    ddsTitle = Graphics_LoadImage("./dat/gfx/title.gif", TRUE, FALSE, "ADAPTIVE", -1) ' Load the title screen bitmap in 8bpp mode for palette tricks
+    ddsTitle = Graphics_LoadImage("./dat/gfx/title.gif", _TRUE, _FALSE, "ADAPTIVE", -1) ' Load the title screen bitmap in 8bpp mode for palette tricks
     _ASSERT ddsTitle < -1
     ' Due to the way the internal QB64-PE 256 color conversion works, the first pixel color is stored at index 0
     ' How do I know this? Well, I wrote it! :)
     _CLEARCOLOR 0, ddsTitle
 
-    ddsShip = Graphics_LoadImage("./dat/gfx/ship.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR) 'Load the ship bitmap and make it into a direct draw surface
+    ddsShip = Graphics_LoadImage("./dat/gfx/ship.gif", _FALSE, _FALSE, _STR_EMPTY, TRANSPARENT_COLOR) 'Load the ship bitmap and make it into a direct draw surface
     _ASSERT ddsShip < -1
 
-    ddsPowerUp = Graphics_LoadImage("./dat/gfx/powerups.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR) 'Load the shield indicator bitmap and put in a direct draw surface
+    ddsPowerUp = Graphics_LoadImage("./dat/gfx/powerups.gif", _FALSE, _FALSE, _STR_EMPTY, TRANSPARENT_COLOR) 'Load the shield indicator bitmap and put in a direct draw surface
     _ASSERT ddsPowerUp < -1
 
-    ddsExplosion(0) = Graphics_LoadImage("./dat/gfx/explosion.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR) 'Load the first explosion bitmap
+    ddsExplosion(0) = Graphics_LoadImage("./dat/gfx/explosion.gif", _FALSE, _FALSE, _STR_EMPTY, TRANSPARENT_COLOR) 'Load the first explosion bitmap
     _ASSERT ddsExplosion(0) < -1
 
-    ddsExplosion(1) = Graphics_LoadImage("./dat/gfx/explosion2.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR) 'Load the second explosion bitmap
+    ddsExplosion(1) = Graphics_LoadImage("./dat/gfx/explosion2.gif", _FALSE, _FALSE, _STR_EMPTY, TRANSPARENT_COLOR) 'Load the second explosion bitmap
     _ASSERT ddsExplosion(1) < -1
 
-    ddsInvulnerable = Graphics_LoadImage("./dat/gfx/invulnerable.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR) 'Load the invulnerable bitmap
+    ddsInvulnerable = Graphics_LoadImage("./dat/gfx/invulnerable.gif", _FALSE, _FALSE, _STR_EMPTY, TRANSPARENT_COLOR) 'Load the invulnerable bitmap
     _ASSERT ddsInvulnerable < -1
 
     DIM intCount AS LONG 'count variable
@@ -956,7 +956,7 @@ SUB InitializeDD
         ExplosionDesc(intCount).H = 120
     NEXT
 
-    ddsHit = Graphics_LoadImage("./dat/gfx/hit.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR)
+    ddsHit = Graphics_LoadImage("./dat/gfx/hit.gif", _FALSE, _FALSE, _STR_EMPTY, TRANSPARENT_COLOR)
     _ASSERT ddsHit < -1
 
     FOR intCount = 0 TO UBOUND(HitDesc)
@@ -965,52 +965,52 @@ SUB InitializeDD
         HitDesc(intCount).W = 8
     NEXT
 
-    ddsLaser = Graphics_LoadImage("./dat/gfx/laser.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR)
+    ddsLaser = Graphics_LoadImage("./dat/gfx/laser.gif", _FALSE, _FALSE, _STR_EMPTY, TRANSPARENT_COLOR)
     _ASSERT ddsLaser < -1
 
     FOR intCount = 0 TO UBOUND(LaserDesc)
-        LaserDesc(intCount).Exists = FALSE
+        LaserDesc(intCount).Exists = _FALSE
         LaserDesc(intCount).W = LASER1WIDTH
         LaserDesc(intCount).H = LASER1HEIGHT
     NEXT
 
-    ddsLaser2R = Graphics_LoadImage("./dat/gfx/laser2.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR)
+    ddsLaser2R = Graphics_LoadImage("./dat/gfx/laser2.gif", _FALSE, _FALSE, _STR_EMPTY, TRANSPARENT_COLOR)
     _ASSERT ddsLaser2R < -1
 
     FOR intCount = 0 TO UBOUND(Laser2RDesc)
-        Laser2RDesc(intCount).Exists = FALSE
+        Laser2RDesc(intCount).Exists = _FALSE
         Laser2RDesc(intCount).W = LASER2WIDTH
         Laser2RDesc(intCount).H = LASER2HEIGHT
     NEXT
 
-    ddsLaser2L = Graphics_LoadImage("./dat/gfx/laser2.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR)
+    ddsLaser2L = Graphics_LoadImage("./dat/gfx/laser2.gif", _FALSE, _FALSE, _STR_EMPTY, TRANSPARENT_COLOR)
     _ASSERT ddsLaser2L < -1
 
     FOR intCount = 0 TO UBOUND(Laser2LDesc)
-        Laser2LDesc(intCount).Exists = FALSE
+        Laser2LDesc(intCount).Exists = _FALSE
         Laser2LDesc(intCount).W = LASER2WIDTH
         Laser2LDesc(intCount).H = LASER2HEIGHT
     NEXT
 
-    ddsLaser3 = Graphics_LoadImage("./dat/gfx/laser3.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR)
+    ddsLaser3 = Graphics_LoadImage("./dat/gfx/laser3.gif", _FALSE, _FALSE, _STR_EMPTY, TRANSPARENT_COLOR)
     _ASSERT ddsLaser3 < -1
 
     FOR intCount = 0 TO UBOUND(Laser3Desc)
-        Laser3Desc(intCount).Exists = FALSE
+        Laser3Desc(intCount).Exists = _FALSE
         Laser3Desc(intCount).W = LASER3WIDTH
         Laser3Desc(intCount).H = LASER3HEIGHT
     NEXT
 
-    ddsEnemyFire = Graphics_LoadImage("./dat/gfx/enemyfire1.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR)
+    ddsEnemyFire = Graphics_LoadImage("./dat/gfx/enemyfire1.gif", _FALSE, _FALSE, _STR_EMPTY, TRANSPARENT_COLOR)
     _ASSERT ddsEnemyFire < -1
 
-    ddsGuidedMissile = Graphics_LoadImage("./dat/gfx/guidedmissile.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR)
+    ddsGuidedMissile = Graphics_LoadImage("./dat/gfx/guidedmissile.gif", _FALSE, _FALSE, _STR_EMPTY, TRANSPARENT_COLOR)
     _ASSERT ddsGuidedMissile < -1
 
-    ddsDisplayBomb = Graphics_LoadImage("./dat/gfx/displaybomb.gif", FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR)
+    ddsDisplayBomb = Graphics_LoadImage("./dat/gfx/displaybomb.gif", _FALSE, _FALSE, _STR_EMPTY, TRANSPARENT_COLOR)
     _ASSERT ddsDisplayBomb < -1
 
-    ddsObstacle(40) = Graphics_LoadImage("./dat/gfx/deadplate.gif", FALSE, FALSE, STRING_EMPTY, -1)
+    ddsObstacle(40) = Graphics_LoadImage("./dat/gfx/deadplate.gif", _FALSE, _FALSE, _STR_EMPTY, -1)
     _ASSERT ddsObstacle(40) < -1
 END SUB
 
@@ -1174,7 +1174,7 @@ SUB EndGame
 
     'Is there a Segment playing?
     'Stop playing any midi's currently playing
-    PlayMIDIFile STRING_EMPTY
+    PlayMIDIFile _STR_EMPTY
 END SUB
 
 
@@ -1188,7 +1188,7 @@ SUB CheckHighScore
 
     IF NOT boolGettingInput THEN 'if the player isn't entering a name then
         ClearInput
-        boolEnterPressed = FALSE 'the enter key hasn't been pressed
+        boolEnterPressed = _FALSE 'the enter key hasn't been pressed
         lngCount = 0 'reset the count
         DO WHILE lngScore < HighScore(lngCount).score 'loop until we reach the end of the high scores
             lngCount = lngCount + 1 'increment the counter
@@ -1200,8 +1200,8 @@ SUB CheckHighScore
             END IF
         LOOP
         HighScore(NUM_HIGH_SCORES - 1).score = lngScore 'if the player does have a high score, assign it to the last place
-        boolGettingInput = TRUE 'we are now getting keyboard input
-        strName = STRING_EMPTY 'clear the string
+        boolGettingInput = _TRUE 'we are now getting keyboard input
+        strName = _STR_EMPTY 'clear the string
         PlayMIDIFile "./dat/sfx/mus/inbtween.mid" 'play the inbetween levels & title screen midi
     END IF
 
@@ -1227,12 +1227,12 @@ SUB CheckHighScore
 
         lngScore = 0 'reset the score
         SaveHighScores
-        boolGettingInput = FALSE 'we are no longer getting input
+        boolGettingInput = _FALSE 'we are no longer getting input
         PlayMIDIFile "./dat/sfx/mus/title.mid" 'Start the title midi again
     END IF
 
-    strBuffer = STRING_EMPTY 'clear the buffer
-    boolEnterPressed = FALSE 'clear the enter toggle
+    strBuffer = _STR_EMPTY 'clear the buffer
+    boolEnterPressed = _FALSE 'clear the enter toggle
 END SUB
 
 
@@ -1265,7 +1265,7 @@ SUB UpdatePowerUps (CreatePowerup AS _BYTE) ' Optional CreatePowerup As Boolean
             END IF
             PowerUp(intCount).X = Math_GetRandomBetween(0, SCREEN_WIDTH - POWERUPWIDTH - 1) 'Create the power-up, and set a random X position
             PowerUp(intCount).Y = 0 'Make the power-up start at the top of the screen
-            PowerUp(intCount).Exists = TRUE 'The power up now exists
+            PowerUp(intCount).Exists = _TRUE 'The power up now exists
         END IF
     END IF
 
@@ -1285,7 +1285,7 @@ SUB UpdatePowerUps (CreatePowerup AS _BYTE) ' Optional CreatePowerup As Boolean
             byteFrameOffset = (POWERUPWIDTH * byteFrameCount) + PowerUp(intCount).Index 'determine the offset for the surfces rectangle
 
             IF PowerUp(intCount).Y >= SCREEN_HEIGHT THEN 'If the power-up goes off screen,
-                PowerUp(intCount).Exists = FALSE 'destroy it
+                PowerUp(intCount).Exists = _FALSE 'destroy it
             ELSEIF PowerUp(intCount).Y + POWERUPHEIGHT > 0 THEN ' Only render if onscreen
                 _PUTIMAGE (PowerUp(intCount).X, PowerUp(intCount).Y), ddsPowerUp, , (byteFrameOffset, 0)-(byteFrameOffset + POWERUPWIDTH - 1, POWERUPHEIGHT - 1) 'otherwise, blit it to the back buffer,
             END IF
@@ -1307,14 +1307,14 @@ SUB CreateExplosion (Coordinates AS typeRect, ExplosionIndex AS _UNSIGNED _BYTE,
         lngNumEnemiesKilled = lngNumEnemiesKilled + 1 'The total number of enemies the player has killed is incremented
         IF intEnemiesKilled = 25 THEN 'If the number of enemies the player has killed exceeds 25, then
             intEnemiesKilled = 0 'Reset the enemies killed power up trigger count to 0
-            UpdatePowerUps TRUE 'Trigger a powerup
+            UpdatePowerUps _TRUE 'Trigger a powerup
         END IF
     END IF
 
     FOR lngCount = 0 TO UBOUND(ExplosionDesc) 'loop through the whole explosion array
         IF NOT ExplosionDesc(lngCount).Exists THEN 'if we find an empty array element
             ExplosionDesc(lngCount).ExplosionIndex = ExplosionIndex 'Set the explosion type to the enemys'
-            ExplosionDesc(lngCount).Exists = TRUE 'this array element now exists
+            ExplosionDesc(lngCount).Exists = _TRUE 'this array element now exists
             ExplosionDesc(lngCount).Frame = 0 'set its' frame to the first one
             ExplosionDesc(lngCount).X = (((Coordinates.right - Coordinates.left) \ 2) + Coordinates.left) - (ExplosionDesc(lngCount).W \ 2) 'assign it the center of the object, at the edge
             ExplosionDesc(lngCount).Y = (((Coordinates.bottom - Coordinates.top) \ 2) + Coordinates.top) - (ExplosionDesc(lngCount).H \ 2) 'assign it the center of the object, along the edge
@@ -1341,7 +1341,7 @@ SUB UpdateExplosions
             ExplosionDesc(lngCount).Frame = ExplosionDesc(lngCount).Frame + 1 'Increment the frame the explosion is on
             IF ExplosionDesc(lngCount).Frame > ExplosionDesc(lngCount).NumFrames THEN 'If the animation frame goes beyond the number of frames the that the explosion has
                 ExplosionDesc(lngCount).Frame = 0 'Reset the frame to the first one
-                ExplosionDesc(lngCount).Exists = FALSE 'The explosion no longer exists
+                ExplosionDesc(lngCount).Exists = _FALSE 'The explosion no longer exists
             END IF
         END IF
     NEXT
@@ -1408,7 +1408,7 @@ SUB StartIntro
     strDialog(3) = "has met with silence on their part, and their assault has not stopped."
     strDialog(4) = "Now is the time for all inhabitants of the Earth to put their trust in you."
     strDialog(5) = "You must not let us down."
-    strDialog(6) = STRING_EMPTY
+    strDialog(6) = _STR_EMPTY
     strDialog(7) = "You will receive the opportunity of grabbing a power-up for every twenty-five"
     strDialog(8) = "alien ships you destroy. We don't have the time to fit your ship with them now,"
     strDialog(9) = "as our outer perimeter space probes have detected a large armada of alien"
@@ -1419,20 +1419,20 @@ SUB StartIntro
     strDialog(14) = "the ship to fail. With that in mind, it is imperative that you avoid getting"
     strDialog(15) = "hit, as the enemy forces are large, and every upgrade you get will make this"
     strDialog(16) = "difficult mission more attainable."
-    strDialog(17) = STRING_EMPTY
+    strDialog(17) = _STR_EMPTY
     strDialog(18) = "We will warp you to the first entry point of the alien galaxy, and you will"
     strDialog(19) = "journey on a course that leads you through each part of their system,"
     strDialog(20) = "destroying as much of their weaponry and resources as possible along the way."
     strDialog(21) = "At the end of each stage, we have set up warp-jumps that will transport you to"
     strDialog(22) = "the next critical sector. Go now, soldier, and fight so that we may avert the"
     strDialog(23) = "annihilation of the human race."
-    strDialog(24) = STRING_EMPTY
+    strDialog(24) = _STR_EMPTY
     strDialog(25) = "(Press ENTER to continue)"
 
     CLS 'fill the backbuffer with black
     YPosition = 50 'initialize the Y coordinate of the text to 50
 
-    ddsSplash = Graphics_LoadImage("./dat/gfx/nebulae4.gif", FALSE, FALSE, STRING_EMPTY, -1) 'create a surface
+    ddsSplash = Graphics_LoadImage("./dat/gfx/nebulae4.gif", _FALSE, _FALSE, _STR_EMPTY, -1) 'create a surface
     _ASSERT ddsSplash < -1
 
     _PUTIMAGE , ddsSplash 'blit the surface to the screen
@@ -1446,17 +1446,17 @@ SUB StartIntro
         lngCount = lngCount + 1 'increment the count
     LOOP
 
-    Graphics_FadeScreen TRUE, FADE_FPS, 100 'fade the screen in
+    Graphics_FadeScreen _TRUE, FADE_FPS, 100 'fade the screen in
 
     ClearInput
 
     DO
         SLEEP 'don't hog the processor
-    LOOP UNTIL _KEYHIT = KEY_ENTER 'if the enter key is pressed, exit the loop
+    LOOP UNTIL _KEYHIT = _KEY_ENTER 'if the enter key is pressed, exit the loop
 
     ClearInput
 
-    Graphics_FadeScreen FALSE, FADE_FPS, 100 'fade the screen out
+    Graphics_FadeScreen _FALSE, FADE_FPS, 100 'fade the screen out
 END SUB
 
 
@@ -1482,7 +1482,7 @@ SUB LoadLevel (level AS LONG)
     END IF
 
     FOR intCount = 0 TO UBOUND(ddsBackgroundObject) 'loop through all the background objects
-        ddsBackgroundObject(intCount) = Graphics_LoadImage("./dat/gfx/" + BackgroundObject(intCount).FileName, FALSE, FALSE, STRING_EMPTY, -1) 'Load one of the background bitmaps
+        ddsBackgroundObject(intCount) = Graphics_LoadImage("./dat/gfx/" + BackgroundObject(intCount).FileName, _FALSE, _FALSE, _STR_EMPTY, -1) 'Load one of the background bitmaps
         _ASSERT ddsBackgroundObject(intCount) < -1
     NEXT
 
@@ -1525,7 +1525,7 @@ SUB LoadLevel (level AS LONG)
         FOR intCount2 = 0 TO 125 'there are 126 slots in each section, loop through all of those
             IF SectionInfo(intCount, intCount2) < 255 THEN 'if the slot value is less than 255, an object exists there
                 IF ddsEnemyContainer(SectionInfo(intCount, intCount2)) > -2 THEN ' if this object hasn't been loaded then (QB64 valid image handles are < -1)
-                    ddsEnemyContainer(SectionInfo(intCount, intCount2)) = Graphics_LoadImage("./dat/gfx/" + EnemyContainerDesc(SectionInfo(intCount, intCount2)).FileName, FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR) 'create this object
+                    ddsEnemyContainer(SectionInfo(intCount, intCount2)) = Graphics_LoadImage("./dat/gfx/" + EnemyContainerDesc(SectionInfo(intCount, intCount2)).FileName, _FALSE, _FALSE, _STR_EMPTY, TRANSPARENT_COLOR) 'create this object
                     _ASSERT ddsEnemyContainer(SectionInfo(intCount, intCount2)) < -1
                 END IF
             END IF
@@ -1536,7 +1536,7 @@ SUB LoadLevel (level AS LONG)
         FOR intCount2 = 0 TO 125
             IF ObstacleInfo(intCount, intCount2) < 255 THEN
                 IF ddsObstacle(ObstacleInfo(intCount, intCount2)) > -2 THEN
-                    ddsObstacle(ObstacleInfo(intCount, intCount2)) = Graphics_LoadImage("./dat/gfx/" + ObstacleContainerInfo(ObstacleInfo(intCount, intCount2)).FileName, FALSE, FALSE, STRING_EMPTY, TRANSPARENT_COLOR)
+                    ddsObstacle(ObstacleInfo(intCount, intCount2)) = Graphics_LoadImage("./dat/gfx/" + ObstacleContainerInfo(ObstacleInfo(intCount, intCount2)).FileName, _FALSE, _FALSE, _STR_EMPTY, TRANSPARENT_COLOR)
                     _ASSERT ddsObstacle(ObstacleInfo(intCount, intCount2)) < -1
                 END IF
             END IF
@@ -1554,7 +1554,7 @@ SUB LoadLevel (level AS LONG)
         intCount = intCount + 1 'increment the count
     LOOP
 
-    ShowMapLocation FALSE 'call the sub that shows the location of the player in the enemies galaxy
+    ShowMapLocation _FALSE 'call the sub that shows the location of the player in the enemies galaxy
     strLevelText = LoadingString 'pass the loading string to the strLevelText variable
     strLevelText = _TRIM$(strLevelText) 'Trim any spaces from the loading string
 
@@ -1569,15 +1569,15 @@ SUB LoadLevel (level AS LONG)
         END IF
     END IF
 
-    Graphics_FadeScreen TRUE, FADE_FPS, 100 'fade the screen in
+    Graphics_FadeScreen _TRUE, FADE_FPS, 100 'fade the screen in
 
     intCount = 0 'set the count variable to 0
     DO
         intCount = intCount + 1 'begin incrementing the count
         IF intCount > 10 AND intCount <= 20 THEN 'if the count is currently greater than 10 and less than 20
-            ShowMapLocation TRUE 'show the map location, with the current position outlined
+            ShowMapLocation _TRUE 'show the map location, with the current position outlined
         ELSEIF intCount <= 10 THEN 'if it is less than 10
-            ShowMapLocation FALSE 'show the map location with no outline
+            ShowMapLocation _FALSE 'show the map location with no outline
         END IF
         IF intCount > 20 THEN intCount = 0 'if the count is larger than 20, set it to 0
         IF byteLevel > 1 THEN 'if the player has passed level 1 then
@@ -1596,45 +1596,45 @@ SUB LoadLevel (level AS LONG)
         _DISPLAY 'flip the direct draw front buffer to display the info
 
         _LIMIT UPDATES_PER_SECOND 'don't hog the processor
-    LOOP UNTIL _KEYDOWN(KEY_ENTER) 'if the enter key is pressed
+    LOOP UNTIL _KEYDOWN(_KEY_ENTER) 'if the enter key is pressed
 
     ClearInput
 
     lngNumEnemiesKilled = 0 'reset the number of enemies killed
     lngTotalNumEnemies = 0 'reset the total number of enemies on the level
-    Graphics_FadeScreen FALSE, FADE_FPS, 100 'fade the screen to black
+    Graphics_FadeScreen _FALSE, FADE_FPS, 100 'fade the screen to black
 
     intObjectIndex = byteLevel - 1 'set the background index to the current level number
     IF intObjectIndex > UBOUND(BackgroundObject) THEN 'if we go beyond the boundaries of how many objects we have allocated
-        boolBackgroundExists = FALSE 'then the background object doesn't exist
+        boolBackgroundExists = _FALSE 'then the background object doesn't exist
         intObjectIndex = 0 'set the index to 0
     ELSE
-        boolBackgroundExists = TRUE 'reset background
+        boolBackgroundExists = _TRUE 'reset background
         sngBackgroundX = (SCREEN_WIDTH \ 2) - (BackgroundObject(intObjectIndex).W \ 2) 'set the coorindates of the background object to be centered
         sngBackgroundY = -100 - BackgroundObject(intObjectIndex).H
         'set the starting Y position of the object off the screen
     END IF
     FOR intCount = 0 TO UBOUND(PowerUp)
-        PowerUp(intCount).Exists = FALSE 'reset powerups
+        PowerUp(intCount).Exists = _FALSE 'reset powerups
     NEXT
     FOR intCount = 0 TO UBOUND(EnemyDesc) 'reset enemy lasers
-        EnemyDesc(intCount).HasFired = FALSE
+        EnemyDesc(intCount).HasFired = _FALSE
     NEXT
     FOR intCount = 0 TO UBOUND(GuidedMissile) 'reset guided missiles
-        GuidedMissile(intCount).Exists = FALSE
+        GuidedMissile(intCount).Exists = _FALSE
     NEXT
     FOR intCount = 0 TO UBOUND(LaserDesc) 'reset lasers
-        LaserDesc(intCount).Exists = FALSE
+        LaserDesc(intCount).Exists = _FALSE
     NEXT
     FOR intCount = 0 TO UBOUND(Laser2LDesc) 'reset level2 lasers
-        Laser2LDesc(intCount).Exists = FALSE
-        Laser2RDesc(intCount).Exists = FALSE
+        Laser2LDesc(intCount).Exists = _FALSE
+        Laser2RDesc(intCount).Exists = _FALSE
     NEXT
     FOR intCount = 0 TO UBOUND(Laser3Desc) 'reset level3 lasers
-        Laser3Desc(intCount).Exists = FALSE
+        Laser3Desc(intCount).Exists = _FALSE
     NEXT
     FOR intCount = 0 TO UBOUND(ExplosionDesc) 'reset explosions
-        ExplosionDesc(intCount).Exists = FALSE
+        ExplosionDesc(intCount).Exists = _FALSE
     NEXT
 
     FOR intCount = 0 TO UBOUND(ddsBackgroundObject) 'loop through all the backgrounds and
@@ -1644,7 +1644,7 @@ SUB LoadLevel (level AS LONG)
         END IF
     NEXT
 
-    ddsBackgroundObject(byteLevel - 1) = Graphics_LoadImage("./dat/gfx/" + BackgroundObject(byteLevel - 1).FileName, FALSE, FALSE, STRING_EMPTY, -1) 'Now we load only the necessary background object
+    ddsBackgroundObject(byteLevel - 1) = Graphics_LoadImage("./dat/gfx/" + BackgroundObject(byteLevel - 1).FileName, _FALSE, _FALSE, _STR_EMPTY, -1) 'Now we load only the necessary background object
     _ASSERT ddsBackgroundObject(byteLevel - 1) < -1
 
     'Reset the ships' position and velocity
@@ -1675,7 +1675,7 @@ SUB UpdateLevels
     IF SectionCount < 0 THEN 'If the end of the level is reached
         byteLevel = byteLevel + 1 'Increment the level the player is on
         IF byteLevel = 9 THEN 'If all levels have been beat
-            PlayMIDIFile STRING_EMPTY 'Stop playing any midi
+            PlayMIDIFile _STR_EMPTY 'Stop playing any midi
             _SNDSTOP dsAlarm 'Turn off any alarm
             _SNDSTOP dsInvulnerability 'Stop any invulnerability sound effect
 
@@ -1696,7 +1696,7 @@ SUB UpdateLevels
                         byteIndex = 0 'set it to the first
                     END IF
 
-                    CreateExplosion SrcRect, byteIndex, TRUE 'create the explosion, and we don't give the player any credit for killing an enemy since there are none
+                    CreateExplosion SrcRect, byteIndex, _TRUE 'create the explosion, and we don't give the player any credit for killing an enemy since there are none
                     _SNDPLAYCOPY dsExplosion 'play the explosion sound
                 END IF
 
@@ -1707,10 +1707,10 @@ SUB UpdateLevels
                 _LIMIT UPDATES_PER_SECOND
             LOOP
 
-            Graphics_FadeScreen FALSE, FADE_FPS, 100 'fade the screen to black
+            Graphics_FadeScreen _FALSE, FADE_FPS, 100 'fade the screen to black
 
             FOR intCount = 0 TO UBOUND(ExplosionDesc) 'loop through all explosions
-                ExplosionDesc(intCount).Exists = FALSE 'they all no longer exist
+                ExplosionDesc(intCount).Exists = _FALSE 'they all no longer exist
             NEXT
             CLS 'fill the back buffer with black
 
@@ -1724,22 +1724,22 @@ SUB UpdateLevels
             DrawStringCenter "help but ponder... were all of the aliens really destroyed?", 240, BGRA_DARKGOLDENROD
             DrawStringCenter "THE END", 270, BGRA_DARKGOLDENROD
 
-            Graphics_FadeScreen TRUE, FADE_FPS, 100 'fade the screen in
+            Graphics_FadeScreen _TRUE, FADE_FPS, 100 'fade the screen in
             SLEEP 20 ' Display the winning message for 20 seconds
-            Graphics_FadeScreen FALSE, FADE_FPS, 100 'fade the screen to black again
+            Graphics_FadeScreen _FALSE, FADE_FPS, 100 'fade the screen to black again
             intShields = SHIELD_MAX 'shields are at 100%
             Ship.X = 300 'reset the players X
             Ship.Y = 300 'and Y coordinates
             Ship.PowerUpState = 0 'no powerups
             Ship.NumBombs = 0 'no bombs
-            Ship.Invulnerable = FALSE 'no longer invulnerable
-            Ship.AlarmActive = FALSE 'make sure the low shield alarm is off
-            boolStarted = FALSE 'the game hasn't been started
+            Ship.Invulnerable = _FALSE 'no longer invulnerable
+            Ship.AlarmActive = _FALSE 'make sure the low shield alarm is off
+            boolStarted = _FALSE 'the game hasn't been started
             byteLives = LIVES_DEFAULT 'the player has 3 lives left
             byteLevel = 1 'reset to level 1
             SectionCount = 999 'start at the first section
             NumberEmptySections = 0 'all the sections are filled again
-            boolBackgroundExists = FALSE 'a background bitmap no longer exists
+            boolBackgroundExists = _FALSE 'a background bitmap no longer exists
             CheckHighScore 'call the sub to see if the player got a high score
             EXIT SUB 'exit the sub
         ELSE 'Otherwise, load a new level
@@ -1757,23 +1757,23 @@ SUB UpdateLevels
             DO UNTIL intCount2 > UBOUND(EnemyDesc) 'Loop through all the enemies
                 IF NOT EnemyDesc(intCount2).Exists THEN 'If this index is open
                     IF EnemyDesc(intCount2).HasFired THEN 'If the old enemy has a weapon that had fired still on the screen
-                        blnTempInfo = TRUE 'flag that we need to pass some information to the new enemy
+                        blnTempInfo = _TRUE 'flag that we need to pass some information to the new enemy
                         TempInfo = EnemyDesc(intCount2) 'store the information on this enemy temporarily
                     ELSE 'otherwise
-                        blnTempInfo = FALSE 'we don't need to give any info to this enemy
+                        blnTempInfo = _FALSE 'we don't need to give any info to this enemy
                     END IF
                     EnemyDesc(intCount2) = EnemyContainerDesc(SectionInfo(SectionCount, intCount))
                     'create the enemy using the enemy template
                     'fill in all the enemy parameters
                     EnemyDesc(intCount2).Index = SectionInfo(SectionCount, intCount)
                     'the enemies index is equal to the value of the slot
-                    EnemyDesc(intCount2).Exists = TRUE 'the enemy exists
+                    EnemyDesc(intCount2).Exists = _TRUE 'the enemy exists
                     EnemyDesc(intCount2).Y = 0 - EnemyDesc(intCount2).H
                     'set the enemy off the screen using its' height as the offset
                     EnemyDesc(intCount2).X = intCount * 5 'offset the X by the slot we are on
                     EnemyDesc(intCount2).TimesHit = 0 'the enemy has never been hit
                     IF blnTempInfo THEN 'if the old enemy has fired, pass the info to this enemy
-                        EnemyDesc(intCount2).HasFired = TRUE 'this enemy has fired
+                        EnemyDesc(intCount2).HasFired = _TRUE 'this enemy has fired
                         EnemyDesc(intCount2).TargetX = TempInfo.TargetX 'give the enemy the target info of the last one
                         EnemyDesc(intCount2).TargetY = TempInfo.TargetY 'give the enemy the target info of the last one
                         EnemyDesc(intCount2).XFire = TempInfo.XFire 'give the enemy the target info of the last one
@@ -1786,7 +1786,7 @@ SUB UpdateLevels
                 intCount2 = intCount2 + 1 'increment the search index
             LOOP
             intCount2 = 0 'reset the search index
-            EnemySectionNotEmpty = TRUE 'this section is not an empty one
+            EnemySectionNotEmpty = _TRUE 'this section is not an empty one
         END IF
         intCount2 = 0 'start the count variable at zero
         IF ObstacleInfo(SectionCount, intCount) < 255 THEN
@@ -1796,21 +1796,21 @@ SUB UpdateLevels
                     'if there is an open slot begin filling in the info for this obstacle
                     IF ObstacleDesc(intCount2).HasFired THEN
                         'if the obstacle has fired
-                        blnTempInfo = TRUE 'flag that we have info to pass to the new obstacle
+                        blnTempInfo = _TRUE 'flag that we have info to pass to the new obstacle
                         TempInfo = ObstacleDesc(intCount2) 'store the information about this obstacle
                     ELSE 'otherwise
-                        blnTempInfo = FALSE 'we don't have info to pass on
+                        blnTempInfo = _FALSE 'we don't have info to pass on
                     END IF
                     ObstacleDesc(intCount2) = ObstacleContainerInfo(ObstacleInfo(SectionCount, intCount))
                     'fill in the info on the new obstacle using the obstacle's template
                     'fill in the dynamic values
                     ObstacleDesc(intCount2).Index = ObstacleInfo(SectionCount, intCount)
                     'the index of this obsacle is stored in the slot value
-                    ObstacleDesc(intCount2).Exists = TRUE 'the obstacle exists
+                    ObstacleDesc(intCount2).Exists = _TRUE 'the obstacle exists
                     ObstacleDesc(intCount2).Y = -80 'set the obstacle off the top of the screen by 80 pixels
                     ObstacleDesc(intCount2).X = intCount * 5 'set the offset of the X position of the obstacle
                     IF blnTempInfo THEN 'if there is info to pass to the new obstacle
-                        ObstacleDesc(intCount2).HasFired = TRUE 'then the obstacle has fired
+                        ObstacleDesc(intCount2).HasFired = _TRUE 'then the obstacle has fired
                         ObstacleDesc(intCount2).TargetX = TempInfo.TargetX 'fill in the fire information
                         ObstacleDesc(intCount2).TargetY = TempInfo.TargetY 'fill in the fire information
                         ObstacleDesc(intCount2).XFire = TempInfo.XFire 'fill in the fire information
@@ -1823,7 +1823,7 @@ SUB UpdateLevels
                 intCount2 = intCount2 + 1 'increment the count index
             LOOP
             intCount2 = 0 'reset the count variable
-            ObstacleSectionNotEmpty = TRUE 'the obstacle section isn't empty
+            ObstacleSectionNotEmpty = _TRUE 'the obstacle section isn't empty
         END IF
     NEXT
 
@@ -1855,7 +1855,7 @@ SUB FireWeapon
         DO UNTIL intCount > UBOUND(LaserDesc) ' TODO: Why was this 7? - loop through all the lasers
             IF NOT LaserDesc(intCount).Exists THEN 'and see if there is an empty slot, and if there is
                 'create a new laser description
-                LaserDesc(intCount).Exists = TRUE 'the laser exists
+                LaserDesc(intCount).Exists = _TRUE 'the laser exists
                 LaserDesc(intCount).X = Ship.X + SHIPWIDTH \ 2 - LASER1WIDTH \ 2
                 'center the laser fire
                 LaserDesc(intCount).Y = Ship.Y 'the laser starts at the same Y as the ship
@@ -1879,7 +1879,7 @@ SUB FireWeapon
             DO UNTIL intCount > UBOUND(GuidedMissile) 'loop through all the guided missile types
                 IF NOT GuidedMissile(intCount).Exists THEN 'if we find an empty slot
                     'create a new guided missile
-                    GuidedMissile(intCount).Exists = TRUE 'the guided missile exists
+                    GuidedMissile(intCount).Exists = _TRUE 'the guided missile exists
                     GuidedMissile(intCount).X = Ship.X + SHIPWIDTH \ 2 - MISSILEDIMENSIONS \ 2 'center the x coordinate
                     GuidedMissile(intCount).Y = Ship.Y + SHIPHEIGHT \ 2 - MISSILEDIMENSIONS \ 2 'center the y coordinate
                     GuidedMissile(intCount).XVelocity = 0 'set the velocity to 0
@@ -1903,7 +1903,7 @@ SUB FireWeapon
             byteLaser2Counter = 0
             DO UNTIL intCount > UBOUND(Laser2RDesc)
                 IF NOT Laser2RDesc(intCount).Exists THEN
-                    Laser2RDesc(intCount).Exists = TRUE
+                    Laser2RDesc(intCount).Exists = _TRUE
                     Laser2RDesc(intCount).X = (Ship.X + SHIPWIDTH) - 15
                     Laser2RDesc(intCount).Y = Ship.Y + 14
                     Laser2RDesc(intCount).XVelocity = 0 + (LASERSPEED - 4)
@@ -1919,7 +1919,7 @@ SUB FireWeapon
 
             DO UNTIL intCount > UBOUND(Laser2LDesc)
                 IF NOT Laser2LDesc(intCount).Exists THEN
-                    Laser2LDesc(intCount).Exists = TRUE
+                    Laser2LDesc(intCount).Exists = _TRUE
                     Laser2LDesc(intCount).X = Ship.X + 5
                     Laser2LDesc(intCount).Y = Ship.Y + 14
                     Laser2LDesc(intCount).XVelocity = 0 - (LASERSPEED - 4)
@@ -1941,7 +1941,7 @@ SUB FireWeapon
         IF byteLaser3Counter = 35 THEN
             DO UNTIL intCount > UBOUND(Laser3Desc)
                 IF NOT Laser3Desc(intCount).Exists THEN
-                    Laser3Desc(intCount).Exists = TRUE
+                    Laser3Desc(intCount).Exists = _TRUE
                     Laser3Desc(intCount).X = Ship.X + ((SHIPWIDTH \ 2) - (Laser3Desc(intCount).W \ 2))
                     Laser3Desc(intCount).Y = Ship.Y
                     Laser3Desc(intCount).YVelocity = (LASERSPEED + 1.5)
@@ -1976,7 +1976,7 @@ SUB UpdateHits (NewHit AS _BYTE, x AS LONG, y AS LONG) ' Optional NewHit As Bool
         FOR intCount = 0 TO UBOUND(HitDesc) 'Loop through the hit array
             IF NOT HitDesc(intCount).Exists THEN 'If we find a spot that is free
                 'Add in the coordinates of the new hit
-                HitDesc(intCount).Exists = TRUE 'This hit now exists
+                HitDesc(intCount).Exists = _TRUE 'This hit now exists
                 HitDesc(intCount).X = x - 2 'Center the x if the hit
                 HitDesc(intCount).Y = y 'The Y of the hit
 
@@ -1990,7 +1990,7 @@ SUB UpdateHits (NewHit AS _BYTE, x AS LONG, y AS LONG) ' Optional NewHit As Bool
             IF HitDesc(intCount).Exists THEN 'If this hit exists
                 IF HitDesc(intCount).Index > HitDesc(intCount).NumFrames THEN
                     'If the current frame is larger than the number of frames the hit animation has
-                    HitDesc(intCount).Exists = FALSE 'The hit no longer exists
+                    HitDesc(intCount).Exists = _FALSE 'The hit no longer exists
                     HitDesc(intCount).Index = 0 'Set the frame of the hit to 0
                 ELSE 'Otherwise, the hit animation frame needs to be displayed
                     IF HitDesc(intCount).X > 0 AND HitDesc(intCount).X < (SCREEN_WIDTH - HitDesc(intCount).W) AND HitDesc(intCount).Y > 0 AND HitDesc(intCount).Y < (SCREEN_HEIGHT - HitDesc(intCount).H) THEN
@@ -2040,7 +2040,7 @@ SUB CheckForCollisions
                 intShields = intShields + 20 'increase the shields by 20
                 lngScore = lngScore + 100 'player gets a 100 points for this
                 IF intShields > SHIELD_MAX THEN intShields = SHIELD_MAX 'if the shields are already maxed out, make sure it doesn't go beyond max
-                PowerUp(intCount).Exists = FALSE 'the power up no longer exists
+                PowerUp(intCount).Exists = _FALSE 'the power up no longer exists
                 _SNDSETPOS dsPowerUp, 0 'set the playback buffer position to 0
                 _SNDPLAY dsPowerUp 'play the wav
                 EXIT SUB
@@ -2048,13 +2048,13 @@ SUB CheckForCollisions
                 IF Ship.PowerUpState < 3 THEN Ship.PowerUpState = Ship.PowerUpState + 1
                 'if the powerups reach 3, make sure it doesn't go any higher than that
                 lngScore = lngScore + 200 'player gets 200 points for this
-                PowerUp(intCount).Exists = FALSE 'the power up no longer exists
+                PowerUp(intCount).Exists = _FALSE 'the power up no longer exists
                 _SNDSETPOS dsPowerUp, 0 'set the playback buffer position to 0
                 _SNDPLAY dsPowerUp 'play the wav
                 EXIT SUB
             ELSEIF PowerUp(intCount).Index = BOMB THEN 'the power up is a bomb powerup
                 lngScore = lngScore + 200 'give the player a score increase, even if the bombs are at max
-                PowerUp(intCount).Exists = FALSE 'the power up no longer exists
+                PowerUp(intCount).Exists = _FALSE 'the power up no longer exists
                 _SNDSETPOS dsPowerUp, 0 'set the playback buffer position to 0
                 _SNDPLAY dsPowerUp 'play the wav
                 Ship.NumBombs = Ship.NumBombs + 1 ' increase the number of bombs the player has
@@ -2062,10 +2062,10 @@ SUB CheckForCollisions
                 EXIT SUB 'exit the sub
             ELSEIF PowerUp(intCount).Index = INVULNERABILITY THEN 'the power up is an invulnerability power up
                 IF Ship.Invulnerable THEN TempTime = Ship.InvulnerableTime - Time_GetTicks ' capture the current time so the player doesn't lose the amount of time he has left to be invulnerable
-                Ship.Invulnerable = TRUE 'set the ships' invulnerable flag
+                Ship.Invulnerable = _TRUE 'set the ships' invulnerable flag
                 Ship.InvulnerableTime = Time_GetTicks + 15000 + TempTime 'set the duration of the invulnerability
                 lngScore = lngScore + 500
-                PowerUp(intCount).Exists = FALSE
+                PowerUp(intCount).Exists = _FALSE
                 _SNDSETPOS dsPowerUp, 0 'set the playback buffer position to 0
                 _SNDPLAY dsPowerUp 'play the wav
                 _SNDSETPOS dsInvulnerability, 0 'set the playback buffer position to 0
@@ -2075,7 +2075,7 @@ SUB CheckForCollisions
     NEXT
 
     FOR intCount = 0 TO UBOUND(EnemyDesc) 'loop through the entire enemy array
-        IF EnemyDesc(intCount).Exists = TRUE THEN 'if the enemy exists
+        IF EnemyDesc(intCount).Exists = _TRUE THEN 'if the enemy exists
             'define the rectangle coordinates of the enemy
             SrcRect.top = EnemyDesc(intCount).Y
             SrcRect.bottom = SrcRect.top + EnemyDesc(intCount).H
@@ -2088,9 +2088,9 @@ SUB CheckForCollisions
 
                 'TODO: If IsFF = True Then ef(1).start 1, 0                                'If force feedback is enabled, start the effect
 
-                IF NOT EnemyDesc(intCount).Invulnerable THEN EnemyDesc(intCount).Exists = FALSE
+                IF NOT EnemyDesc(intCount).Invulnerable THEN EnemyDesc(intCount).Exists = _FALSE
                 'if the enemy isn't invulnerable the enemy is destroyed
-                CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, FALSE 'Call the create explosion sub with the rect coordinates, and the index of the explosion type
+                CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, _FALSE 'Call the create explosion sub with the rect coordinates, and the index of the explosion type
                 IF NOT Ship.Invulnerable THEN 'If the ship is not invulnerable then
                     intShields = intShields - EnemyDesc(intCount).CollisionDamage 'take points off the shields for colliding with the enemy
                     IF Ship.PowerUpState > 0 THEN 'reduce a powerup level if the player has one
@@ -2109,14 +2109,14 @@ SUB CheckForCollisions
             SrcRect.right = SrcRect.left + 5
 
             IF DetectCollision(SrcRect, ShipRect) THEN 'if the enemy weapon fire hits the player then
-                EnemyDesc(intCount).HasFired = FALSE 'the enemy weapon fire is destroyed
+                EnemyDesc(intCount).HasFired = _FALSE 'the enemy weapon fire is destroyed
                 IF NOT Ship.Invulnerable THEN
                     intShields = intShields - 5 'subtract 5 from the playres shields
                     IF Ship.PowerUpState > 0 THEN 'if the player has a power up,
                         Ship.PowerUpState = Ship.PowerUpState - 1 'knock it down a level
                     END IF
                 END IF
-                UpdateHits TRUE, EnemyDesc(intCount).XFire, EnemyDesc(intCount).YFire 'Call the sub that displays a small explosion bitmap where the player was hit
+                UpdateHits _TRUE, EnemyDesc(intCount).XFire, EnemyDesc(intCount).YFire 'Call the sub that displays a small explosion bitmap where the player was hit
                 'TODO: If IsFF Then ef(1).start 1, 0                                'If force feeback is enabled, start the effect
                 EXIT SUB
             END IF
@@ -2132,14 +2132,14 @@ SUB CheckForCollisions
             SrcRect.right = SrcRect.left + 5
 
             IF DetectCollision(SrcRect, ShipRect) THEN 'if the obstacle weapon fire hits the player then
-                ObstacleDesc(intCount).HasFired = FALSE 'the obstacle weapon fire is destroyed
+                ObstacleDesc(intCount).HasFired = _FALSE 'the obstacle weapon fire is destroyed
                 IF NOT Ship.Invulnerable THEN 'If the player isn't invulnerable then
                     intShields = intShields - 5 'subtract 5 from the playres shields
                     IF Ship.PowerUpState > 0 THEN 'if the player has a power up,
                         Ship.PowerUpState = Ship.PowerUpState - 1 'knock it down a level
                     END IF
                 END IF
-                UpdateHits TRUE, ObstacleDesc(intCount).XFire, ObstacleDesc(intCount).YFire 'Small explosion sub
+                UpdateHits _TRUE, ObstacleDesc(intCount).XFire, ObstacleDesc(intCount).YFire 'Small explosion sub
                 EXIT SUB
             END IF
         END IF
@@ -2171,13 +2171,13 @@ SUB CheckForCollisions
 
                             _SNDPLAYCOPY dsExplosion, , (2 * (EnemyDesc(intCount).X + EnemyDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
 
-                            EnemyDesc(intCount).Exists = FALSE 'This enemy no longer exists
-                            LaserDesc(intCount2).Exists = FALSE 'The players weapon fire no longer exists
-                            CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, FALSE
+                            EnemyDesc(intCount).Exists = _FALSE 'This enemy no longer exists
+                            LaserDesc(intCount2).Exists = _FALSE 'The players weapon fire no longer exists
+                            CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, _FALSE
                             EXIT SUB
                         ELSE 'If the enemy is still alive, then
-                            UpdateHits TRUE, SrcRect2.left, SrcRect2.top
-                            LaserDesc(intCount2).Exists = FALSE 'The players weapon fire no longer exists
+                            UpdateHits _TRUE, SrcRect2.left, SrcRect2.top
+                            LaserDesc(intCount2).Exists = _FALSE 'The players weapon fire no longer exists
                             EXIT SUB
                         END IF
                     END IF
@@ -2205,13 +2205,13 @@ SUB CheckForCollisions
 
                             IF ObstacleDesc(intCount).HasFired THEN
                                 TempDesc = ObstacleDesc(intCount)
-                                blnTempDesc = TRUE
+                                blnTempDesc = _TRUE
                             ELSE
-                                blnTempDesc = FALSE
+                                blnTempDesc = _FALSE
                             END IF
                             IF ObstacleDesc(intCount).HasDeadIndex THEN
                                 ObstacleDesc(intCount) = ObstacleContainerInfo(ObstacleDesc(intCount).DeadIndex)
-                                ObstacleDesc(intCount).Exists = TRUE
+                                ObstacleDesc(intCount).Exists = _TRUE
                                 ObstacleDesc(intCount).X = SrcRect.left
                                 ObstacleDesc(intCount).Y = SrcRect.top
                                 ObstacleDesc(intCount).Index = ObstacleDesc(intCount).DeadIndex
@@ -2222,14 +2222,14 @@ SUB CheckForCollisions
                                     ObstacleDesc(intCount).TargetY = TempDesc.TargetY
                                 END IF
                             ELSE
-                                ObstacleDesc(intCount).Exists = FALSE
+                                ObstacleDesc(intCount).Exists = _FALSE
                             END IF
-                            LaserDesc(intCount2).Exists = FALSE 'The players weapon fire no longer exists
-                            CreateExplosion SrcRect, ObstacleDesc(intCount).ExplosionIndex, FALSE
+                            LaserDesc(intCount2).Exists = _FALSE 'The players weapon fire no longer exists
+                            CreateExplosion SrcRect, ObstacleDesc(intCount).ExplosionIndex, _FALSE
                             EXIT SUB
                         ELSE 'If the obstacle is still alive, then
-                            UpdateHits TRUE, SrcRect2.left, SrcRect2.top
-                            LaserDesc(intCount2).Exists = FALSE 'The players weapon fire no longer exists
+                            UpdateHits _TRUE, SrcRect2.left, SrcRect2.top
+                            LaserDesc(intCount2).Exists = _FALSE 'The players weapon fire no longer exists
                             EXIT SUB
                         END IF
                     END IF
@@ -2266,13 +2266,13 @@ SUB CheckForCollisions
 
                             _SNDPLAYCOPY dsExplosion, , (2 * (EnemyDesc(intCount).X + EnemyDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
 
-                            EnemyDesc(intCount).Exists = FALSE
-                            CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, FALSE
-                            Laser2RDesc(intCount2).Exists = FALSE
+                            EnemyDesc(intCount).Exists = _FALSE
+                            CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, _FALSE
+                            Laser2RDesc(intCount2).Exists = _FALSE
                             EXIT SUB
                         ELSE
-                            Laser2RDesc(intCount2).Exists = FALSE
-                            UpdateHits TRUE, SrcRect2.left, SrcRect.top
+                            Laser2RDesc(intCount2).Exists = _FALSE
+                            UpdateHits _TRUE, SrcRect2.left, SrcRect.top
                             EXIT SUB
                         END IF
                     END IF
@@ -2296,13 +2296,13 @@ SUB CheckForCollisions
 
                             IF ObstacleDesc(intCount).HasFired THEN
                                 TempDesc = ObstacleDesc(intCount)
-                                blnTempDesc = TRUE
+                                blnTempDesc = _TRUE
                             ELSE
-                                blnTempDesc = FALSE
+                                blnTempDesc = _FALSE
                             END IF
                             IF ObstacleDesc(intCount).HasDeadIndex THEN
                                 ObstacleDesc(intCount) = ObstacleContainerInfo(ObstacleDesc(intCount).DeadIndex)
-                                ObstacleDesc(intCount).Exists = TRUE
+                                ObstacleDesc(intCount).Exists = _TRUE
                                 ObstacleDesc(intCount).X = SrcRect.left
                                 ObstacleDesc(intCount).Y = SrcRect.top
                                 ObstacleDesc(intCount).Index = ObstacleDesc(intCount).DeadIndex
@@ -2313,14 +2313,14 @@ SUB CheckForCollisions
                                     ObstacleDesc(intCount).TargetY = TempDesc.TargetY
                                 END IF
                             ELSE
-                                ObstacleDesc(intCount).Exists = FALSE
+                                ObstacleDesc(intCount).Exists = _FALSE
                             END IF
-                            CreateExplosion SrcRect, ObstacleDesc(intCount).ExplosionIndex, FALSE
-                            Laser2RDesc(intCount2).Exists = FALSE
+                            CreateExplosion SrcRect, ObstacleDesc(intCount).ExplosionIndex, _FALSE
+                            Laser2RDesc(intCount2).Exists = _FALSE
                             EXIT SUB
                         ELSE
-                            Laser2RDesc(intCount2).Exists = FALSE
-                            UpdateHits TRUE, SrcRect2.left, SrcRect.top
+                            Laser2RDesc(intCount2).Exists = _FALSE
+                            UpdateHits _TRUE, SrcRect2.left, SrcRect.top
                             EXIT SUB
                         END IF
                     END IF
@@ -2352,13 +2352,13 @@ SUB CheckForCollisions
 
                             _SNDPLAYCOPY dsExplosion, , (2 * (EnemyDesc(intCount).X + EnemyDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
 
-                            EnemyDesc(intCount).Exists = FALSE
-                            CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, FALSE
-                            Laser2LDesc(intCount2).Exists = FALSE
+                            EnemyDesc(intCount).Exists = _FALSE
+                            CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, _FALSE
+                            Laser2LDesc(intCount2).Exists = _FALSE
                             EXIT SUB
                         ELSE
-                            Laser2LDesc(intCount2).Exists = FALSE
-                            UpdateHits TRUE, SrcRect2.left, SrcRect.top
+                            Laser2LDesc(intCount2).Exists = _FALSE
+                            UpdateHits _TRUE, SrcRect2.left, SrcRect.top
                             EXIT SUB
                         END IF
                     END IF
@@ -2382,13 +2382,13 @@ SUB CheckForCollisions
 
                             IF ObstacleDesc(intCount).HasFired THEN
                                 TempDesc = ObstacleDesc(intCount)
-                                blnTempDesc = TRUE
+                                blnTempDesc = _TRUE
                             ELSE
-                                blnTempDesc = FALSE
+                                blnTempDesc = _FALSE
                             END IF
                             IF ObstacleDesc(intCount).HasDeadIndex THEN
                                 ObstacleDesc(intCount) = ObstacleContainerInfo(ObstacleDesc(intCount).DeadIndex)
-                                ObstacleDesc(intCount).Exists = TRUE
+                                ObstacleDesc(intCount).Exists = _TRUE
                                 ObstacleDesc(intCount).X = SrcRect.left
                                 ObstacleDesc(intCount).Y = SrcRect.top
                                 ObstacleDesc(intCount).Index = ObstacleDesc(intCount).DeadIndex
@@ -2399,14 +2399,14 @@ SUB CheckForCollisions
                                     ObstacleDesc(intCount).TargetY = TempDesc.TargetY
                                 END IF
                             ELSE
-                                ObstacleDesc(intCount).Exists = FALSE
+                                ObstacleDesc(intCount).Exists = _FALSE
                             END IF
-                            CreateExplosion SrcRect, ObstacleDesc(intCount).ExplosionIndex, FALSE
-                            Laser2LDesc(intCount2).Exists = FALSE
+                            CreateExplosion SrcRect, ObstacleDesc(intCount).ExplosionIndex, _FALSE
+                            Laser2LDesc(intCount2).Exists = _FALSE
                             EXIT SUB
                         ELSE
-                            Laser2LDesc(intCount2).Exists = FALSE
-                            UpdateHits TRUE, SrcRect2.left, SrcRect.top
+                            Laser2LDesc(intCount2).Exists = _FALSE
+                            UpdateHits _TRUE, SrcRect2.left, SrcRect.top
                             EXIT SUB
                         END IF
                     END IF
@@ -2432,22 +2432,22 @@ SUB CheckForCollisions
                     SrcRect.right = SrcRect.left + EnemyDesc(intCount).W
 
                     IF DetectCollision(SrcRect, SrcRect2) AND NOT Laser3Desc(intCount2).StillColliding THEN
-                        Laser3Desc(intCount2).StillColliding = TRUE
+                        Laser3Desc(intCount2).StillColliding = _TRUE
                         EnemyDesc(intCount).TimesHit = EnemyDesc(intCount).TimesHit + Laser3Desc(intCount2).Damage
                         IF EnemyDesc(intCount).TimesHit > EnemyDesc(intCount).TimesDies AND NOT EnemyDesc(intCount).Invulnerable THEN
                             lngScore = lngScore + EnemyDesc(intCount).Score
 
                             _SNDPLAYCOPY dsExplosion, , (2 * (EnemyDesc(intCount).X + EnemyDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
 
-                            CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, FALSE
-                            EnemyDesc(intCount).Exists = FALSE
+                            CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, _FALSE
+                            EnemyDesc(intCount).Exists = _FALSE
                             EXIT SUB
                         ELSE
-                            UpdateHits TRUE, SrcRect2.left, SrcRect2.top
+                            UpdateHits _TRUE, SrcRect2.left, SrcRect2.top
                             EXIT SUB
                         END IF
                     ELSEIF NOT DetectCollision(SrcRect, SrcRect2) AND Laser3Desc(intCount2).StillColliding THEN
-                        Laser3Desc(intCount2).StillColliding = FALSE
+                        Laser3Desc(intCount2).StillColliding = _FALSE
                     END IF
                 END IF
             NEXT
@@ -2461,23 +2461,23 @@ SUB CheckForCollisions
                     SrcRect.right = SrcRect.left + ObstacleDesc(intCount).W
 
                     IF DetectCollision(SrcRect, SrcRect2) AND NOT Laser3Desc(intCount2).StillColliding THEN
-                        Laser3Desc(intCount2).StillColliding = TRUE
+                        Laser3Desc(intCount2).StillColliding = _TRUE
                         ObstacleDesc(intCount).TimesHit = ObstacleDesc(intCount).TimesHit + Laser3Desc(intCount2).Damage
                         IF ObstacleDesc(intCount).TimesHit > ObstacleDesc(intCount).TimesDies THEN
                             lngScore = lngScore + ObstacleDesc(intCount).Score
 
                             _SNDPLAYCOPY dsExplosion, , (2 * (ObstacleDesc(intCount).X + ObstacleDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
 
-                            CreateExplosion SrcRect, ObstacleDesc(intCount).ExplosionIndex, FALSE
+                            CreateExplosion SrcRect, ObstacleDesc(intCount).ExplosionIndex, _FALSE
                             IF ObstacleDesc(intCount).HasFired THEN
                                 TempDesc = ObstacleDesc(intCount)
-                                blnTempDesc = TRUE
+                                blnTempDesc = _TRUE
                             ELSE
-                                blnTempDesc = FALSE
+                                blnTempDesc = _FALSE
                             END IF
                             IF ObstacleDesc(intCount).HasDeadIndex THEN
                                 ObstacleDesc(intCount) = ObstacleContainerInfo(ObstacleDesc(intCount).DeadIndex)
-                                ObstacleDesc(intCount).Exists = TRUE
+                                ObstacleDesc(intCount).Exists = _TRUE
                                 ObstacleDesc(intCount).X = SrcRect.left
                                 ObstacleDesc(intCount).Index = ObstacleDesc(intCount).DeadIndex
                                 ObstacleDesc(intCount).Y = SrcRect.top
@@ -2488,16 +2488,16 @@ SUB CheckForCollisions
                                     ObstacleDesc(intCount).TargetY = TempDesc.TargetY
                                 END IF
                             ELSE
-                                ObstacleDesc(intCount).Exists = FALSE
+                                ObstacleDesc(intCount).Exists = _FALSE
                             END IF
 
                             EXIT SUB
                         ELSE
-                            UpdateHits TRUE, SrcRect2.left, SrcRect2.top
+                            UpdateHits _TRUE, SrcRect2.left, SrcRect2.top
                             EXIT SUB
                         END IF
                     ELSEIF NOT DetectCollision(SrcRect, SrcRect2) AND Laser3Desc(intCount2).StillColliding THEN
-                        Laser3Desc(intCount2).StillColliding = FALSE
+                        Laser3Desc(intCount2).StillColliding = _FALSE
                     END IF
                 END IF
             NEXT
@@ -2526,14 +2526,14 @@ SUB CheckForCollisions
                         _SNDPLAYCOPY dsExplosion, , (2 * (EnemyDesc(intCount).X + EnemyDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
 
                         IF EnemyDesc(intCount).TimesHit > EnemyDesc(intCount).TimesDies AND NOT EnemyDesc(intCount).Invulnerable THEN
-                            EnemyDesc(intCount).Exists = FALSE
+                            EnemyDesc(intCount).Exists = _FALSE
                             lngScore = lngScore + EnemyDesc(intCount).Score
-                            CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, FALSE
+                            CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, _FALSE
                         ELSE
-                            CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, TRUE
+                            CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, _TRUE
                         END IF
-                        GuidedMissile(intCount2).Exists = FALSE
-                        GuidedMissile(intCount2).TargetSet = FALSE
+                        GuidedMissile(intCount2).Exists = _FALSE
+                        GuidedMissile(intCount2).TargetSet = _FALSE
                         EXIT SUB
                     END IF
                 END IF
@@ -2556,13 +2556,13 @@ SUB CheckForCollisions
                             lngScore = lngScore + ObstacleDesc(intCount).Score
                             IF ObstacleDesc(intCount).HasFired THEN
                                 TempDesc = ObstacleDesc(intCount)
-                                blnTempDesc = TRUE
+                                blnTempDesc = _TRUE
                             ELSE
-                                blnTempDesc = FALSE
+                                blnTempDesc = _FALSE
                             END IF
                             IF ObstacleDesc(intCount).HasDeadIndex THEN
                                 ObstacleDesc(intCount) = ObstacleContainerInfo(ObstacleDesc(intCount).DeadIndex)
-                                ObstacleDesc(intCount).Exists = TRUE
+                                ObstacleDesc(intCount).Exists = _TRUE
                                 ObstacleDesc(intCount).X = SrcRect.left
                                 ObstacleDesc(intCount).Y = SrcRect.top
                                 ObstacleDesc(intCount).Index = ObstacleDesc(intCount).DeadIndex
@@ -2573,14 +2573,14 @@ SUB CheckForCollisions
                                     ObstacleDesc(intCount).TargetY = TempDesc.TargetY
                                 END IF
                             ELSE
-                                ObstacleDesc(intCount).Exists = FALSE
+                                ObstacleDesc(intCount).Exists = _FALSE
                             END IF
-                            CreateExplosion SrcRect, ObstacleDesc(intCount).ExplosionIndex, FALSE
+                            CreateExplosion SrcRect, ObstacleDesc(intCount).ExplosionIndex, _FALSE
                         ELSE
-                            CreateExplosion SrcRect, ObstacleDesc(intCount).ExplosionIndex, TRUE
+                            CreateExplosion SrcRect, ObstacleDesc(intCount).ExplosionIndex, _TRUE
                         END IF
-                        GuidedMissile(intCount2).Exists = FALSE
-                        GuidedMissile(intCount2).TargetSet = FALSE
+                        GuidedMissile(intCount2).Exists = _FALSE
+                        GuidedMissile(intCount2).TargetSet = _FALSE
                         EXIT SUB
                     END IF
                 END IF
@@ -2596,7 +2596,7 @@ SUB UpdateBackground
         sngBackgroundY = sngBackgroundY + 0.1 'increment the Y position of the bitmap
 
         IF sngBackgroundY >= SCREEN_HEIGHT THEN 'if the bitmap has moved below the screen
-            boolBackgroundExists = FALSE 'the bitmap no longer exists, since it has left the screen
+            boolBackgroundExists = _FALSE 'the bitmap no longer exists, since it has left the screen
         ELSEIF sngBackgroundY + BackgroundObject(intObjectIndex).H > 0 THEN ' Only render if onscreen
             _PUTIMAGE (sngBackgroundX, sngBackgroundY), ddsBackgroundObject(intObjectIndex) 'blit the background object to the backbuffer, using a source color key
         END IF
@@ -2612,7 +2612,7 @@ SUB UpdateStars
         IF NOT StarDesc(intCount).Exists THEN 'if this star doesn't exist then
             IF (INT((3500 - 1) * RND) + 1) <= 25 THEN 'if a number between 3500 and 1 is less than 25 then
                 'begin creating a new star
-                StarDesc(intCount).Exists = TRUE 'the star exists
+                StarDesc(intCount).Exists = _TRUE 'the star exists
                 StarDesc(intCount).X = Math_GetRandomBetween(0, SCREEN_WIDTH - 1)
                 'set a random X coordinate
                 StarDesc(intCount).Y = 0 'start at the top of the screen
@@ -2625,7 +2625,7 @@ SUB UpdateStars
             IF StarDesc(intCount).Y >= SCREEN_HEIGHT THEN
                 'if the star goes off the screen
                 StarDesc(intCount).Y = 0 'set the stars Y position to 0
-                StarDesc(intCount).Exists = FALSE 'the star no longer exists
+                StarDesc(intCount).Exists = _FALSE 'the star no longer exists
             ELSEIF StarDesc(intCount).Y >= 0 THEN ' Only render if it is oncreen
                 Graphics_DrawPixel StarDesc(intCount).X, StarDesc(intCount).Y, StarDesc(intCount).Index 'blit the star to the screen
             END IF
@@ -2645,7 +2645,7 @@ SUB UpdateObstacles
             ObstacleDesc(intCount).Y = ObstacleDesc(intCount).Y + ObstacleDesc(intCount).Speed 'increment the obstacle by its' speed
 
             IF ObstacleDesc(intCount).Y >= SCREEN_HEIGHT THEN 'if the obstacle goes completely off the screen
-                ObstacleDesc(intCount).Exists = FALSE 'the obstacle no longer exists
+                ObstacleDesc(intCount).Exists = _FALSE 'the obstacle no longer exists
             ELSEIF ObstacleDesc(intCount).Y + ObstacleDesc(intCount).H > 0 THEN ' Only render if onscreen
                 IF ObstacleDesc(intCount).NumFrames > 0 THEN 'if this obstacle has an animation
                     ObstacleDesc(intCount).Frame = ObstacleDesc(intCount).Frame + 1 'increment the frame the animation is on
@@ -2719,7 +2719,7 @@ SUB UpdateEnemys
                     _PUTIMAGE (EnemyDesc(intCount).X, EnemyDesc(intCount).Y), ddsEnemyContainer(EnemyDesc(intCount).Index), , (XOffset, YOffset)-(XOffset + EnemyDesc(intCount).W - 1, YOffset + EnemyDesc(intCount).H - 1)
                 END IF
             ELSE
-                EnemyDesc(intCount).Exists = FALSE 'otherwise, this enemy no longer exists
+                EnemyDesc(intCount).Exists = _FALSE 'otherwise, this enemy no longer exists
             END IF
         END IF
 
@@ -2742,7 +2742,7 @@ SUB UpdateEnemys
                 END IF
                 EnemyDesc(intCount).XFire = EnemyDesc(intCount).X + EnemyDesc(intCount).W \ 2 - ENEMY_FIRE_WIDTH \ 2 'center the enemies X fire
                 EnemyDesc(intCount).YFire = EnemyDesc(intCount).Y + EnemyDesc(intCount).H \ 2 - ENEMY_FIRE_HEIGHT \ 2 'center the eneies Y fire
-                EnemyDesc(intCount).HasFired = TRUE 'the enemy has fired
+                EnemyDesc(intCount).HasFired = _TRUE 'the enemy has fired
             END IF
         ELSEIF EnemyDesc(intCount).HasFired THEN 'otherwise, if the enemy has fired
             IF EnemyDesc(intCount).FireType = TARGETEDFIRE THEN
@@ -2766,7 +2766,7 @@ SUB UpdateEnemys
 
             IF EnemyDesc(intCount).XFire >= SCREEN_WIDTH OR EnemyDesc(intCount).XFire + ENEMY_FIRE_WIDTH <= 0 OR EnemyDesc(intCount).YFire >= SCREEN_HEIGHT OR EnemyDesc(intCount).YFire + ENEMY_FIRE_HEIGHT <= 0 THEN
                 'if the enemy fire is off the visible screen
-                EnemyDesc(intCount).HasFired = FALSE 'the enemy hasn't fired
+                EnemyDesc(intCount).HasFired = _FALSE 'the enemy hasn't fired
             ELSE 'otherwise
                 _PUTIMAGE (EnemyDesc(intCount).XFire, EnemyDesc(intCount).YFire), ddsEnemyFire, , (EnemyDesc(intCount).FireFrame, 0)-(EnemyDesc(intCount).FireFrame + ENEMY_FIRE_WIDTH - 1, ENEMY_FIRE_HEIGHT - 1) 'blit the enemy fire
             END IF
@@ -2794,7 +2794,7 @@ SUB UpdateEnemys
                 END IF
                 ObstacleDesc(intCount).XFire = ObstacleDesc(intCount).X + ObstacleDesc(intCount).W \ 2 - ENEMY_FIRE_WIDTH \ 2
                 ObstacleDesc(intCount).YFire = ObstacleDesc(intCount).Y + ObstacleDesc(intCount).H \ 2 - ENEMY_FIRE_HEIGHT \ 2
-                ObstacleDesc(intCount).HasFired = TRUE
+                ObstacleDesc(intCount).HasFired = _TRUE
             END IF
         ELSEIF ObstacleDesc(intCount).HasFired THEN
             ObstacleDesc(intCount).XFire = ObstacleDesc(intCount).XFire + ObstacleDesc(intCount).TargetX
@@ -2809,7 +2809,7 @@ SUB UpdateEnemys
             END IF
 
             IF ObstacleDesc(intCount).XFire >= SCREEN_WIDTH OR ObstacleDesc(intCount).XFire + ENEMY_FIRE_WIDTH <= 0 OR ObstacleDesc(intCount).YFire >= SCREEN_HEIGHT OR ObstacleDesc(intCount).YFire + ENEMY_FIRE_HEIGHT <= 0 THEN
-                ObstacleDesc(intCount).HasFired = FALSE
+                ObstacleDesc(intCount).HasFired = _FALSE
             ELSE
                 _PUTIMAGE (ObstacleDesc(intCount).XFire, ObstacleDesc(intCount).YFire), ddsEnemyFire, , (ObstacleDesc(intCount).FireFrame, 0)-(ObstacleDesc(intCount).FireFrame + ENEMY_FIRE_WIDTH - 1, ENEMY_FIRE_HEIGHT - 1)
             END IF
@@ -2829,7 +2829,7 @@ SUB UpdateWeapons
             LaserDesc(intCount).Y = LaserDesc(intCount).Y - LASERSPEED
             'increment the Y position by the speed of the laser
             IF LaserDesc(intCount).Y < 0 THEN 'if the laser goes off the screen
-                LaserDesc(intCount).Exists = FALSE 'the laser no longer exists
+                LaserDesc(intCount).Exists = _FALSE 'the laser no longer exists
                 LaserDesc(intCount).Y = 0 'reset the Y position
                 LaserDesc(intCount).X = 0 'reset the X position
             ELSE 'otherwise
@@ -2860,7 +2860,7 @@ SUB UpdateWeapons
 
             IF Laser2RDesc(intCount).X < 0 OR Laser2RDesc(intCount).X > (SCREEN_WIDTH - LASER2WIDTH) OR Laser2RDesc(intCount).Y < 0 OR Laser2RDesc(intCount).Y > (SCREEN_HEIGHT - LASER2HEIGHT) THEN
                 'if the laser goes off the screen then
-                Laser2RDesc(intCount).Exists = FALSE 'the laser no longer exists
+                Laser2RDesc(intCount).Exists = _FALSE 'the laser no longer exists
             ELSE 'otherwise
                 _PUTIMAGE (Laser2RDesc(intCount).X, Laser2RDesc(intCount).Y), ddsLaser2R, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom) 'blit the laser to the screen
             END IF
@@ -2882,7 +2882,7 @@ SUB UpdateWeapons
             SrcRect.bottom = LASER2HEIGHT
 
             IF Laser2LDesc(intCount).X < 0 OR Laser2LDesc(intCount).X > (SCREEN_WIDTH - LASER2WIDTH) OR Laser2LDesc(intCount).Y < 0 OR Laser2LDesc(intCount).Y > (SCREEN_HEIGHT - LASER2HEIGHT) THEN
-                Laser2LDesc(intCount).Exists = FALSE
+                Laser2LDesc(intCount).Exists = _FALSE
             ELSE
                 _PUTIMAGE (Laser2LDesc(intCount).X, Laser2LDesc(intCount).Y), ddsLaser2L, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom)
             END IF
@@ -2895,7 +2895,7 @@ SUB UpdateWeapons
         IF Laser3Desc(intCount).Exists THEN
             Laser3Desc(intCount).Y = Laser3Desc(intCount).Y - Laser3Desc(intCount).YVelocity
             IF Laser3Desc(intCount).Y < 0 THEN
-                Laser3Desc(intCount).Exists = FALSE
+                Laser3Desc(intCount).Exists = _FALSE
                 Laser3Desc(intCount).Y = 0
                 Laser3Desc(intCount).X = 0
             ELSE
@@ -2914,7 +2914,7 @@ SUB UpdateWeapons
                     IF EnemyDesc(intCounter).Exists THEN 'if the first enemy encountered exists
                         GuidedMissile(intCount).TargetIndex = intCounter
                         'set the index of the target to the index of the enemy
-                        GuidedMissile(intCount).TargetSet = TRUE
+                        GuidedMissile(intCount).TargetSet = _TRUE
                         'the target has now been set
                         EXIT FOR 'exit the loop
                     END IF
@@ -2949,7 +2949,7 @@ SUB UpdateWeapons
                         'make sure that the missiles velocity doesn't go past the maximum
                     END IF
                 ELSE
-                    GuidedMissile(intCount).TargetSet = FALSE
+                    GuidedMissile(intCount).TargetSet = _FALSE
                     'if the enemy does not exist, the target has no longer been set
                 END IF
             END IF
@@ -2960,8 +2960,8 @@ SUB UpdateWeapons
             'increment the missile X by the velocity of the missile
             IF GuidedMissile(intCount).X < 0 OR (GuidedMissile(intCount).X + MISSILEDIMENSIONS) > SCREEN_WIDTH OR GuidedMissile(intCount).Y < 0 OR (GuidedMissile(intCount).Y + MISSILEDIMENSIONS) > SCREEN_HEIGHT THEN
                 'if the missile goes off the screen
-                GuidedMissile(intCount).Exists = FALSE 'the guided missile no longer exists
-                GuidedMissile(intCount).TargetSet = FALSE 'the guided missile has no target
+                GuidedMissile(intCount).Exists = _FALSE 'the guided missile no longer exists
+                GuidedMissile(intCount).TargetSet = _FALSE 'the guided missile has no target
             ELSE 'otherwise
                 _PUTIMAGE (GuidedMissile(intCount).X, GuidedMissile(intCount).Y), ddsGuidedMissile
                 'blit the missile to the screen
@@ -3057,13 +3057,13 @@ SUB UpdateInvulnerability
     DIM timeLeft AS _INTEGER64
 
     IF Time_GetTicks > Ship.InvulnerableTime THEN 'If the amount of invulenrability exceeds the time alloted to the player
-        Ship.Invulnerable = FALSE 'The ship is no longer invulnerable
+        Ship.Invulnerable = _FALSE 'The ship is no longer invulnerable
         intInvFrameCount = 0 'The animation is reset to the starting frame
 
         _SNDSTOP dsInvulnerability 'Stop playing the invulnerable sound effect
         _SNDPLAY dsInvPowerDown 'Play the power down sound effect
 
-        blnInvWarning = FALSE 'No longer warning the player
+        blnInvWarning = _FALSE 'No longer warning the player
         intWarningCount = 0 'Reset the warning count
     ELSE 'Otherwise, the ship is invulnerable
         timeLeft = Ship.InvulnerableTime - Time_GetTicks
@@ -3123,10 +3123,10 @@ SUB UpdateShields
         DrawString "Shields:", 380, 10, BGRA_PALEGREEN 'display some text
         IF intShields < 25 THEN 'if the shields are less than 25% then
             _SNDLOOP dsAlarm 'play the alarm sound effect, and loop it
-            Ship.AlarmActive = TRUE 'set the alarm flag to on
+            Ship.AlarmActive = _TRUE 'set the alarm flag to on
         ELSE 'otherwise
             _SNDSTOP dsAlarm 'make sure the alarm sound effect is off
-            Ship.AlarmActive = FALSE 'the flag is set to off
+            Ship.AlarmActive = _FALSE 'the flag is set to off
         END IF
     ELSE 'The player has died
         _SNDSETPOS dsPlayerDies, 0 'set the dies wave to the beginning
@@ -3140,21 +3140,21 @@ SUB UpdateShields
         SrcRect.left = Ship.X
         SrcRect.right = SrcRect.left + SHIPWIDTH
 
-        CreateExplosion SrcRect, 0, TRUE 'create an explosion where the player was
+        CreateExplosion SrcRect, 0, _TRUE 'create an explosion where the player was
         lngTime = Time_GetTicks 'get the current tick count
         FOR intCount = 0 TO UBOUND(EnemyDesc) 'loop through all the enemies and
-            EnemyDesc(intCount).Exists = FALSE 'the enemies no longer exist
-            EnemyDesc(intCount).HasFired = FALSE 'the enemies' weapons no longer exist
+            EnemyDesc(intCount).Exists = _FALSE 'the enemies no longer exist
+            EnemyDesc(intCount).HasFired = _FALSE 'the enemies' weapons no longer exist
         NEXT
         FOR intCount = 0 TO UBOUND(GuidedMissile) 'loop through all the players guided missiles
-            GuidedMissile(intCount).Exists = FALSE 'they no longer exist
+            GuidedMissile(intCount).Exists = _FALSE 'they no longer exist
         NEXT
         FOR intCount = 0 TO UBOUND(ObstacleDesc) 'make all the obstacles non-existent
-            ObstacleDesc(intCount).Exists = FALSE 'the obstacle doesn't exist
-            ObstacleDesc(intCount).HasFired = FALSE 'the obstacle hasn't fired
+            ObstacleDesc(intCount).Exists = _FALSE 'the obstacle doesn't exist
+            ObstacleDesc(intCount).HasFired = _FALSE 'the obstacle hasn't fired
         NEXT
         FOR intCount = 0 TO UBOUND(PowerUp)
-            PowerUp(intCount).Exists = FALSE 'if there is a power up currently on screen, get rid of it
+            PowerUp(intCount).Exists = _FALSE 'if there is a power up currently on screen, get rid of it
         NEXT
         byteLives = byteLives - 1 'the player loses a life
         intShields = SHIELD_MAX 'shields are at full again
@@ -3162,8 +3162,8 @@ SUB UpdateShields
         Ship.X = 300 'center the ships' X
         Ship.Y = 300 'and Y
         Ship.PowerUpState = 0 'the player is back to no powerups
-        Ship.AlarmActive = FALSE 'the alarm flag is set to off
-        Ship.FiringMissile = FALSE 'the firing missle flag is set to off
+        Ship.AlarmActive = _FALSE 'the alarm flag is set to off
+        Ship.FiringMissile = _FALSE 'the firing missle flag is set to off
 
         SectionCount = SectionCount + 30 'Set the player back a bit
         IF SectionCount > 999 THEN SectionCount = 999 'Make sure we don't go over the limit
@@ -3198,7 +3198,7 @@ SUB UpdateShields
 
                 _DISPLAY 'flip the front and back surfaces
             LOOP 'continues looping for three seconds
-            Graphics_FadeScreen FALSE, FADE_FPS, 100 'Fade the screen to black
+            Graphics_FadeScreen _FALSE, FADE_FPS, 100 'Fade the screen to black
             intShields = SHIELD_MAX 'shields are at 100%
             Ship.X = 300 'reset the players X
             Ship.Y = 300 'and Y coordinates
@@ -3207,9 +3207,9 @@ SUB UpdateShields
             SectionCount = 999 'start at the beginning
             byteLevel = 1 'level 1 starts over
             byteLives = LIVES_DEFAULT 'the player has 3 lives left
-            boolBackgroundExists = FALSE 'there is no background picture
+            boolBackgroundExists = _FALSE 'there is no background picture
             CheckHighScore 'call the sub to see if the player got a high score
-            boolStarted = FALSE 'the game hasn't been started
+            boolStarted = _FALSE 'the game hasn't been started
         END IF
     END IF
 END SUB
@@ -3272,7 +3272,7 @@ SUB FireMissile
         UpdateStars 'Update the stars
         UpdateObstacles 'Update all obstacles
         UpdateEnemys 'Update the enemies
-        UpdatePowerUps FALSE 'Update the powerups
+        UpdatePowerUps _FALSE 'Update the powerups
         UpdateWeapons 'Update the weapon fire
         UpdateExplosions 'Update the explosions
         UpdateShip 'Update the players ship
@@ -3307,16 +3307,16 @@ SUB FireMissile
             ExplosionRect.left = EnemyDesc(intCount).X
             ExplosionRect.right = ExplosionRect.left + EnemyDesc(intCount).W
 
-            CreateExplosion ExplosionRect, EnemyDesc(intCount).ExplosionIndex, FALSE
+            CreateExplosion ExplosionRect, EnemyDesc(intCount).ExplosionIndex, _FALSE
             'call the sub that creates large explosions and plays the explosion sound
 
-            EnemyDesc(intCount).HasFired = FALSE 'erase any existing enemy fire
+            EnemyDesc(intCount).HasFired = _FALSE 'erase any existing enemy fire
             EnemyDesc(intCount).TimesHit = EnemyDesc(intCount).TimesHit + 30 'the missile does 30x the normal laser 1 damage, add this value to the number of times the enemy has been hit
 
             IF EnemyDesc(intCount).TimesHit >= EnemyDesc(intCount).TimesDies THEN
                 'check to see if the enemy has been hit more times than it takes for it to die, if it has
                 'reset the enemy
-                EnemyDesc(intCount).Exists = FALSE 'the enemy no longer exists
+                EnemyDesc(intCount).Exists = _FALSE 'the enemy no longer exists
                 EnemyDesc(intCount).TargetX = 0 'it has no x target
                 EnemyDesc(intCount).TargetY = 0 'it has no y target
                 EnemyDesc(intCount).TimesHit = 0 'it has never been hit
@@ -3341,7 +3341,7 @@ SUB FireMissile
         UpdateStars
         UpdateObstacles
         UpdateEnemys
-        UpdatePowerUps FALSE
+        UpdatePowerUps _FALSE
         UpdateWeapons
         UpdateExplosions
         UpdateShip
@@ -3365,7 +3365,7 @@ SUB FireMissile
 
     'TODO: Do we need this? dd.WaitForVerticalBlank DDWAITVB_BLOCKBEGIN, 0
 
-    Ship.FiringMissile = FALSE 'The ship is no longer firing a missle
+    Ship.FiringMissile = _FALSE 'The ship is no longer firing a missle
 END SUB
 
 
@@ -3375,7 +3375,7 @@ SUB DoCredits
 
     CLS 'fill the back buffer with black
 
-    ddsEndCredits = Graphics_LoadImage("./dat/gfx/endcredits.gif", FALSE, FALSE, STRING_EMPTY, -1) 'create the end credits direct draw surface
+    ddsEndCredits = Graphics_LoadImage("./dat/gfx/endcredits.gif", _FALSE, _FALSE, _STR_EMPTY, -1) 'create the end credits direct draw surface
     _ASSERT ddsEndCredits < -1
 
     _PUTIMAGE (0, 100), ddsEndCredits 'blt the end credits to the back buffer
@@ -3384,10 +3384,10 @@ SUB DoCredits
 
     DrawString "Samuel Gomes - QB64-PE source port", 32, 290, BGRA_YELLOW ' shameless plug XD
 
-    Graphics_FadeScreen TRUE, FADE_FPS, 100 'Fade the screen in
+    Graphics_FadeScreen _TRUE, FADE_FPS, 100 'Fade the screen in
     SLEEP 2 ' Wait for 2 seconds
 
-    Graphics_FadeScreen FALSE, FADE_FPS, 100 'Fade the screen out
+    Graphics_FadeScreen _FALSE, FADE_FPS, 100 'Fade the screen out
     SLEEP 1 ' Wait for a second
 END SUB
 
@@ -3408,27 +3408,27 @@ SUB GetInput
     IF boolStarted AND NOT boolGettingInput THEN 'if the game has started and we aren't getting input for high scores from the regular form key press events
 
         'Keyboard
-        IF _KEYDOWN(KEY_UP_ARROW) THEN 'if the up arrow is down
+        IF _KEYDOWN(_KEY_UP) THEN 'if the up arrow is down
             Ship.YVelocity = Ship.YVelocity - DISPLACEMENT 'the constant displacement is subtracted from the ships Y velocity
         END IF
-        IF _KEYDOWN(KEY_DOWN_ARROW) THEN 'if the down arrow is pressed down
+        IF _KEYDOWN(_KEY_DOWN) THEN 'if the down arrow is pressed down
             Ship.YVelocity = Ship.YVelocity + DISPLACEMENT 'the constant displacement is added to the ships Y velocity
         END IF
-        IF _KEYDOWN(KEY_LEFT_ARROW) THEN 'if the left arrow is pressed down
+        IF _KEYDOWN(_KEY_LEFT) THEN 'if the left arrow is pressed down
             Ship.XVelocity = Ship.XVelocity - DISPLACEMENT 'the constant displacement is subtracted from the ships X velocity
         END IF
-        IF _KEYDOWN(KEY_RIGHT_ARROW) THEN 'if the right arrow is down
+        IF _KEYDOWN(_KEY_RIGHT) THEN 'if the right arrow is down
             Ship.XVelocity = Ship.XVelocity + DISPLACEMENT 'the constant displacement is added to the ships X velocity
         END IF
         IF _KEYDOWN(KEY_SPACE) THEN 'if the space bar is down
             FireWeapon 'call the sub to fire the weapon
         END IF
-        IF _KEYDOWN(KEY_RIGHT_CONTROL) AND NOT Ship.FiringMissile AND Ship.NumBombs > 0 THEN
-            Ship.FiringMissile = TRUE 'if the control key is pressed
+        IF _KEYDOWN(_KEY_RCTRL) AND NOT Ship.FiringMissile AND Ship.NumBombs > 0 THEN
+            Ship.FiringMissile = _TRUE 'if the control key is pressed
             FireMissile 'fire the missile
         END IF
-        IF _KEYDOWN(KEY_LEFT_CONTROL) AND NOT Ship.FiringMissile AND Ship.NumBombs > 0 THEN
-            Ship.FiringMissile = TRUE 'if the control key is pressed
+        IF _KEYDOWN(_KEY_LCTRL) AND NOT Ship.FiringMissile AND Ship.NumBombs > 0 THEN
+            Ship.FiringMissile = _TRUE 'if the control key is pressed
             FireMissile 'fire the missile
         END IF
 
@@ -3446,14 +3446,14 @@ SUB GetInput
         '    End If
         'End If
 
-        IF _KEYDOWN(KEY_BACKSPACE) THEN 'if the backspace key is pressed
+        IF _KEYDOWN(_KEY_BACKSPACE) THEN 'if the backspace key is pressed
             IF Ship.Invulnerable THEN 'if the ship is invulnerable
                 _SNDSTOP dsInvulnerability 'stop playing the invulnerability sound
                 TempTime = Ship.InvulnerableTime - Time_GetTicks 'capture the current time so the player doesn't lose the amount of time he has left to be invulnerable
             END IF
             IF Ship.AlarmActive THEN _SNDSTOP dsAlarm 'if the low shield alarm is playing, stop that
             ' pause music
-            PauseMIDI TRUE
+            PauseMIDI _TRUE
 
             DrawStringCenter "(Paused - Press ENTER to resume)", 200, BGRA_ORANGERED 'display the pause text
             _DISPLAY 'flip the surfaces to show the back buffer
@@ -3461,10 +3461,10 @@ SUB GetInput
             'Check the keyboard for keypresses
             DO
                 SLEEP ' don't hog the CPU
-            LOOP UNTIL _KEYDOWN(KEY_ENTER)
+            LOOP UNTIL _KEYDOWN(_KEY_ENTER)
 
             ' resume music
-            PauseMIDI FALSE
+            PauseMIDI _FALSE
 
             IF Ship.Invulnerable THEN 'if the ship was invulnerable
                 _SNDLOOP dsInvulnerability 'start the invulenrability wave again
@@ -3480,17 +3480,17 @@ SUB GetInput
         IF boolGettingInput THEN 'If the game is getting high score input then
             IF (keyCode >= 0 AND keyCode <= 127 AND String_IsAlphaNumeric(keyCode)) OR keyCode = KEY_SPACE THEN 'if the keys are alpha keys then
                 strBuffer = CHR$(keyCode) 'add this key to the buffer
-            ELSEIF keyCode = KEY_ENTER AND LEN(_TRIM$(strName)) > NULL THEN 'if enter has been pressed
-                boolEnterPressed = TRUE 'toggle the enter pressed flag to on
-            ELSEIF keyCode = KEY_BACKSPACE THEN 'if backspace was pressed
+            ELSEIF keyCode = _KEY_ENTER AND LEN(_TRIM$(strName)) > NULL THEN 'if enter has been pressed
+                boolEnterPressed = _TRUE 'toggle the enter pressed flag to on
+            ELSEIF keyCode = _KEY_BACKSPACE THEN 'if backspace was pressed
                 IF LEN(strName) > 0 THEN strName = LEFT$(strName, LEN(strName) - 1) 'make the buffer is not empty, and delete any existing character
             END IF
-        ELSEIF keyCode = KEY_ENTER THEN
+        ELSEIF keyCode = _KEY_ENTER THEN
             'if the enter key is pressed then
-            boolStarted = TRUE 'the game has started
+            boolStarted = _TRUE 'the game has started
             'TODO: If Not ef(2) Is Nothing And IsFF Then ef(2).Download
             'download the force feedback effect for firing lasers
-            Graphics_FadeScreen FALSE, FADE_FPS, 100 'fade the current screen
+            Graphics_FadeScreen _FALSE, FADE_FPS, 100 'fade the current screen
             StartIntro 'show the intro text
             byteLives = LIVES_DEFAULT 'Set lives
             intShields = SHIELD_MAX 'Set shields
@@ -3500,36 +3500,36 @@ SUB GetInput
             PlayMIDIFile "./dat/sfx/mus/level1.mid" 'start the level 1 midi
             ' Stars were reset here before. This is not needed
             ' Stars can be recycled and beginning a new level does not feel jarring
-        ELSEIF keyCode = KEY_ESCAPE THEN 'if the escape key is pressed,
+        ELSEIF keyCode = _KEY_ESC THEN 'if the escape key is pressed,
             DoCredits 'Show the credits
             EndGame 'Call sub to reset all variables
             SYSTEM 'Exit the application
         ELSEIF keyCode = KEY_LOWER_F OR keyCode = KEY_UPPER_F THEN 'if the F key is pressed
             IF boolFrameRate THEN 'if the frame rate display is toggled
-                boolFrameRate = FALSE 'turn it off
+                boolFrameRate = _FALSE 'turn it off
             ELSE 'otherwise
-                boolFrameRate = TRUE 'turn it on
+                boolFrameRate = _TRUE 'turn it on
             END IF
         ELSEIF keyCode = KEY_LOWER_J OR keyCode = KEY_UPPER_J THEN 'if the J key is pressed
             IF blnJoystickEnabled THEN 'if the joystick is enabled
-                blnJoystickEnabled = FALSE 'turn it off
+                blnJoystickEnabled = _FALSE 'turn it off
             ELSE 'otherwise
-                blnJoystickEnabled = TRUE 'turn it on
+                blnJoystickEnabled = _TRUE 'turn it on
             END IF
         ELSEIF (keyCode = KEY_LOWER_M OR keyCode = KEY_UPPER_M) AND NOT boolStarted THEN
             'if the M key is pressed, and the game has not started
             IF blnMIDIEnabled THEN 'if midi is enabled
-                PlayMIDIFile STRING_EMPTY 'stop playing any midi
-                blnMIDIEnabled = FALSE 'toggle it off
+                PlayMIDIFile _STR_EMPTY 'stop playing any midi
+                blnMIDIEnabled = _FALSE 'toggle it off
             ELSE 'otherwise
-                blnMIDIEnabled = TRUE 'turn the midi on
+                blnMIDIEnabled = _TRUE 'turn the midi on
                 PlayMIDIFile "./dat/sfx/mus/title.mid" 'play the title midi
             END IF
         ELSEIF keyCode = KEY_LOWER_X OR keyCode = KEY_UPPER_X THEN 'if the X key has been pressed
             IF boolMaxFrameRate THEN 'if the maximum frame rate is toggled
-                boolMaxFrameRate = FALSE 'toggle it off
+                boolMaxFrameRate = _FALSE 'toggle it off
             ELSE 'otherwise
-                boolMaxFrameRate = TRUE 'toggle it on
+                boolMaxFrameRate = _TRUE 'toggle it on
             END IF
         END IF
     END IF
@@ -3542,7 +3542,7 @@ SUB PlayMIDIFile (fileName AS STRING)
         $IF WINDOWS THEN
             IF _FILEEXISTS(fileName) THEN
                 MIDI_PlayFromFile fileName
-                MIDI_Loop TRUE
+                MIDI_Loop _TRUE
             ELSE
                 MIDI_Stop
             END IF
