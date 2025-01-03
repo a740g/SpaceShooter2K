@@ -32,8 +32,8 @@ $VERSIONINFO:Comments='https://github.com/a740g'
 $VERSIONINFO:InternalName='SpaceShooter2k'
 $VERSIONINFO:OriginalFilename='SpaceShooter2k.exe'
 $VERSIONINFO:FileDescription='Space Shooter 2000 executable'
-$VERSIONINFO:FILEVERSION#=2,1,4,0
-$VERSIONINFO:PRODUCTVERSION#=2,1,4,0
+$VERSIONINFO:FILEVERSION#=2,1,5,0
+$VERSIONINFO:PRODUCTVERSION#=2,1,5,0
 $EXEICON:'./SpaceShooter2k.ico'
 '-----------------------------------------------------------------------------------------------------------------------
 
@@ -42,11 +42,8 @@ $EXEICON:'./SpaceShooter2k.ico'
 '-----------------------------------------------------------------------------------------------------------------------
 '$INCLUDE:'include/TimeOps.bi'
 '$INCLUDE:'include/Math/Math.bi'
+'$INCLUDE:'include/StringOps.bi'
 '$INCLUDE:'include/GraphicOps.bi'
-$IF WINDOWS THEN
-    '$INCLUDE:'include/File.bi'
-    '$INCLUDE:'include/WinMIDIPlayer.bi'
-$END IF
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
@@ -59,7 +56,7 @@ CONST SCREEN_WIDTH& = 640& ' width for the display mode
 CONST SCREEN_HEIGHT& = 480& ' height for the display mode
 CONST TRANSPARENT_COLOR~& = _RGB32(208, 2, 178) ' transparent color used in all GIF images assets
 CONST UPDATES_PER_SECOND& = 52& ' this is the desired game FPS
-CONST FADE_FPS& = UPDATES_PER_SECOND * 2& ' how fast do we want our sceen fades
+CONST FADE_FPS& = 120& ' how fast do we want our sceen fades
 
 ' Powerup stuff
 CONST SHIELD = &H0 'Constant for the shield powerup
@@ -238,9 +235,7 @@ DIM SHARED dsInvulnerability AS LONG 'sound for when the player is invulnerable
 DIM SHARED dsInvPowerDown AS LONG 'sound for when the invulnerability wears off
 DIM SHARED dsExtraLife AS LONG 'sound for when the player gets an extra life
 
-$IF LINUX OR MACOSX THEN
-        DIM SHARED MIDIHandle AS LONG ' MIDI music handle
-$END IF
+DIM SHARED midiHandle AS LONG ' MIDI music handle
 
 'Variables to handle graphics
 DIM SHARED boolBackgroundExists AS _BYTE 'Boolean to determine if a background object exists
@@ -426,6 +421,8 @@ SUB InitializeStartup
     _MOUSEHIDE 'don't show the cursor while DX is active
     blnMIDIEnabled = _TRUE 'turn on the midi by default
     byteNewHighScore = 255 'set the new high score to no new high score
+
+    _MIDISOUNDBANK "./dat/sfx/mus/gzdoom.sf2"
     InitializeDS
     InitializeDD 'call the sub that initialized direct draw
 
@@ -3539,30 +3536,23 @@ END SUB
 ' Loads and plays a MIDI file (loops it too)
 SUB PlayMIDIFile (fileName AS STRING)
     IF blnMIDIEnabled THEN
-        $IF WINDOWS THEN
-            IF _FILEEXISTS(fileName) THEN
-                MIDI_PlayFromFile fileName
-                MIDI_Loop _TRUE
-            ELSE
-                MIDI_Stop
-            END IF
-        $ELSE
-            ' Unload if there is anything previously loaded
-            IF MIDIHandle > 0 THEN
-                _SNDSTOP MIDIHandle
-                _SNDCLOSE MIDIHandle
-                MIDIHandle = 0
-            END IF
+        ' Unload if there is anything previously loaded
+        IF midiHandle > 0 THEN
+            _SNDSTOP midiHandle
+            _SNDCLOSE midiHandle
+            midiHandle = 0
+        END IF
 
-            ' Check if the file exists
-            IF _FILEEXISTS(fileName) THEN
-                MIDIHandle = _SNDOPEN(fileName, "stream")
-                _ASSERT MIDIHandle > 0
+        ' Check if the file exists
+        IF _FILEEXISTS(fileName) THEN
+            midiHandle = _SNDOPEN(fileName)
+            _ASSERT midiHandle > 0
 
-                ' Loop the MIDI file
-                IF MIDIHandle > 0 THEN _SNDLOOP MIDIHandle
+            ' Loop the MIDI file
+            IF midiHandle > 0 THEN
+                _SNDLOOP midiHandle
             END IF
-        $END IF
+        END IF
     END IF
 END SUB
 
@@ -3570,11 +3560,11 @@ END SUB
 ' Pauses / unpauses MIDI playback
 SUB PauseMIDI (pause AS _BYTE)
     IF blnMIDIEnabled THEN
-        $IF WINDOWS THEN
-            MIDI_Pause pause
-        $ELSE
-            IF pause THEN _SNDPAUSE MIDIHandle ELSE _SNDLOOP MIDIHandle
-        $END IF
+        IF pause THEN
+            _SNDPAUSE midiHandle
+        ELSE
+            _SNDLOOP midiHandle
+        END IF
     END IF
 END SUB
 
@@ -3591,10 +3581,7 @@ END SUB
 '-----------------------------------------------------------------------------------------------------------------------
 ' HEADER FILES
 '-----------------------------------------------------------------------------------------------------------------------
+'$INCLUDE:'include/StringOps.bas'
 '$INCLUDE:'include/GraphicOps.bas'
-$IF WINDOWS THEN
-    '$INCLUDE:'include/File.bas'
-    '$INCLUDE:'include/WinMIDIPlayer.bas'
-$END IF
 '-----------------------------------------------------------------------------------------------------------------------
 '-----------------------------------------------------------------------------------------------------------------------
