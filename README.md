@@ -1,47 +1,56 @@
 # SPACE SHOOTER 2000
 
-This is a [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe) source port of the Space Shooter 2000 [Visual Basic 6](https://winworldpc.com/product/microsoft-visual-bas/60) game that came with Microsoft's [DirectX 7 SDK](https://github.com/oxiKKK/dx7sdk).
+This is a [QB64-PE](https://www.qb64phoenix.com) source port of the [Space Shooter 2000](https://github.com/a740g/SpaceShooter2K) game originally written in [Visual Basic 6](https://winworldpc.com/product/microsoft-visual-bas/60) and distributed with Microsoft's [DirectX 7 SDK](https://github.com/oxiKKK/dx7sdk).
 
 ![Screenshot](screenshots/screenshot1.png)
 ![Screenshot](screenshots/screenshot2.png)
 ![Screenshot](screenshots/screenshot3.png)
 ![Screenshot](screenshots/screenshot4.png)
 
-The original [Visual Basic 6](https://winworldpc.com/product/microsoft-visual-bas/60) sources can be found [here](https://github.com/oxiKKK/dx7sdk/tree/main/dx7sdk-700.1/samples/multimedia/vbsamples/dxmisc/src/spaceshooter) and [here](https://github.com/orbitersim/orbiter/tree/main/Extern/mssdk_dx7/samples/Multimedia/VBSamples/DXMisc/src/SpaceShooter).
+The original [Visual Basic 6](https://winworldpc.com/product/microsoft-visual-bas/60) source code is available [here](https://github.com/oxiKKK/dx7sdk/tree/main/dx7sdk-700.1/samples/multimedia/vbsamples/dxmisc/src/spaceshooter) and [here](https://github.com/orbitersim/orbiter/tree/main/Extern/mssdk_dx7/samples/Multimedia/VBSamples/DXMisc/src/SpaceShooter).
 
 ## FEATURES
 
-- Works natively on Windows, Linux & macOS
-- No [DirectX](https://en.wikipedia.org/wiki/DirectX) dependencies
-- Uses native [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe) graphics and sound functions
-- Runs in 32bpp graphics mode unlike the original code that ran in 8bpp graphics mode
-- Color key transparency is done on the BASIC side
-- MIDI playback is handled using MIDI support in [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe)
-- No sound buffer copy limit unlike the original code
-- Alt + Enter puts the game in window mode
+- Native support for Windows, Linux, and macOS.
+- No dependencies on [DirectX](https://en.wikipedia.org/wiki/DirectX).
+- Leverages native [QB64-PE](https://www.qb64phoenix.com) graphics and sound functions.
+- Runs in 32-bit color (32bpp) mode, unlike the original 8-bit color (8bpp) mode.
+- MIDI playback handled using QB64-PE's built-in MIDI support.
+- No sound buffer copy limitations, unlike the original version.
+- Supports fullscreen toggle with `Alt + Enter`.
 
 ## USAGE
 
-- Clone the repository to a directory of your choice
-- Open Terminal and change to the directory using an appropriate OS command
-- Run `git submodule update --init --recursive` to initialize, fetch and checkout git submodules
-- Open *SpaceShooter2k.bas* in the QB64-PE IDE and press `F5` to compile and run
+1. Clone the repository to your desired directory:
+
+    ```sh
+    git clone https://github.com/a740g/SpaceShooter2K.git
+    ```
+
+2. Open a terminal and navigate to the repository directory.
+3. Initialize the submodules:
+
+    ```sh
+    git submodule update --init --recursive
+    ```
+
+4. Open the `SpaceShooter2k.bas` file in the QB64-PE IDE.
+5. Press `F5` to compile and run the game.
 
 ## NOTES
 
-- This requires the latest version of [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases)
-- When you clone a repository that contains submodules, the submodules are not automatically cloned by default
-- You will need to use the `git submodule update --init --recursive` to initialize, fetch and checkout git submodules
-- The source port still has some rough edges and bugs. You can see these under the [TODO](https://github.com/a740g/SpaceShooter2K/blob/master/SpaceShooter2k.bas#L7) section in the source code
-- Joystick / game controller support is WIP. I will gradually work through these as and when I get time
+- Requires the latest version of [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases)
+- Submodules are not automatically cloned by default. The `git submodule update --init --recursive` command is required.
+- The source port still contains some bugs and rough edges, which are documented in the [TODO](https://github.com/a740g/SpaceShooter2K/blob/master/SpaceShooter2k.bas#L8) section of the source code.
+- Joystick/game controller support is still a work in progress and will be added over time.
 
 ## ASSETS
 
-Icon by [Everaldo / Yellowicon](https://iconarchive.com/artist/everaldo.html)
+Icon designed by [Everaldo / Yellowicon](https://iconarchive.com/artist/everaldo.html)
 
 ## CREDITS
 
-There is a [YouTube Playthrough](https://www.youtube.com/watch?v=LnUwmS-mYPA) that helped me a lot while doing the source port. Shoutout to [David Coleman](https://www.youtube.com/user/TheFieryDreamer) for posting the video.
+Special thanks to [David Coleman](https://www.youtube.com/user/TheFieryDreamer) for his [YouTube Playthrough](https://www.youtube.com/watch?v=LnUwmS-mYPA), which greatly assisted in the porting process.
 
 ## ORIGINAL CREDITS
 
