@@ -44,6 +44,7 @@ $EXEICON:'./SpaceShooter2k.ico'
 '$INCLUDE:'include/Math/Math.bi'
 '$INCLUDE:'include/StringOps.bi'
 '$INCLUDE:'include/GraphicOps.bi'
+'$INCLUDE:'include/Ini.bi'
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
@@ -99,10 +100,19 @@ CONST SHIELD_MAX = 100 ' Maximum shield value
 CONST BOMBS_MAX& = 4& ' Maximum number of bombs
 CONST LIVES_DEFAULT = 3 ' Number lives we start with
 
-' High score stuff
-CONST HIGH_SCORE_FILENAME = "highscore.csv" ' High score file
-CONST NUM_HIGH_SCORES = 10 ' Number of high scores
-CONST HIGH_SCORE_TEXT_LEN = 14 ' The max length of the name in a high score
+' Config and high score stuff
+CONST CONFIG_FILENAME = "config.ini" ' configuration file name
+CONST CONFIG_VERSION = 2
+CONST CONFIG_SECTION = "Configuration"
+CONST CONFIG_VERSION_KEY = "Version"
+CONST CONFIG_SHOW_FRAME_RATE_KEY = "ShowFrameRate"
+CONST CONFIG_MIDI_ENABLED_KEY = "EnableMIDI"
+CONST CONFIG_JOYSTICK_ENABLED_KEY = "EnableGameController"
+CONST CONFIG_HIGHSCORE_SECTION = "HighScores"
+CONST CONFIG_HIGHSCORE_NAME_KEY = "Name"
+CONST CONFIG_HIGHSCORE_SCORE_KEY = "Score"
+CONST CONFIG_HIGHSCORE_COUNT = 10 ' Number of high scores
+CONST CONFIG_HIGHSCORE_TEXT_LEN = 14 ' The max length of the name in a high score
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
@@ -280,7 +290,7 @@ DIM SHARED strName AS STRING 'Players name when they get a high score
 DIM SHARED SectionCount AS LONG 'Keeps track of what section the player is on
 DIM SHARED FrameCount AS LONG 'keeps track of the number of accumulated frames. When it reaches 20, a new section is added
 DIM SHARED boolStarted AS _BYTE 'Determines whether a game is running or not
-DIM SHARED HighScore(0 TO NUM_HIGH_SCORES - 1) AS typeHighScore 'Keeps track of high scores
+DIM SHARED HighScore(0 TO CONFIG_HIGHSCORE_COUNT - 1) AS typeHighScore 'Keeps track of high scores
 DIM SHARED byteNewHighScore AS _UNSIGNED _BYTE 'index of a new high score to paint the name color differently
 DIM SHARED strBuffer AS STRING 'Buffer to pass keypresses
 DIM SHARED boolEnterPressed AS _BYTE 'Flag to determine if the enter key was pressed
@@ -290,25 +300,21 @@ DIM SHARED strLevelText AS STRING 'Stores the associated startup text for the le
 DIM SHARED blnJoystickEnabled AS _BYTE 'Toggles joystick on or off
 DIM SHARED blnMIDIEnabled AS _BYTE 'Toggles Midi music on or off
 DIM SHARED boolMaxFrameRate AS _BYTE 'Removes all frame rate limits
+DIM SHARED boolUserEndGame AS _BYTE ' did the user end a running game?
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
 ' PROGRAM ENTRY POINT - This is the entry point for the game. From here everything branches out to all the
 ' subs that handle collisions, enemies, player, weapon fire, sounds, level updating, etc.
 '-----------------------------------------------------------------------------------------------------------------------
-InitializeStartup 'Do the startup routines
-LoadHighScores 'Call the sub to load the high scores
-lngNextExtraLifeScore = EXTRALIFETARGET 'Initialize the extra life score to 100,000
-SLEEP 1 ' Wait for a second
-Graphics_FadeScreen _FALSE, FADE_FPS, 100 ' Fade out the loading screen
-ClearInput ' Clear any cached input
+InitializeStartup ' Do the startup routines
 
 DO 'The main loop of the game.
-    GetInput 'call sub that checks for player input
+    boolUserEndGame = GetInput 'call sub that checks for player input
     CLS 'fill the back buffer with black
     UpdateBackground 'Update the background bitmaps
     UpdateStars 'Update the stars
-    IF boolStarted AND NOT boolGettingInput THEN 'If the game has started, and we are not getting high score input from the player
+    IF boolStarted _ANDALSO NOT boolGettingInput THEN 'If the game has started, and we are not getting high score input from the player
         FrameCount = FrameCount + 1 'Keep track of the frame increment
         IF FrameCount >= 20 THEN 'When 20 frames elapsed
             SectionCount = SectionCount - 1 'Reduce the section the player is on
@@ -331,7 +337,7 @@ DO 'The main loop of the game.
         DrawString "Lives:" + STR$(byteLives), 175, 10, BGRA_PALEGREEN 'Display lives left.
         DrawString "Level:" + STR$(byteLevel), 560, 10, BGRA_PALEGREEN 'Display the current level
         CheckScore
-    ELSEIF NOT boolStarted AND NOT boolGettingInput THEN 'If we haven't started, and we aren't getting high score input from the player
+    ELSEIF NOT boolStarted _ANDALSO NOT boolGettingInput THEN 'If we haven't started, and we aren't getting high score input from the player
         ShowTitle 'Show the title screen with high scores and directions
     ELSEIF boolGettingInput THEN 'If we are getting input from the player, then
         CheckHighScore 'call the high score subroutine
@@ -347,7 +353,7 @@ DO 'The main loop of the game.
 
     _DISPLAY 'Flip the front buffer with the back
 
-    IF boolStarted AND _KEYDOWN(_KEY_ESC) THEN 'If the game has started, and the player presses escape
+    IF boolStarted _ANDALSO boolUserEndGame THEN 'If the game has started, and the player presses escape
         'TODO: If IsFF = True Then ef(2).Unload                            'unload the laser force feedback effect
         ResetGame 'call the sub to reset the game variables
     END IF 'If the escape key is preseed, reset the game and go back to the title screen
@@ -409,6 +415,8 @@ END SUB
 SUB InitializeStartup
     Math_SetRandomSeed TIMER ' Seed randomizer
 
+    LoadConfig ' Call the sub to load the config & high scores
+
     $RESIZE:SMOOTH
     SCREEN _NEWIMAGE(SCREEN_WIDTH, SCREEN_HEIGHT, 32) ' Initialize graphics
     _FULLSCREEN _SQUAREPIXELS , _SMOOTH ' Set to fullscreen. We can also go to windowed mode using Alt+Enter
@@ -419,8 +427,9 @@ SUB InitializeStartup
     _DISPLAY ' We want the framebuffer to be updated when we want
 
     _MOUSEHIDE 'don't show the cursor while DX is active
-    blnMIDIEnabled = _TRUE 'turn on the midi by default
+
     byteNewHighScore = 255 'set the new high score to no new high score
+    lngNextExtraLifeScore = EXTRALIFETARGET 'Initialize the extra life score to 100,000
 
     _MIDISOUNDBANK "./dat/sfx/mus/gzdoom.sf2"
     InitializeDS
@@ -767,79 +776,79 @@ SUB InitializeStartup
     BackgroundObject(7).FileName = "nebulae4.gif"
     BackgroundObject(7).W = 600
     BackgroundObject(7).H = 400
+
+    SLEEP 1 ' Wait for a second
+    Graphics_FadeScreen _FALSE, FADE_FPS, 100 ' Fade out the loading screen
+    ClearInput ' Clear any cached input
 END SUB
 
 
-' Loads the high score file from disk
+' Loads configuration settings and high score file from disk
 ' If a high score file cannot be found or cannot be read, a default list of high-score entries is created
-SUB LoadHighScores
-    IF _FILEEXISTS(HIGH_SCORE_FILENAME) THEN
-        DIM i AS INTEGER
-        DIM hsFile AS LONG
+SUB LoadConfig
+    IF VAL(Ini_ReadSetting(CONFIG_FILENAME, CONFIG_SECTION, CONFIG_VERSION_KEY)) = CONFIG_VERSION THEN
+        boolFrameRate = VAL(Ini_ReadSetting(CONFIG_FILENAME, CONFIG_SECTION, CONFIG_SHOW_FRAME_RATE_KEY)) <> _FALSE
+        blnMIDIEnabled = VAL(Ini_ReadSetting(CONFIG_FILENAME, CONFIG_SECTION, CONFIG_MIDI_ENABLED_KEY)) <> _FALSE
+        blnJoystickEnabled = VAL(Ini_ReadSetting(CONFIG_FILENAME, CONFIG_SECTION, CONFIG_JOYSTICK_ENABLED_KEY)) <> _FALSE
 
-        ' Open the highscore file
-        hsFile = FREEFILE
-        OPEN HIGH_SCORE_FILENAME FOR INPUT AS hsFile
+        DIM i AS LONG
 
         ' Read the name and the scores
-        FOR i = 0 TO NUM_HIGH_SCORES - 1
-            INPUT #hsFile, HighScore(i).text, HighScore(i).score
-            HighScore(i).text = _TRIM$(HighScore(i).text) 'trim the highscorename variable of all spaces and assign it to the name array
-        NEXT
-
-        ' Close file
-        CLOSE hsFile
+        FOR i = 0 TO CONFIG_HIGHSCORE_COUNT - 1
+            HighScore(i).text = LEFT$(_TRIM$(Ini_ReadSetting(CONFIG_FILENAME, CONFIG_HIGHSCORE_SECTION, CONFIG_HIGHSCORE_NAME_KEY + _TOSTR$(i))), CONFIG_HIGHSCORE_TEXT_LEN)
+            HighScore(i).score = VAL(Ini_ReadSetting(CONFIG_FILENAME, CONFIG_HIGHSCORE_SECTION, CONFIG_HIGHSCORE_SCORE_KEY + _TOSTR$(i)))
+        NEXT i
     ELSE
+        blnMIDIEnabled = _TRUE 'turn on the midi by default
+
         ' Load default highscores if there is no highscore file
 
-        HighScore(0).text = "Major Stryker"
-        HighScore(0).score = 70000
+        HighScore(0).text = "Captain Pixels"
+        HighScore(0).score = 72000
 
-        HighScore(1).text = "Sam Stone"
-        HighScore(1).score = 60000
+        HighScore(1).text = "Blast Radius"
+        HighScore(1).score = 67000
 
-        HighScore(2).text = "Commander Keen"
-        HighScore(2).score = 55000
+        HighScore(2).text = "Turbo Nova"
+        HighScore(2).score = 62000
 
-        HighScore(3).text = "Gordon Freeman"
-        HighScore(3).score = 50000
+        HighScore(3).text = "Photon Hunter"
+        HighScore(3).score = 57000
 
-        HighScore(4).text = "Max Payne"
-        HighScore(4).score = 40000
+        HighScore(4).text = "Neon Phantom"
+        HighScore(4).score = 52000
 
-        HighScore(5).text = "Lara Croft"
-        HighScore(5).score = 35000
+        HighScore(5).text = "Cyber Shadow"
+        HighScore(5).score = 47000
 
-        HighScore(6).text = "Duke Nukem"
-        HighScore(6).score = 30000
+        HighScore(6).text = "Blaze Knight"
+        HighScore(6).score = 42000
 
-        HighScore(7).text = "Master Chief"
-        HighScore(7).score = 20000
+        HighScore(7).text = "Hyper Vanguard"
+        HighScore(7).score = 37000
 
-        HighScore(8).text = "Marcus Fenix"
-        HighScore(8).score = 15000
+        HighScore(8).text = "Glitch Slayer"
+        HighScore(8).score = 32000
 
-        HighScore(9).text = "John Blade"
-        HighScore(9).score = 10000
+        HighScore(9).text = "Storm Hero"
+        HighScore(9).score = 27000
     END IF
 END SUB
 
 
 ' Writes the HighScore array out to the high score file
-SUB SaveHighScores
-    DIM i AS INTEGER
-    DIM hsFile AS LONG
+SUB SaveConfig
+    Ini_WriteSetting CONFIG_FILENAME, CONFIG_SECTION, CONFIG_VERSION_KEY, _TOSTR$(CONFIG_VERSION)
+    Ini_WriteSetting CONFIG_FILENAME, CONFIG_SECTION, CONFIG_SHOW_FRAME_RATE_KEY, _TOSTR$(boolFrameRate)
+    Ini_WriteSetting CONFIG_FILENAME, CONFIG_SECTION, CONFIG_MIDI_ENABLED_KEY, _TOSTR$(blnMIDIEnabled)
+    Ini_WriteSetting CONFIG_FILENAME, CONFIG_SECTION, CONFIG_JOYSTICK_ENABLED_KEY, _TOSTR$(blnJoystickEnabled)
 
-    ' Open the file for writing
-    hsFile = FREEFILE
-    OPEN HIGH_SCORE_FILENAME FOR OUTPUT AS hsFile
+    DIM i AS LONG
 
-    FOR i = 0 TO NUM_HIGH_SCORES - 1
-        HighScore(i).text = _TRIM$(HighScore(i).text) 'trim the highscorename variable of all spaces and assign it to the name array
-        WRITE #hsFile, HighScore(i).text, HighScore(i).score
-    NEXT
-
-    CLOSE hsFile
+    FOR i = 0 TO CONFIG_HIGHSCORE_COUNT - 1
+        Ini_WriteSetting CONFIG_FILENAME, CONFIG_HIGHSCORE_SECTION, CONFIG_HIGHSCORE_NAME_KEY + _TOSTR$(i), HighScore(i).text
+        Ini_WriteSetting CONFIG_FILENAME, CONFIG_HIGHSCORE_SECTION, CONFIG_HIGHSCORE_SCORE_KEY + _TOSTR$(i), _TOSTR$(HighScore(i).score)
+    NEXT i
 END SUB
 
 
@@ -858,7 +867,7 @@ SUB CheckScore
         byteLives = byteLives + 1 'increase the players life by 1
     END IF
 
-    IF lngTargetTime > Time_GetTicks AND blnExtraLifeDisplay THEN 'As long as the target time is larger than the current time, and the extra life display flag is set
+    IF blnExtraLifeDisplay _ANDALSO lngTargetTime > Time_GetTicks THEN 'As long as the target time is larger than the current time, and the extra life display flag is set
         DrawStringCenter "EXTRA LIFE!", 250, BGRA_TOMATO 'Display the extra life message
     ELSE
         blnExtraLifeDisplay = _FALSE 'Otherwise, if we have gone past the display duration, turn the display flag off
@@ -885,11 +894,11 @@ SUB ShowTitle
 
     DrawStringCenter STRING$(9, 205) + " HIGH SCORES " + STRING$(9, 205), 250, BGRA_PEACHPUFF 'Display the high scores message
 
-    FOR i = 0 TO NUM_HIGH_SCORES - 1 'loop through the 10 high scores
+    FOR i = 0 TO CONFIG_HIGHSCORE_COUNT - 1 'loop through the 10 high scores
         IF i = byteNewHighScore THEN
-            DrawStringCenter RIGHT$(" " + STR$(i + 1), 2) + ". " + LEFT$(HighScore(i).text + SPACE$(HIGH_SCORE_TEXT_LEN), HIGH_SCORE_TEXT_LEN) + "  " + RIGHT$(SPACE$(10) + STR$(HighScore(i).score), 11), 265 + i * 16, BGRA_YELLOW
+            DrawStringCenter RIGHT$(" " + STR$(i + 1), 2) + ". " + LEFT$(HighScore(i).text + SPACE$(CONFIG_HIGHSCORE_TEXT_LEN), CONFIG_HIGHSCORE_TEXT_LEN) + "  " + RIGHT$(SPACE$(10) + STR$(HighScore(i).score), 11), 265 + i * 16, BGRA_YELLOW
         ELSE
-            DrawStringCenter RIGHT$(" " + STR$(i + 1), 2) + ". " + LEFT$(HighScore(i).text + SPACE$(HIGH_SCORE_TEXT_LEN), HIGH_SCORE_TEXT_LEN) + "  " + RIGHT$(SPACE$(10) + STR$(HighScore(i).score), 11), 265 + i * 16, BGRA_ROYALBLUE
+            DrawStringCenter RIGHT$(" " + STR$(i + 1), 2) + ". " + LEFT$(HighScore(i).text + SPACE$(CONFIG_HIGHSCORE_TEXT_LEN), CONFIG_HIGHSCORE_TEXT_LEN) + "  " + RIGHT$(SPACE$(10) + STR$(HighScore(i).score), 11), 265 + i * 16, BGRA_ROYALBLUE
         END IF
     NEXT
 
@@ -1009,6 +1018,11 @@ SUB InitializeDD
 
     ddsObstacle(40) = Graphics_LoadImage("./dat/gfx/deadplate.gif", _FALSE, _FALSE, _STR_EMPTY, -1)
     _ASSERT ddsObstacle(40) < -1
+
+    ' Set an initial group of stars
+    FOR intCount = 0 TO UBOUND(StarDesc)
+        CreateStar intCount, _FALSE
+    NEXT
 END SUB
 
 
@@ -1189,27 +1203,27 @@ SUB CheckHighScore
         lngCount = 0 'reset the count
         DO WHILE lngScore < HighScore(lngCount).score 'loop until we reach the end of the high scores
             lngCount = lngCount + 1 'increment the counter
-            IF lngCount >= NUM_HIGH_SCORES THEN 'if we reach the end of the high scores
+            IF lngCount >= CONFIG_HIGHSCORE_COUNT THEN 'if we reach the end of the high scores
                 lngScore = 0 'reset the players score
                 PlayMIDIFile "./dat/sfx/mus/title.mid" 'play the title midi
                 byteNewHighScore = 255 'set the new high score to no new high score
                 EXIT SUB 'get out of here
             END IF
         LOOP
-        HighScore(NUM_HIGH_SCORES - 1).score = lngScore 'if the player does have a high score, assign it to the last place
+        HighScore(CONFIG_HIGHSCORE_COUNT - 1).score = lngScore 'if the player does have a high score, assign it to the last place
         boolGettingInput = _TRUE 'we are now getting keyboard input
         strName = _STR_EMPTY 'clear the string
         PlayMIDIFile "./dat/sfx/mus/inbtween.mid" 'play the inbetween levels & title screen midi
     END IF
 
-    IF boolGettingInput AND NOT boolEnterPressed THEN 'as long as we are getting input, and the player hasn't pressed enter
-        IF LEN(strName) < HIGH_SCORE_TEXT_LEN AND LEN(strBuffer) > NULL THEN 'if we haven't reached the limit of characters for the name, and the buffer isn't empty then
+    IF boolGettingInput _ANDALSO NOT boolEnterPressed THEN 'as long as we are getting input, and the player hasn't pressed enter
+        IF LEN(strName) < CONFIG_HIGHSCORE_TEXT_LEN _ANDALSO LEN(strBuffer) > NULL THEN 'if we haven't reached the limit of characters for the name, and the buffer isn't empty then
             strName = strName + strBuffer 'if the buffer contains a letter or a space, add it to the buffer
         END IF
-        DrawStringCenter "NEW HIGH SCORE:" + STR$(HighScore(NUM_HIGH_SCORES - 1).score), 200, BGRA_WHITE 'Display the new high score message
+        DrawStringCenter "NEW HIGH SCORE:" + STR$(HighScore(CONFIG_HIGHSCORE_COUNT - 1).score), 200, BGRA_WHITE 'Display the new high score message
         DrawStringCenter "Enter your name: " + strName + CHR$(179), 220, BGRA_YELLOW 'Give the player a cursor, and display the buffer
-    ELSEIF boolGettingInput AND boolEnterPressed THEN 'If we are getting input, and the player presses then enter key then
-        HighScore(NUM_HIGH_SCORES - 1).text = strName 'assign the new high score name the string contained in the buffer
+    ELSEIF boolGettingInput _ANDALSO boolEnterPressed THEN 'If we are getting input, and the player presses then enter key then
+        HighScore(CONFIG_HIGHSCORE_COUNT - 1).text = strName 'assign the new high score name the string contained in the buffer
         FOR intCount = 0 TO 9 'loop through the high scores and re-arrange them
             FOR intCount2 = 0 TO 8 'so that the highest scores are on top, and the lowest
                 IF HighScore(intCount2 + 1).score > HighScore(intCount2).score THEN 'are on the bottom
@@ -1218,12 +1232,12 @@ SUB CheckHighScore
             NEXT
         NEXT
 
-        FOR intCount = 0 TO NUM_HIGH_SCORES - 1 'loop through all the high scores
+        FOR intCount = 0 TO CONFIG_HIGHSCORE_COUNT - 1 'loop through all the high scores
             IF HighScore(intCount).score = lngScore THEN byteNewHighScore = intCount 'find the new high score from the list and store it's index
         NEXT
 
         lngScore = 0 'reset the score
-        SaveHighScores
+        SaveConfig
         boolGettingInput = _FALSE 'we are no longer getting input
         PlayMIDIFile "./dat/sfx/mus/title.mid" 'Start the title midi again
     END IF
@@ -1253,11 +1267,11 @@ SUB UpdatePowerUps (CreatePowerup AS _BYTE) ' Optional CreatePowerup As Boolean
             intRandomNumber = Math_GetRandomBetween(0, 899) 'Create a random number to see which power up
             IF intRandomNumber <= 400 THEN 'see what value the random number is
                 PowerUp(intCount).Index = SHIELD 'make it a shield powerup
-            ELSEIF intRandomNumber > 400 AND intRandomNumber < 600 THEN
+            ELSEIF intRandomNumber > 400 _ANDALSO intRandomNumber < 600 THEN
                 PowerUp(intCount).Index = WEAPON 'make it a weapon powerup
-            ELSEIF intRandomNumber >= 600 AND intRandomNumber < 800 THEN
+            ELSEIF intRandomNumber >= 600 _ANDALSO intRandomNumber < 800 THEN
                 PowerUp(intCount).Index = BOMB 'make it a bomb powerup
-            ELSEIF intRandomNumber >= 800 AND intRandomNumber < 900 THEN
+            ELSEIF intRandomNumber >= 800 _ANDALSO intRandomNumber < 900 THEN
                 PowerUp(intCount).Index = INVULNERABILITY 'Make it an invulnerability powerup
             END IF
             PowerUp(intCount).X = Math_GetRandomBetween(0, SCREEN_WIDTH - POWERUPWIDTH - 1) 'Create the power-up, and set a random X position
@@ -1571,7 +1585,7 @@ SUB LoadLevel (level AS LONG)
     intCount = 0 'set the count variable to 0
     DO
         intCount = intCount + 1 'begin incrementing the count
-        IF intCount > 10 AND intCount <= 20 THEN 'if the count is currently greater than 10 and less than 20
+        IF intCount > 10 _ANDALSO intCount <= 20 THEN 'if the count is currently greater than 10 and less than 20
             ShowMapLocation _TRUE 'show the map location, with the current position outlined
         ELSEIF intCount <= 10 THEN 'if it is less than 10
             ShowMapLocation _FALSE 'show the map location with no outline
@@ -1824,7 +1838,7 @@ SUB UpdateLevels
         END IF
     NEXT
 
-    IF NOT ObstacleSectionNotEmpty AND NOT EnemySectionNotEmpty THEN
+    IF NOT ObstacleSectionNotEmpty _ANDALSO NOT EnemySectionNotEmpty THEN
         'if the both sections are empty then
         NumberEmptySections = NumberEmptySections + 1 'increment the number of empty sections
         IF NumberEmptySections = 40 THEN 'if 40 empty sections are reached
@@ -1990,7 +2004,7 @@ SUB UpdateHits (NewHit AS _BYTE, x AS LONG, y AS LONG) ' Optional NewHit As Bool
                     HitDesc(intCount).Exists = _FALSE 'The hit no longer exists
                     HitDesc(intCount).Index = 0 'Set the frame of the hit to 0
                 ELSE 'Otherwise, the hit animation frame needs to be displayed
-                    IF HitDesc(intCount).X > 0 AND HitDesc(intCount).X < (SCREEN_WIDTH - HitDesc(intCount).W) AND HitDesc(intCount).Y > 0 AND HitDesc(intCount).Y < (SCREEN_HEIGHT - HitDesc(intCount).H) THEN
+                    IF HitDesc(intCount).X > 0 _ANDALSO HitDesc(intCount).X < (SCREEN_WIDTH - HitDesc(intCount).W) _ANDALSO HitDesc(intCount).Y > 0 _ANDALSO HitDesc(intCount).Y < (SCREEN_HEIGHT - HitDesc(intCount).H) THEN
                         'If the hit is on screen
                         _PUTIMAGE (HitDesc(intCount).X, HitDesc(intCount).Y), ddsHit 'blit the hit to the screen
                     END IF
@@ -2032,7 +2046,7 @@ SUB CheckForCollisions
         SrcRect.left = PowerUp(intCount).X
         SrcRect.right = SrcRect.left + POWERUPWIDTH
 
-        IF PowerUp(intCount).Exists AND DetectCollision(ShipRect, SrcRect) THEN 'if the power up exists, and the player has collided with it
+        IF PowerUp(intCount).Exists _ANDALSO DetectCollision(ShipRect, SrcRect) THEN 'if the power up exists, and the player has collided with it
             IF PowerUp(intCount).Index = SHIELD THEN 'if it is a shield powerup
                 intShields = intShields + 20 'increase the shields by 20
                 lngScore = lngScore + 100 'player gets a 100 points for this
@@ -2161,7 +2175,7 @@ SUB CheckForCollisions
                     IF DetectCollision(SrcRect, SrcRect2) THEN 'If this enemy is struck by the weapon
                         EnemyDesc(intCount).TimesHit = EnemyDesc(intCount).TimesHit + LaserDesc(intCount2).Damage
                         'Subtract the amount of damage the weapon does from the enemy
-                        IF EnemyDesc(intCount).TimesHit > EnemyDesc(intCount).TimesDies AND NOT EnemyDesc(intCount).Invulnerable THEN
+                        IF EnemyDesc(intCount).TimesHit > EnemyDesc(intCount).TimesDies _ANDALSO NOT EnemyDesc(intCount).Invulnerable THEN
                             'If the number of times the enemy has been hit is greater than
                             'the amount of times the enemy can be hit, then
                             lngScore = lngScore + EnemyDesc(intCount).Score 'add the score value of this enemy to the players score
@@ -2182,7 +2196,7 @@ SUB CheckForCollisions
             NEXT
 
             FOR intCount = 0 TO UBOUND(ObstacleDesc) 'Loop through all the obstacles
-                IF ObstacleDesc(intCount).Exists AND NOT ObstacleDesc(intCount).Invulnerable THEN
+                IF ObstacleDesc(intCount).Exists _ANDALSO NOT ObstacleDesc(intCount).Invulnerable THEN
                     'If this obstacle is on the screen then
                     'Define this enemies coordinates
                     SrcRect.top = ObstacleDesc(intCount).Y
@@ -2258,7 +2272,7 @@ SUB CheckForCollisions
 
                     IF DetectCollision(SrcRect, SrcRect2) THEN
                         EnemyDesc(intCount).TimesHit = EnemyDesc(intCount).TimesHit + Laser2RDesc(intCount2).Damage
-                        IF EnemyDesc(intCount).TimesHit > EnemyDesc(intCount).TimesDies AND NOT EnemyDesc(intCount).Invulnerable THEN
+                        IF EnemyDesc(intCount).TimesHit > EnemyDesc(intCount).TimesDies _ANDALSO NOT EnemyDesc(intCount).Invulnerable THEN
                             lngScore = lngScore + EnemyDesc(intCount).Score
 
                             _SNDPLAYCOPY dsExplosion, , (2 * (EnemyDesc(intCount).X + EnemyDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
@@ -2277,7 +2291,7 @@ SUB CheckForCollisions
             NEXT
 
             FOR intCount = 0 TO UBOUND(ObstacleDesc)
-                IF ObstacleDesc(intCount).Exists AND NOT ObstacleDesc(intCount).Invulnerable THEN
+                IF ObstacleDesc(intCount).Exists _ANDALSO NOT ObstacleDesc(intCount).Invulnerable THEN
 
                     SrcRect.top = ObstacleDesc(intCount).Y
                     SrcRect.bottom = SrcRect.top + ObstacleDesc(intCount).H
@@ -2344,7 +2358,7 @@ SUB CheckForCollisions
 
                     IF DetectCollision(SrcRect, SrcRect2) THEN
                         EnemyDesc(intCount).TimesHit = EnemyDesc(intCount).TimesHit + Laser2LDesc(intCount2).Damage
-                        IF EnemyDesc(intCount).TimesHit > EnemyDesc(intCount).TimesDies AND NOT EnemyDesc(intCount).Invulnerable THEN
+                        IF EnemyDesc(intCount).TimesHit > EnemyDesc(intCount).TimesDies _ANDALSO NOT EnemyDesc(intCount).Invulnerable THEN
                             lngScore = lngScore + EnemyDesc(intCount).Score
 
                             _SNDPLAYCOPY dsExplosion, , (2 * (EnemyDesc(intCount).X + EnemyDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
@@ -2363,7 +2377,7 @@ SUB CheckForCollisions
             NEXT
 
             FOR intCount = 0 TO UBOUND(ObstacleDesc)
-                IF ObstacleDesc(intCount).Exists AND NOT ObstacleDesc(intCount).Invulnerable THEN
+                IF ObstacleDesc(intCount).Exists _ANDALSO NOT ObstacleDesc(intCount).Invulnerable THEN
 
                     SrcRect.top = ObstacleDesc(intCount).Y
                     SrcRect.bottom = SrcRect.top + ObstacleDesc(intCount).H
@@ -2428,10 +2442,10 @@ SUB CheckForCollisions
                     SrcRect.left = EnemyDesc(intCount).X
                     SrcRect.right = SrcRect.left + EnemyDesc(intCount).W
 
-                    IF DetectCollision(SrcRect, SrcRect2) AND NOT Laser3Desc(intCount2).StillColliding THEN
+                    IF DetectCollision(SrcRect, SrcRect2) _ANDALSO NOT Laser3Desc(intCount2).StillColliding THEN
                         Laser3Desc(intCount2).StillColliding = _TRUE
                         EnemyDesc(intCount).TimesHit = EnemyDesc(intCount).TimesHit + Laser3Desc(intCount2).Damage
-                        IF EnemyDesc(intCount).TimesHit > EnemyDesc(intCount).TimesDies AND NOT EnemyDesc(intCount).Invulnerable THEN
+                        IF EnemyDesc(intCount).TimesHit > EnemyDesc(intCount).TimesDies _ANDALSO NOT EnemyDesc(intCount).Invulnerable THEN
                             lngScore = lngScore + EnemyDesc(intCount).Score
 
                             _SNDPLAYCOPY dsExplosion, , (2 * (EnemyDesc(intCount).X + EnemyDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
@@ -2443,21 +2457,21 @@ SUB CheckForCollisions
                             UpdateHits _TRUE, SrcRect2.left, SrcRect2.top
                             EXIT SUB
                         END IF
-                    ELSEIF NOT DetectCollision(SrcRect, SrcRect2) AND Laser3Desc(intCount2).StillColliding THEN
+                    ELSEIF Laser3Desc(intCount2).StillColliding _ANDALSO NOT DetectCollision(SrcRect, SrcRect2) THEN
                         Laser3Desc(intCount2).StillColliding = _FALSE
                     END IF
                 END IF
             NEXT
 
             FOR intCount = 0 TO UBOUND(ObstacleDesc)
-                IF ObstacleDesc(intCount).Exists AND NOT ObstacleDesc(intCount).Invulnerable THEN
+                IF ObstacleDesc(intCount).Exists _ANDALSO NOT ObstacleDesc(intCount).Invulnerable THEN
 
                     SrcRect.top = ObstacleDesc(intCount).Y
                     SrcRect.bottom = SrcRect.top + ObstacleDesc(intCount).H
                     SrcRect.left = ObstacleDesc(intCount).X
                     SrcRect.right = SrcRect.left + ObstacleDesc(intCount).W
 
-                    IF DetectCollision(SrcRect, SrcRect2) AND NOT Laser3Desc(intCount2).StillColliding THEN
+                    IF DetectCollision(SrcRect, SrcRect2) _ANDALSO NOT Laser3Desc(intCount2).StillColliding THEN
                         Laser3Desc(intCount2).StillColliding = _TRUE
                         ObstacleDesc(intCount).TimesHit = ObstacleDesc(intCount).TimesHit + Laser3Desc(intCount2).Damage
                         IF ObstacleDesc(intCount).TimesHit > ObstacleDesc(intCount).TimesDies THEN
@@ -2493,7 +2507,7 @@ SUB CheckForCollisions
                             UpdateHits _TRUE, SrcRect2.left, SrcRect2.top
                             EXIT SUB
                         END IF
-                    ELSEIF NOT DetectCollision(SrcRect, SrcRect2) AND Laser3Desc(intCount2).StillColliding THEN
+                    ELSEIF Laser3Desc(intCount2).StillColliding _ANDALSO NOT DetectCollision(SrcRect, SrcRect2) THEN
                         Laser3Desc(intCount2).StillColliding = _FALSE
                     END IF
                 END IF
@@ -2522,7 +2536,7 @@ SUB CheckForCollisions
 
                         _SNDPLAYCOPY dsExplosion, , (2 * (EnemyDesc(intCount).X + EnemyDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the explosion sound
 
-                        IF EnemyDesc(intCount).TimesHit > EnemyDesc(intCount).TimesDies AND NOT EnemyDesc(intCount).Invulnerable THEN
+                        IF EnemyDesc(intCount).TimesHit > EnemyDesc(intCount).TimesDies _ANDALSO NOT EnemyDesc(intCount).Invulnerable THEN
                             EnemyDesc(intCount).Exists = _FALSE
                             lngScore = lngScore + EnemyDesc(intCount).Score
                             CreateExplosion SrcRect, EnemyDesc(intCount).ExplosionIndex, _FALSE
@@ -2537,7 +2551,7 @@ SUB CheckForCollisions
             NEXT
 
             FOR intCount = 0 TO UBOUND(ObstacleDesc)
-                IF ObstacleDesc(intCount).Exists AND NOT ObstacleDesc(intCount).Invulnerable THEN
+                IF ObstacleDesc(intCount).Exists _ANDALSO NOT ObstacleDesc(intCount).Invulnerable THEN
 
                     SrcRect.top = ObstacleDesc(intCount).Y
                     SrcRect.bottom = SrcRect.top + ObstacleDesc(intCount).H
@@ -2601,6 +2615,18 @@ SUB UpdateBackground
 END SUB
 
 
+' Creates a single star
+' n Star array index
+' onTop Create the star at the top of the screen
+SUB CreateStar (n AS LONG, onTop AS _BYTE)
+    StarDesc(n).Exists = _TRUE 'the star exists
+    StarDesc(n).X = Math_GetRandomBetween(0, SCREEN_WIDTH - 1) 'set a random X coordinate
+    StarDesc(n).Y = _IIF(onTop, 0, Math_GetRandomBetween(0, SCREEN_HEIGHT - 1)) ' set a random Y coordinate
+    StarDesc(n).Index = _RGB32(Math_GetRandomBetween(192, 255), Math_GetRandomBetween(192, 255), Math_GetRandomBetween(192, 255)) 'set a random number for a color
+    StarDesc(n).Speed = ((2! - 0.4!) * RND) + 0.4! 'set a random number for the speed of the star
+END SUB
+
+
 'This sub creates as well as updates stars
 SUB UpdateStars
     DIM intCount AS LONG 'count variable
@@ -2608,13 +2634,7 @@ SUB UpdateStars
     FOR intCount = 0 TO UBOUND(StarDesc) 'loop through all the stars
         IF NOT StarDesc(intCount).Exists THEN 'if this star doesn't exist then
             IF (INT((3500 - 1) * RND) + 1) <= 25 THEN 'if a number between 3500 and 1 is less than 25 then
-                'begin creating a new star
-                StarDesc(intCount).Exists = _TRUE 'the star exists
-                StarDesc(intCount).X = Math_GetRandomBetween(0, SCREEN_WIDTH - 1)
-                'set a random X coordinate
-                StarDesc(intCount).Y = 0 'start at the top of the screen
-                StarDesc(intCount).Index = _RGB32(Math_GetRandomBetween(192, 255), Math_GetRandomBetween(192, 255), Math_GetRandomBetween(192, 255)) 'set a random number for a color
-                StarDesc(intCount).Speed = ((2 - 0.4) * RND) + 0.4 'set a random number for the speed of the star
+                CreateStar intCount, _TRUE
             END IF
         ELSE
             StarDesc(intCount).Y = StarDesc(intCount).Y + StarDesc(intCount).Speed
@@ -2711,7 +2731,7 @@ SUB UpdateEnemys
                 XOffset = (EnemyDesc(intCount).Frame MOD 4) * EnemyDesc(intCount).W 'set the X offset of the animation frame
                 YOffset = (EnemyDesc(intCount).Frame \ 4) * EnemyDesc(intCount).H 'set the Y offset of the animation frame
 
-                IF EnemyDesc(intCount).X + EnemyDesc(intCount).W > 0 AND EnemyDesc(intCount).X < SCREEN_WIDTH AND EnemyDesc(intCount).Y + EnemyDesc(intCount).H > 0 THEN 'make sure that the enemy is within the bounds for blitting
+                IF EnemyDesc(intCount).X + EnemyDesc(intCount).W > 0 _ANDALSO EnemyDesc(intCount).X < SCREEN_WIDTH _ANDALSO EnemyDesc(intCount).Y + EnemyDesc(intCount).H > 0 THEN 'make sure that the enemy is within the bounds for blitting
                     ' Blit the enemy with a transparent key
                     _PUTIMAGE (EnemyDesc(intCount).X, EnemyDesc(intCount).Y), ddsEnemyContainer(EnemyDesc(intCount).Index), , (XOffset, YOffset)-(XOffset + EnemyDesc(intCount).W - 1, YOffset + EnemyDesc(intCount).H - 1)
                 END IF
@@ -2720,7 +2740,7 @@ SUB UpdateEnemys
             END IF
         END IF
 
-        IF NOT EnemyDesc(intCount).HasFired AND EnemyDesc(intCount).Exists AND EnemyDesc(intCount).DoesFire AND EnemyDesc(intCount).Y > 0 AND (EnemyDesc(intCount).Y + EnemyDesc(intCount).H) < SCREEN_HEIGHT AND EnemyDesc(intCount).X > 0 AND (EnemyDesc(intCount).X + EnemyDesc(intCount).W) < SCREEN_WIDTH THEN
+        IF NOT EnemyDesc(intCount).HasFired _ANDALSO EnemyDesc(intCount).Exists _ANDALSO EnemyDesc(intCount).DoesFire _ANDALSO EnemyDesc(intCount).Y > 0 _ANDALSO (EnemyDesc(intCount).Y + EnemyDesc(intCount).H) < SCREEN_HEIGHT _ANDALSO EnemyDesc(intCount).X > 0 _ANDALSO (EnemyDesc(intCount).X + EnemyDesc(intCount).W) < SCREEN_WIDTH THEN
             'This incredibly long line has a very important job. It makes sure that the enemy hasn't fired, that it exists, and that it is visible on the screen
             IF INT((1500 - 1) * RND + 1) < 20 THEN 'if the random number is less than 20, make the enemy fire
 
@@ -2774,7 +2794,7 @@ SUB UpdateEnemys
     'except it does it for any of the obstacles that have the ability to fire
 
     FOR intCount = 0 TO UBOUND(ObstacleDesc)
-        IF NOT ObstacleDesc(intCount).HasFired AND ObstacleDesc(intCount).Exists AND ObstacleDesc(intCount).DoesFire THEN
+        IF ObstacleDesc(intCount).Exists _ANDALSO ObstacleDesc(intCount).DoesFire _ANDALSO NOT ObstacleDesc(intCount).HasFired THEN
             IF INT((3000 - 1) * RND + 1) < 20 THEN
 
                 _SNDPLAYCOPY dsEnemyFire, , (2 * (ObstacleDesc(intCount).X + ObstacleDesc(intCount).W / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1) 'play the duplicate sound buffer
@@ -2977,7 +2997,7 @@ SUB UpdateShip
     STATIC isFrameDirectionReverse AS _BYTE 'keep track of the direction the animation is moving
 
     ' If the end of the animation is reached in either direction
-    IF (intShipFrameCount > 29 AND NOT isFrameDirectionReverse) OR (intShipFrameCount < 1 AND isFrameDirectionReverse) THEN
+    IF (intShipFrameCount > 29 _ANDALSO NOT isFrameDirectionReverse) OR (intShipFrameCount < 1 _ANDALSO isFrameDirectionReverse) THEN
         isFrameDirectionReverse = NOT isFrameDirectionReverse 'reverse the direction
     END IF
 
@@ -3262,7 +3282,7 @@ SUB FireMissile
         'Since this sub will be looping until we finish manipulating the palette, we will need to call all of the normal
         'main functions from here to maintain gameplay while we are busy with this sub
 
-        GetInput 'Get input from the player
+        boolUserEndGame = GetInput 'Get input from the player
         CheckForCollisions 'Check to see if there are any collisions
         CLS 'Fill the back buffer with black
         UpdateBackground 'Update the background bitmap, using a transparent blit
@@ -3296,7 +3316,7 @@ SUB FireMissile
     _SNDPLAY dsMissile 'play the missile wav
     'TODO: If IsFF Then ef(0).start 1, 0                        'if force feedback exists, start the missile effect
     FOR intCount = 0 TO UBOUND(EnemyDesc) 'loop through all the enemies
-        IF EnemyDesc(intCount).Exists AND NOT EnemyDesc(intCount).Invulnerable THEN
+        IF EnemyDesc(intCount).Exists _ANDALSO NOT EnemyDesc(intCount).Invulnerable THEN
             'if the enemy exists on screen, and is not invulnerable
             'set the explosion rectangle coordinates
             ExplosionRect.top = EnemyDesc(intCount).Y
@@ -3331,7 +3351,7 @@ SUB FireMissile
             UpdateLevels
             FrameCount = 0
         END IF
-        GetInput
+        boolUserEndGame = GetInput
         CheckForCollisions
         CLS
         UpdateBackground
@@ -3389,9 +3409,9 @@ SUB DoCredits
 END SUB
 
 
-'This subroutine gets input from the player using Direct Input. The boolean flag is so that the missile fire routine doesn't
-'loop when a missile is fired
-SUB GetInput
+' This subroutine gets input from the player using Direct Input. The boolean flag is so that the missile fire routine doesn't
+' loop when a missile is fired. Returns _TRUE if the user wants to exit a running game.
+FUNCTION GetInput%%
     'TODO: Dim JoystickState As DIJOYSTATE                             'joystick state type
     DIM TempTime AS _INTEGER64
 
@@ -3402,7 +3422,7 @@ SUB GetInput
     '    diJoystick.GetDeviceState Len(JoystickState), JoystickState  'get the current state of the joystick
     'End If
 
-    IF boolStarted AND NOT boolGettingInput THEN 'if the game has started and we aren't getting input for high scores from the regular form key press events
+    IF boolStarted _ANDALSO NOT boolGettingInput THEN 'if the game has started and we aren't getting input for high scores from the regular form key press events
 
         'Keyboard
         IF _KEYDOWN(_KEY_UP) THEN 'if the up arrow is down
@@ -3420,11 +3440,11 @@ SUB GetInput
         IF _KEYDOWN(KEY_SPACE) THEN 'if the space bar is down
             FireWeapon 'call the sub to fire the weapon
         END IF
-        IF _KEYDOWN(_KEY_RCTRL) AND NOT Ship.FiringMissile AND Ship.NumBombs > 0 THEN
+        IF Ship.NumBombs > 0 _ANDALSO NOT Ship.FiringMissile _ANDALSO _KEYDOWN(_KEY_RCTRL) THEN
             Ship.FiringMissile = _TRUE 'if the control key is pressed
             FireMissile 'fire the missile
         END IF
-        IF _KEYDOWN(_KEY_LCTRL) AND NOT Ship.FiringMissile AND Ship.NumBombs > 0 THEN
+        IF Ship.NumBombs > 0 _ANDALSO NOT Ship.FiringMissile _ANDALSO _KEYDOWN(_KEY_LCTRL) THEN
             Ship.FiringMissile = _TRUE 'if the control key is pressed
             FireMissile 'fire the missile
         END IF
@@ -3443,7 +3463,9 @@ SUB GetInput
         '    End If
         'End If
 
-        IF _KEYDOWN(_KEY_BACKSPACE) THEN 'if the backspace key is pressed
+        DIM isEscPressed AS _BYTE: isEscPressed = _KEYDOWN(_KEY_ESC)
+
+        IF isEscPressed _ORELSE _KEYDOWN(_KEY_BACKSPACE) THEN 'if the backspace key is pressed
             IF Ship.Invulnerable THEN 'if the ship is invulnerable
                 _SNDSTOP dsInvulnerability 'stop playing the invulnerability sound
                 TempTime = Ship.InvulnerableTime - Time_GetTicks 'capture the current time so the player doesn't lose the amount of time he has left to be invulnerable
@@ -3452,15 +3474,33 @@ SUB GetInput
             ' pause music
             PauseMIDI _TRUE
 
-            DrawStringCenter "(Paused - Press ENTER to resume)", 200, BGRA_ORANGERED 'display the pause text
+            IF isEscPressed THEN
+                DrawStringCenter "(Press Y to exit or N to resume)", 200, BGRA_ORANGERED 'display the pause text
+            ELSE
+                DrawStringCenter "(Paused - Press ENTER to resume)", 200, BGRA_ORANGERED 'display the pause text
+            END IF
+
             _DISPLAY 'flip the surfaces to show the back buffer
 
             'Check the keyboard for keypresses
             DO
                 SLEEP ' don't hog the CPU
-            LOOP UNTIL _KEYDOWN(_KEY_ENTER)
 
-            ' resume music
+                IF isEscPressed THEN
+                    IF _KEYDOWN(KEY_LOWER_N) _ORELSE _KEYDOWN(KEY_UPPER_N) THEN
+                        EXIT DO
+                    ELSEIF _KEYDOWN(KEY_LOWER_Y) _ORELSE _KEYDOWN(KEY_UPPER_Y) THEN
+                        GetInput = _TRUE
+                        EXIT DO
+                    END IF
+                ELSE
+                    IF _KEYDOWN(_KEY_ENTER) THEN
+                        EXIT DO
+                    END IF
+                END IF
+            LOOP
+
+            ' Resume music
             PauseMIDI _FALSE
 
             IF Ship.Invulnerable THEN 'if the ship was invulnerable
@@ -3475,9 +3515,9 @@ SUB GetInput
         DIM keyCode AS LONG: keyCode = _KEYHIT
 
         IF boolGettingInput THEN 'If the game is getting high score input then
-            IF (keyCode >= 0 AND keyCode <= 127 AND String_IsAlphaNumeric(keyCode)) OR keyCode = KEY_SPACE THEN 'if the keys are alpha keys then
+            IF (keyCode >= 0 _ANDALSO keyCode <= 127 _ANDALSO String_IsAlphaNumeric(keyCode)) OR keyCode = KEY_SPACE THEN 'if the keys are alpha keys then
                 strBuffer = CHR$(keyCode) 'add this key to the buffer
-            ELSEIF keyCode = _KEY_ENTER AND LEN(_TRIM$(strName)) > NULL THEN 'if enter has been pressed
+            ELSEIF keyCode = _KEY_ENTER _ANDALSO LEN(_TRIM$(strName)) > NULL THEN 'if enter has been pressed
                 boolEnterPressed = _TRUE 'toggle the enter pressed flag to on
             ELSEIF keyCode = _KEY_BACKSPACE THEN 'if backspace was pressed
                 IF LEN(strName) > 0 THEN strName = LEFT$(strName, LEN(strName) - 1) 'make the buffer is not empty, and delete any existing character
@@ -3498,6 +3538,7 @@ SUB GetInput
             ' Stars were reset here before. This is not needed
             ' Stars can be recycled and beginning a new level does not feel jarring
         ELSEIF keyCode = _KEY_ESC THEN 'if the escape key is pressed,
+            SaveConfig
             DoCredits 'Show the credits
             EndGame 'Call sub to reset all variables
             SYSTEM 'Exit the application
@@ -3513,7 +3554,7 @@ SUB GetInput
             ELSE 'otherwise
                 blnJoystickEnabled = _TRUE 'turn it on
             END IF
-        ELSEIF (keyCode = KEY_LOWER_M OR keyCode = KEY_UPPER_M) AND NOT boolStarted THEN
+        ELSEIF (keyCode = KEY_LOWER_M OR keyCode = KEY_UPPER_M) _ANDALSO NOT boolStarted THEN
             'if the M key is pressed, and the game has not started
             IF blnMIDIEnabled THEN 'if midi is enabled
                 PlayMIDIFile _STR_EMPTY 'stop playing any midi
@@ -3530,7 +3571,7 @@ SUB GetInput
             END IF
         END IF
     END IF
-END SUB
+END FUNCTION
 
 
 ' Loads and plays a MIDI file (loops it too)
@@ -3583,5 +3624,6 @@ END SUB
 '-----------------------------------------------------------------------------------------------------------------------
 '$INCLUDE:'include/StringOps.bas'
 '$INCLUDE:'include/GraphicOps.bas'
+'$INCLUDE:'include/Ini.bas'
 '-----------------------------------------------------------------------------------------------------------------------
 '-----------------------------------------------------------------------------------------------------------------------

@@ -8,5 +8,5 @@
 !include
 # Ignore all exe files
 *.exe
-# Ignore highscore file
-highscore.csv
+# Ignore configuration file
+config.ini
