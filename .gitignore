@@ -1,12 +1,41 @@
 # Ignore all
 *
+
 # Unignore all with extensions
 !*.*
+
 # Unignore all dirs
 !*/
+
+# Ignore compiled files
+*.o
+*.a
+*.out
+
+# Ignore all executable files
+*.com
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Ignore Visual Studio Code stuff
+.vscode
+.fake
+
+# Ignore Visual Studio stuff
+.vs
+
+# Ignore macOS stuff
+.DS_Store
+*.command
+
+# Ignore Windows stuff
+Thumbs.db
+desktop.ini
+
 # Unignore include
 !include
-# Ignore all exe files
-*.exe
+
 # Ignore configuration file
 config.ini

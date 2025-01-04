@@ -1,6 +1,6 @@
 '-----------------------------------------------------------------------------------------------------------------------
 ' SPACE SHOOTER 2000!
-' Copyright (c) 2024 Samuel Gomes
+' Copyright (c) 2025 Samuel Gomes
 ' Copyright (c) 2000 Adam "Gollum" Lonnberg
 '-----------------------------------------------------------------------------------------------------------------------
 
@@ -25,7 +25,7 @@
 $ASSERTS
 $VERSIONINFO:ProductName='Space Shooter 2000'
 $VERSIONINFO:CompanyName='Samuel Gomes'
-$VERSIONINFO:LegalCopyright='Conversion / port copyright (c) 2024 Samuel Gomes'
+$VERSIONINFO:LegalCopyright='Conversion / port copyright (c) 2025 Samuel Gomes'
 $VERSIONINFO:LegalTrademarks='All trademarks are property of their respective owners'
 $VERSIONINFO:Web='https://github.com/a740g'
 $VERSIONINFO:Comments='https://github.com/a740g'
