@@ -46,7 +46,7 @@ The original [Visual Basic 6](https://winworldpc.com/product/microsoft-visual-ba
 
 ## ASSETS
 
-Icon designed by [Everaldo / Yellowicon](https://iconarchive.com/artist/everaldo.html)
+Icon designed by [Everaldo / Yellowicon](https://iconarchive.com/artist/everaldo.html).
 
 ## CREDITS
 

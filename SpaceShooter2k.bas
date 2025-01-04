@@ -15,7 +15,7 @@
 '   IMPROVEMENT: Alignment of the HUD items at the top of the screen is bad and should be corrected
 '   IMPROVEMENT: FadeScreen is not used for all screen transitions and should be checked
 '   IMPROVEMENT: There are some extra sprite sheets that are not used - shiptransform, shiptransform2. Use these for cool effects / upgrades?
-'   IMPROVEMENT: Remove unnecessary overusage of Time_GetTicks
+'   IMPROVEMENT: Remove unnecessary overuse of Time_GetTicks
 '   OTHER: Check any comment labeled with 'TODO'
 '-----------------------------------------------------------------------------------------------------------------------
 
@@ -57,13 +57,13 @@ CONST SCREEN_WIDTH& = 640& ' width for the display mode
 CONST SCREEN_HEIGHT& = 480& ' height for the display mode
 CONST TRANSPARENT_COLOR~& = _RGB32(208, 2, 178) ' transparent color used in all GIF images assets
 CONST UPDATES_PER_SECOND& = 52& ' this is the desired game FPS
-CONST FADE_FPS& = 120& ' how fast do we want our sceen fades
+CONST FADE_FPS& = 120& ' how fast do we want our screen fades
 
 ' Powerup stuff
 CONST SHIELD = &H0 'Constant for the shield powerup
 CONST WEAPON = &H20 'Constant for the weapon powerup
 CONST BOMB = &H40 'Constant for the bomb powerup
-CONST INVULNERABILITY = &H60 'Constant for the invulenrability powerup
+CONST INVULNERABILITY = &H60 'Constant for the invulnerability powerup
 
 CONST SHIPWIDTH = 35 'Width of the players ship
 CONST SHIPHEIGHT = 60 'Height of the players ship
@@ -322,7 +322,7 @@ DO 'The main loop of the game.
             FrameCount = 0 'Reset the frame count
         END IF
         UpdateObstacles 'Update the back layer of objects
-        UpdateEnemys 'Move and draw the enemys
+        UpdateEnemies 'Move and draw the enemies
         UpdatePowerUps _FALSE 'Move and draw the power ups
         UpdateHits _FALSE, 0, 0 'Update the small explosions
         UpdateWeapons 'Move and draw the weapons
@@ -356,7 +356,7 @@ DO 'The main loop of the game.
     IF boolStarted _ANDALSO boolUserEndGame THEN 'If the game has started, and the player presses escape
         'TODO: If IsFF = True Then ef(2).Unload                            'unload the laser force feedback effect
         ResetGame 'call the sub to reset the game variables
-    END IF 'If the escape key is preseed, reset the game and go back to the title screen
+    END IF 'If the escape key is pressed, reset the game and go back to the title screen
 LOOP 'keep looping endlessly
 
 END 1 ' It should not come here
@@ -371,7 +371,7 @@ SUB ResetGame
 
     FOR intCount = 0 TO UBOUND(EnemyDesc) 'loop through all the enemies and
         EnemyDesc(intCount).Exists = _FALSE 'the enemies no longer exist
-        EnemyDesc(intCount).HasFired = _FALSE 'the enemies' wepaons no longer exist
+        EnemyDesc(intCount).HasFired = _FALSE 'the enemies' weapons no longer exist
     NEXT
     FOR intCount = 0 TO UBOUND(GuidedMissile) 'loop through all the players guided missiles
         GuidedMissile(intCount).Exists = _FALSE 'they no longer exist
@@ -411,7 +411,7 @@ SUB ResetGame
 END SUB
 
 
-'This sub initializes all neccessary objects, classes, variables, and user-defined types
+'This sub initializes all necessary objects, classes, variables, and user-defined types
 SUB InitializeStartup
     Math_SetRandomSeed TIMER ' Seed randomizer
 
@@ -474,7 +474,7 @@ SUB InitializeStartup
     EnemyContainerDesc(2).ExplosionIndex = 0
     EnemyContainerDesc(2).Score = 350
     EnemyContainerDesc(2).Speed = 2
-    EnemyContainerDesc(2).ChaseValue = CHASEOFF 'This enemy does not chase the players' X coordinates. This value doesn't need to be setm though, since its' value is 0. It can be set merely as a reminder of the enemies behavior.
+    EnemyContainerDesc(2).ChaseValue = CHASEOFF 'This enemy does not chase the players' X coordinates. This value doesn't need to be set though, since its' value is 0. It can be set merely as a reminder of the enemies behavior.
     EnemyContainerDesc(2).FireType = TARGETEDFIRE 'This enemy does fire towards the player
     EnemyContainerDesc(2).DoesFire = _TRUE
     EnemyContainerDesc(2).CollisionDamage = 5
@@ -2682,7 +2682,7 @@ END SUB
 
 
 'This sub updates all the enemies that are being displayed on the screen
-SUB UpdateEnemys
+SUB UpdateEnemies
     DIM intCount AS LONG 'count variable
     DIM sngChaseSpeed AS SINGLE 'chase speed of the enemy
     DIM XOffset AS LONG 'X offset of the animation frame
@@ -3288,7 +3288,7 @@ SUB FireMissile
         UpdateBackground 'Update the background bitmap, using a transparent blit
         UpdateStars 'Update the stars
         UpdateObstacles 'Update all obstacles
-        UpdateEnemys 'Update the enemies
+        UpdateEnemies 'Update the enemies
         UpdatePowerUps _FALSE 'Update the powerups
         UpdateWeapons 'Update the weapon fire
         UpdateExplosions 'Update the explosions
@@ -3357,7 +3357,7 @@ SUB FireMissile
         UpdateBackground
         UpdateStars
         UpdateObstacles
-        UpdateEnemys
+        UpdateEnemies
         UpdatePowerUps _FALSE
         UpdateWeapons
         UpdateExplosions
