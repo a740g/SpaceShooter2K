@@ -1972,9 +1972,9 @@ SUB FireWeapon
 END SUB
 
 
-'This function takes two rectangles and determines if they overlap each other
+' This function takes two rectangles and determines if they overlap each other
 FUNCTION DetectCollision%% (r1 AS typeRect, r2 AS typeRect)
-    DetectCollision = NOT (r1.left > r2.right OR r2.left > r1.right OR r1.top > r2.bottom OR r2.top > r1.bottom)
+    DetectCollision = r1.left <= r2.right _ANDALSO r2.left <= r1.right _ANDALSO r1.top <= r2.bottom _ANDALSO r2.top <= r1.bottom
 END FUNCTION
 
 
@@ -2781,7 +2781,7 @@ SUB UpdateEnemys
                 'increment the wait time
             END IF
 
-            IF EnemyDesc(intCount).XFire >= SCREEN_WIDTH OR EnemyDesc(intCount).XFire + ENEMY_FIRE_WIDTH <= 0 OR EnemyDesc(intCount).YFire >= SCREEN_HEIGHT OR EnemyDesc(intCount).YFire + ENEMY_FIRE_HEIGHT <= 0 THEN
+            IF EnemyDesc(intCount).XFire >= SCREEN_WIDTH _ORELSE EnemyDesc(intCount).XFire + ENEMY_FIRE_WIDTH <= 0 _ORELSE EnemyDesc(intCount).YFire >= SCREEN_HEIGHT _ORELSE EnemyDesc(intCount).YFire + ENEMY_FIRE_HEIGHT <= 0 THEN
                 'if the enemy fire is off the visible screen
                 EnemyDesc(intCount).HasFired = _FALSE 'the enemy hasn't fired
             ELSE 'otherwise
@@ -2825,7 +2825,7 @@ SUB UpdateEnemys
                 ObstacleDesc(intCount).FireFrameCount = ObstacleDesc(intCount).FireFrameCount + 1
             END IF
 
-            IF ObstacleDesc(intCount).XFire >= SCREEN_WIDTH OR ObstacleDesc(intCount).XFire + ENEMY_FIRE_WIDTH <= 0 OR ObstacleDesc(intCount).YFire >= SCREEN_HEIGHT OR ObstacleDesc(intCount).YFire + ENEMY_FIRE_HEIGHT <= 0 THEN
+            IF ObstacleDesc(intCount).XFire >= SCREEN_WIDTH _ORELSE ObstacleDesc(intCount).XFire + ENEMY_FIRE_WIDTH <= 0 _ORELSE ObstacleDesc(intCount).YFire >= SCREEN_HEIGHT _ORELSE ObstacleDesc(intCount).YFire + ENEMY_FIRE_HEIGHT <= 0 THEN
                 ObstacleDesc(intCount).HasFired = _FALSE
             ELSE
                 _PUTIMAGE (ObstacleDesc(intCount).XFire, ObstacleDesc(intCount).YFire), ddsEnemyFire, , (ObstacleDesc(intCount).FireFrame, 0)-(ObstacleDesc(intCount).FireFrame + ENEMY_FIRE_WIDTH - 1, ENEMY_FIRE_HEIGHT - 1)
@@ -2875,7 +2875,7 @@ SUB UpdateWeapons
             SrcRect.top = 0
             SrcRect.bottom = LASER2HEIGHT
 
-            IF Laser2RDesc(intCount).X < 0 OR Laser2RDesc(intCount).X > (SCREEN_WIDTH - LASER2WIDTH) OR Laser2RDesc(intCount).Y < 0 OR Laser2RDesc(intCount).Y > (SCREEN_HEIGHT - LASER2HEIGHT) THEN
+            IF Laser2RDesc(intCount).X < 0 _ORELSE Laser2RDesc(intCount).X > (SCREEN_WIDTH - LASER2WIDTH) _ORELSE Laser2RDesc(intCount).Y < 0 _ORELSE Laser2RDesc(intCount).Y > (SCREEN_HEIGHT - LASER2HEIGHT) THEN
                 'if the laser goes off the screen then
                 Laser2RDesc(intCount).Exists = _FALSE 'the laser no longer exists
             ELSE 'otherwise
@@ -2898,7 +2898,7 @@ SUB UpdateWeapons
             SrcRect.top = 0
             SrcRect.bottom = LASER2HEIGHT
 
-            IF Laser2LDesc(intCount).X < 0 OR Laser2LDesc(intCount).X > (SCREEN_WIDTH - LASER2WIDTH) OR Laser2LDesc(intCount).Y < 0 OR Laser2LDesc(intCount).Y > (SCREEN_HEIGHT - LASER2HEIGHT) THEN
+            IF Laser2LDesc(intCount).X < 0 _ORELSE Laser2LDesc(intCount).X > (SCREEN_WIDTH - LASER2WIDTH) _ORELSE Laser2LDesc(intCount).Y < 0 _ORELSE Laser2LDesc(intCount).Y > (SCREEN_HEIGHT - LASER2HEIGHT) THEN
                 Laser2LDesc(intCount).Exists = _FALSE
             ELSE
                 _PUTIMAGE (Laser2LDesc(intCount).X, Laser2LDesc(intCount).Y), ddsLaser2L, , (SrcRect.left, SrcRect.top)-(SrcRect.right, SrcRect.bottom)
@@ -2975,7 +2975,7 @@ SUB UpdateWeapons
             'increment the missile X by the velocity of the missile
             GuidedMissile(intCount).Y = GuidedMissile(intCount).Y + GuidedMissile(intCount).YVelocity
             'increment the missile X by the velocity of the missile
-            IF GuidedMissile(intCount).X < 0 OR (GuidedMissile(intCount).X + MISSILEDIMENSIONS) > SCREEN_WIDTH OR GuidedMissile(intCount).Y < 0 OR (GuidedMissile(intCount).Y + MISSILEDIMENSIONS) > SCREEN_HEIGHT THEN
+            IF GuidedMissile(intCount).X < 0 _ORELSE (GuidedMissile(intCount).X + MISSILEDIMENSIONS) > SCREEN_WIDTH _ORELSE GuidedMissile(intCount).Y < 0 _ORELSE (GuidedMissile(intCount).Y + MISSILEDIMENSIONS) > SCREEN_HEIGHT THEN
                 'if the missile goes off the screen
                 GuidedMissile(intCount).Exists = _FALSE 'the guided missile no longer exists
                 GuidedMissile(intCount).TargetSet = _FALSE 'the guided missile has no target
@@ -2997,7 +2997,7 @@ SUB UpdateShip
     STATIC isFrameDirectionReverse AS _BYTE 'keep track of the direction the animation is moving
 
     ' If the end of the animation is reached in either direction
-    IF (intShipFrameCount > 29 _ANDALSO NOT isFrameDirectionReverse) OR (intShipFrameCount < 1 _ANDALSO isFrameDirectionReverse) THEN
+    IF (intShipFrameCount > 29 _ANDALSO NOT isFrameDirectionReverse) _ORELSE (intShipFrameCount < 1 _ANDALSO isFrameDirectionReverse) THEN
         isFrameDirectionReverse = NOT isFrameDirectionReverse 'reverse the direction
     END IF
 
@@ -3515,7 +3515,7 @@ FUNCTION GetInput%%
         DIM keyCode AS LONG: keyCode = _KEYHIT
 
         IF boolGettingInput THEN 'If the game is getting high score input then
-            IF (keyCode >= 0 _ANDALSO keyCode <= 127 _ANDALSO String_IsAlphaNumeric(keyCode)) OR keyCode = KEY_SPACE THEN 'if the keys are alpha keys then
+            IF keyCode = _ASC_SPACE _ORELSE (keyCode >= ASC_0 _ANDALSO keyCode <= ASC_LOWER_Z _ANDALSO String_IsAlphaNumeric(keyCode)) THEN 'if the keys are alpha keys then
                 strBuffer = CHR$(keyCode) 'add this key to the buffer
             ELSEIF keyCode = _KEY_ENTER _ANDALSO LEN(_TRIM$(strName)) > NULL THEN 'if enter has been pressed
                 boolEnterPressed = _TRUE 'toggle the enter pressed flag to on
@@ -3542,19 +3542,19 @@ FUNCTION GetInput%%
             DoCredits 'Show the credits
             EndGame 'Call sub to reset all variables
             SYSTEM 'Exit the application
-        ELSEIF keyCode = KEY_LOWER_F OR keyCode = KEY_UPPER_F THEN 'if the F key is pressed
+        ELSEIF keyCode = KEY_LOWER_F _ORELSE keyCode = KEY_UPPER_F THEN 'if the F key is pressed
             IF boolFrameRate THEN 'if the frame rate display is toggled
                 boolFrameRate = _FALSE 'turn it off
             ELSE 'otherwise
                 boolFrameRate = _TRUE 'turn it on
             END IF
-        ELSEIF keyCode = KEY_LOWER_J OR keyCode = KEY_UPPER_J THEN 'if the J key is pressed
+        ELSEIF keyCode = KEY_LOWER_J _ORELSE keyCode = KEY_UPPER_J THEN 'if the J key is pressed
             IF blnJoystickEnabled THEN 'if the joystick is enabled
                 blnJoystickEnabled = _FALSE 'turn it off
             ELSE 'otherwise
                 blnJoystickEnabled = _TRUE 'turn it on
             END IF
-        ELSEIF (keyCode = KEY_LOWER_M OR keyCode = KEY_UPPER_M) _ANDALSO NOT boolStarted THEN
+        ELSEIF (keyCode = KEY_LOWER_M _ORELSE keyCode = KEY_UPPER_M) _ANDALSO NOT boolStarted THEN
             'if the M key is pressed, and the game has not started
             IF blnMIDIEnabled THEN 'if midi is enabled
                 PlayMIDIFile _STR_EMPTY 'stop playing any midi
@@ -3563,7 +3563,7 @@ FUNCTION GetInput%%
                 blnMIDIEnabled = _TRUE 'turn the midi on
                 PlayMIDIFile "./dat/sfx/mus/title.mid" 'play the title midi
             END IF
-        ELSEIF keyCode = KEY_LOWER_X OR keyCode = KEY_UPPER_X THEN 'if the X key has been pressed
+        ELSEIF keyCode = KEY_LOWER_X _ORELSE keyCode = KEY_UPPER_X THEN 'if the X key has been pressed
             IF boolMaxFrameRate THEN 'if the maximum frame rate is toggled
                 boolMaxFrameRate = _FALSE 'toggle it off
             ELSE 'otherwise
